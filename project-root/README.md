@@ -2,7 +2,8 @@
 
 This repository contains the full-stack application:
 - client/ - React frontend
-- server/ - FastAPI backend 
+- server/ - FastAPI backend
+# project root navigation 
 cd project-root
 # Start the server:
 cd server
