@@ -17,7 +17,7 @@ export default function Login() {
       await login(form.email, form.password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid email or password');
+      setError(err.response?.data?.detail || err.message || 'Invalid email or password');
     } finally { setLoading(false); }
   };
 
