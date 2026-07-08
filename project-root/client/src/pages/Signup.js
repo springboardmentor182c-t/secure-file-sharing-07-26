@@ -70,7 +70,7 @@ export default function Signup() {
       await register(form.name, form.email, form.password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Registration failed');
+      setError(err.response?.data?.detail || err.message || 'Registration failed');
     } finally { setLoading(false); }
   };
 
