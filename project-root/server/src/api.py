@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.auth.controller import router as auth_router
@@ -9,6 +12,7 @@ from src.notifications.controller import router as notifications_router
 from src.audit.controller import router as audit_router
 from src.analytics.controller import router as analytics_router
 from src.admin.controller import router as admin_router
+from src.todos.controller import router as todos_router
 from src.exceptions import AppException, app_exception_handler
 from src.database.init_db import init_db
 
@@ -47,6 +51,7 @@ def create_app() -> FastAPI:
     app.include_router(audit_router,         prefix="/api/audit",         tags=["Audit"])
     app.include_router(analytics_router,     prefix="/api/analytics",     tags=["Analytics"])
     app.include_router(admin_router,         prefix="/api/admin",         tags=["Admin"])
+    app.include_router(todos_router,         prefix="/api/todos",         tags=["Todos"])
 
     # ── Health check ──────────────────────────────────────────────────────────
     @app.get("/health", tags=["System"])
