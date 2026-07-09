@@ -1,0 +1,113 @@
+.admin-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--admin-bg-sidebar);
+  border-right: 1px solid var(--admin-border-subtle);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.admin-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  font-weight: 600;
+  font-size: 15px;
+  border-bottom: 1px solid var(--admin-border-subtle);
+}
+
+.admin-sidebar-brand-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-sidebar-scroll {
+  flex: 1;
+  padding: 14px 10px;
+  overflow-y: auto;
+}
+
+.admin-sidebar-group {
+  margin-bottom: 18px;
+}
+
+.admin-sidebar-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--admin-text-muted);
+  padding: 0 10px 8px;
+}
+
+.admin-sidebar-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text-secondary);
+  font-size: 13.5px;
+  text-align: left;
+}
+
+.admin-sidebar-item span:first-child {
+  flex: 1;
+}
+
+.admin-sidebar-item:hover {
+  background: var(--admin-bg-panel);
+  color: var(--admin-text-primary);
+}
+
+.admin-sidebar-item.is-active {
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent-strong);
+}
+
+.admin-sidebar-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--admin-accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--admin-border-subtle);
+  font-size: 13px;
+}
+
+.admin-sidebar-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent-strong);
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -1,0 +1,39 @@
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.admin-badge-purple {
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent-strong);
+}
+
+.admin-badge-blue {
+  background: var(--admin-blue-bg);
+  color: var(--admin-blue);
+}
+
+.admin-badge-gray {
+  background: var(--admin-bg-panel-raised);
+  color: var(--admin-text-secondary);
+}
+
+.admin-badge-green {
+  background: var(--admin-green-bg);
+  color: var(--admin-green);
+}
+
+.admin-badge-amber {
+  background: var(--admin-amber-bg);
+  color: var(--admin-amber);
+}
+
+.admin-badge-red {
+  background: var(--admin-red-bg);
+  color: var(--admin-red);
+}

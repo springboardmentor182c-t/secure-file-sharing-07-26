@@ -1,0 +1,57 @@
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 26px 30px 22px;
+  flex-wrap: wrap;
+}
+
+.admin-header-title {
+  font-size: 21px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.admin-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--admin-bg-input);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: var(--admin-radius-sm);
+  padding: 8px 12px;
+  color: var(--admin-text-muted);
+  width: 220px;
+}
+
+.admin-search input {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 13.5px;
+  width: 100%;
+}
+
+.admin-invite-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--admin-accent);
+  border: none;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 9px 16px;
+  border-radius: var(--admin-radius-sm);
+}
+
+.admin-invite-btn:hover {
+  background: var(--admin-accent-strong);
+}
