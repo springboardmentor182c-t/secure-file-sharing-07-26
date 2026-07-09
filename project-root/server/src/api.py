@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from src.activity.controller import router as activity_router
 from fastapi.middleware.cors import CORSMiddleware
 from src.auth.controller import router as auth_router
 from src.users.controller import router as users_router
@@ -47,6 +48,7 @@ def create_app() -> FastAPI:
     app.include_router(audit_router,         prefix="/api/audit",         tags=["Audit"])
     app.include_router(analytics_router,     prefix="/api/analytics",     tags=["Analytics"])
     app.include_router(admin_router,         prefix="/api/admin",         tags=["Admin"])
+    app.include_router(activity_router, prefix="/api/activity", tags=["Activity"])
 
     # ── Health check ──────────────────────────────────────────────────────────
     @app.get("/health", tags=["System"])
