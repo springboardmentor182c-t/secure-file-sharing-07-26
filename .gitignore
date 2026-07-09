@@ -1,0 +1,21 @@
+# ── Client (CRA / Node) ─────────────────────────────────
+client/node_modules/
+client/build/
+client/.env
+client/.env.local
+client/npm-debug.log*
+
+# ── Server (Python / FastAPI) ───────────────────────────
+server/venv/
+server/__pycache__/
+server/**/__pycache__/
+server/*.pyc
+server/.env
+server/.pytest_cache/
+server/alembic/versions/*.pyc
+
+# ── Editor / OS ──────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+*.log
