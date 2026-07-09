@@ -1,0 +1,57 @@
+.navbar {
+  height: 90px;
+  background: #201d1d;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 35px;
+}
+
+.navbar h2 {
+  font-size: 28px;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.right input {
+  width: 350px;
+  height: 45px;
+  border: none;
+  border-radius: 25px;
+  padding: 0 20px;
+}
+
+.right button {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 45px;
+  height: 45px;
+  background: #735454;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+}
+
+.profile p {
+  font-size: 13px;
+  color: #ddd;
+}

@@ -1,0 +1,131 @@
+.activity-page {
+  flex: 1;
+  padding: 35px;
+  background: #f7f5f3;
+}
+
+.activity-page h1 {
+  font-size: 48px;
+  margin-bottom: 30px;
+  color: #222;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.toolbar input {
+  width: 360px;
+  height: 48px;
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  padding: 0 18px;
+  font-size: 15px;
+}
+
+.toolbar button {
+  padding: 10px 25px;
+  border-radius: 22px;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.toolbar .active {
+  background: #735454;
+  color: white;
+  border: none;
+}
+
+table {
+  width: 100%;
+  background: white;
+  border-collapse: collapse;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+thead {
+  background: #fafafa;
+}
+
+thead th {
+  padding: 20px;
+  color: #777;
+  text-align: left;
+}
+
+tbody td {
+  padding: 22px 20px;
+  border-top: 1px solid #eee;
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #735454;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+}
+
+.status {
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.success {
+  background: #e8faf0;
+  color: green;
+}
+
+.warning {
+  background: #fff6de;
+  color: #d48b00;
+}
+
+.danger {
+  background: #ffe5e5;
+  color: red;
+}
+
+.footer {
+  margin-top: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pages {
+  display: flex;
+  gap: 10px;
+}
+
+.pages button {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+}
+
+.current {
+  background: #735454 !important;
+  color: white;
+}
