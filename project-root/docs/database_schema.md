@@ -5,7 +5,7 @@
 
 **Date:** 9 July 2026  
 **Created By:** Badal Kumar Rai   
-**Scope:** Maps to Section 3 (Architecture Components) and Section 4 (Modules to be Implemented) of the project specification.
+**Scope:** Maps to Section 3 (Architecture Components) and Section 4 (Modules to be Implemented) of the project specification.  
 **Stack:** PostgreSQL (relational core) · MongoDB (activity/audit logs) · Redis (cache/sessions/tokens) · AWS S3 / Azure Blob (encrypted file storage)
 **Status:** Architecture Review – READY FOR IMPLEMENTATION
 
