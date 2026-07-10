@@ -14,12 +14,12 @@ export default function SecurityStatusCard({ security }) {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 id="security-status-heading" className="text-base font-semibold text-[#0F172A]">
-            Security Status
+            Encryption & Security
           </h2>
-          <p className="mt-1 text-sm text-[#64748B]">Workspace protections are healthy</p>
+          <p className="mt-1 text-sm text-[#64748B]">Protect your confidential files with advanced encryption and secure authentication.</p>
         </div>
         <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#16A34A]">
-          Protected
+          Encrypted
         </span>
       </div>
 
