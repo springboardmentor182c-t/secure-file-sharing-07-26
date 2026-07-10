@@ -149,14 +149,14 @@ export const mockDashboardData = {
       type: 'expired',
       title: 'Temporary link expired',
       time: '3 hours ago',
-    },
+    },``
   ],
   security: [
     { id: 'encryption', label: 'AES-256 Encryption', value: 'Enabled', tone: 'success' },
-    { id: 'mfa', label: 'MFA', value: 'Active', tone: 'success' },
-    { id: 'sharing', label: 'Secure Sharing', value: 'Enabled', tone: 'success' },
-    { id: 'logging', label: 'Audit Logging', value: 'Running', tone: 'success' },
-    { id: 'suspicious', label: 'Suspicious Activity', value: 'None detected', tone: 'success' },
+    { id: 'mfa', label: 'Multi-Factor Authentication', value: 'Active', tone: 'success' },
+    { id: 'sharing', label: 'Role-Based Access Control', value: 'Enabled', tone: 'success' },
+    { id: 'logging', label: 'Secure File Transfer', value: 'Running', tone: 'success' },
+    { id: 'virus', label: 'Virus Scanning', value: 'No threats detected', tone: 'success' },
   ],
   notifications: [
     {
