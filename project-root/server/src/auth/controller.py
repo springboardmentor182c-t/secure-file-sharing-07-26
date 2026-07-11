@@ -213,3 +213,17 @@ async def microsoft_callback(code: str, db: Session = Depends(get_db)):
     )
     return RedirectResponse(url=redirect_url)
 
+@router.post("/mfa/enable", response_model=models.UserOut)
+def enable_mfa(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return service.enable_mfa(db, current_user)
+
+
+@router.post("/mfa/disable", response_model=models.UserOut)
+def disable_mfa(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return service.disable_mfa(db, current_user)

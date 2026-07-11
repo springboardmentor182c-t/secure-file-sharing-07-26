@@ -157,3 +157,16 @@ def get_or_create_oauth_user(db: Session, provider: str, email: str, name: str) 
         db.commit()
         db.refresh(user)
     return user
+
+def enable_mfa(db: Session, user: User) -> User:
+    user.mfa_enabled = True
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def disable_mfa(db: Session, user: User) -> User:
+    user.mfa_enabled = False
+    db.commit()
+    db.refresh(user)
+    return user
