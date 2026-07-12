@@ -1,11 +1,8 @@
-import React from 'react';
+import React from "react";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
-  return (
-    <div className="App">
-      <h1>Secure File Sharing - Client</h1>
-    </div>
-  );
+  return <AdminDashboard />;
 }
 
 export default App;
