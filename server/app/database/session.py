@@ -26,5 +26,8 @@ def get_db() -> Generator[Session, None, None]:
 
 def init_db() -> None:
     from app.models import dashboard  # noqa: F401
+    from app.models import audit_log  # noqa: F401
+    from app.models import login_history  # noqa: F401
+    from app.models import security_event  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
