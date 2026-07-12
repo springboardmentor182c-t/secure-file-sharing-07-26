@@ -180,3 +180,205 @@ body.dark .nav-icon-btn:hover{
     background:#1E293B;
     color:#FFFFFF;
 }
+
+/* ================= SEARCH DROPDOWN ================= */
+
+.navbar-search{
+    position:relative;
+}
+
+.search-dropdown{
+
+    position:absolute;
+
+    top:52px;
+
+    left:0;
+
+    width:100%;
+
+    background:#ffffff;
+
+    border:1px solid #e2e8f0;
+
+    border-radius:12px;
+
+    box-shadow:0 10px 25px rgba(0,0,0,.1);
+
+    z-index:999;
+
+    max-height:350px;
+
+    overflow-y:auto;
+}
+
+.search-section{
+
+    padding:8px 0;
+
+}
+
+.search-title{
+
+    padding:8px 16px;
+
+    font-size:12px;
+
+    font-weight:700;
+
+    color:#64748b;
+
+    text-transform:uppercase;
+}
+
+.search-item{
+
+    padding:10px 16px;
+
+    cursor:pointer;
+
+    transition:.2s;
+}
+
+.search-item:hover{
+
+    background:#f1f5f9;
+}
+
+body.dark .search-dropdown{
+
+    background:#1e293b;
+
+    border-color:#334155;
+}
+
+body.dark .search-item:hover{
+
+    background:#334155;
+}
+
+/* ================= NOTIFICATION DROPDOWN ================= */
+
+.navbar-actions{
+    position:relative;
+}
+
+.notification-dropdown{
+
+    position:absolute;
+
+    top:50px;
+
+    right:0;
+
+    width:340px;
+
+    background:#ffffff;
+
+    border:1px solid #e2e8f0;
+
+    border-radius:12px;
+
+    box-shadow:0 10px 25px rgba(0,0,0,.12);
+
+    overflow:hidden;
+
+    z-index:999;
+}
+
+.notification-header{
+
+    padding:14px 16px;
+
+    font-weight:700;
+
+    border-bottom:1px solid #e2e8f0;
+}
+
+.notification-item{
+
+    padding:14px 16px;
+
+    cursor:pointer;
+
+    border-bottom:1px solid #f1f5f9;
+
+    transition:.2s;
+}
+
+.notification-item:hover{
+
+    background:#f8fafc;
+}
+
+.notification-title{
+
+    font-weight:600;
+
+    margin-bottom:4px;
+}
+
+.notification-message{
+
+    font-size:13px;
+
+    color:#64748b;
+}
+
+.notification-empty{
+
+    padding:20px;
+
+    text-align:center;
+
+    color:#64748b;
+}
+
+.notification-view-all{
+
+    width:100%;
+
+    padding:14px;
+
+    border:none;
+
+    background:#f8fafc;
+
+    cursor:pointer;
+
+    font-weight:600;
+}
+
+.notification-view-all:hover{
+
+    background:#e2e8f0;
+}
+
+body.dark .notification-dropdown{
+
+    background:#1e293b;
+
+    border-color:#334155;
+}
+
+body.dark .notification-item{
+
+    border-color:#334155;
+}
+
+body.dark .notification-item:hover{
+
+    background:#334155;
+}
+
+body.dark .notification-message{
+
+    color:#cbd5e1;
+}
+
+body.dark .notification-view-all{
+
+    background:#334155;
+
+    color:white;
+}

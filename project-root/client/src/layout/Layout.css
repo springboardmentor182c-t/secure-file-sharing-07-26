@@ -17,19 +17,30 @@
     transition:margin-left .3s ease;
 }
 
+/* Desktop collapsed sidebar */
+
+.main-area-collapsed{
+    margin-left:80px;
+}
+
 @media (max-width:992px){
 
 .main-area{
-   margin-left:var(--sidebar-width);
+    margin-left:var(--sidebar-width);
 }
+
+.main-area-collapsed{
+    margin-left:var(--sidebar-width);
+}
+
 /* ================= DARK MODE ================= */
 
 body.dark .app-shell{
-    background:#111827;
+    background:#000000;
 }
 
 body.dark .main-area{
-    background:#111827;
+    background:#000000;
 }
 
 }

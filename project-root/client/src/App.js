@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './layout/ProtectedRoute';
+import NotFound from "./pages/NotFound";
 import Navbar from './layout/Navbar';
 import Sidebar from './layout/Sidebar';
 import Login from './pages/Login';
@@ -41,7 +42,7 @@ function AppShell() {
       <Route path="/notifications" element={<Notifications />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="/settings" element={<Settings />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   </Layout>
 );
