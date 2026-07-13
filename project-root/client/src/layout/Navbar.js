@@ -1,15 +1,29 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Navbar.css";
-import { Search, Bell, Moon, Sun } from "lucide-react";
+import { Bell, Moon, Sun } from "lucide-react";
+import {
+    RiSearch2Line,
+    RiFileTextLine,
+    RiFolderOpenLine,
+    RiShareForwardLine,
+    RiNotification3Line,
+    RiImageLine,
+    RiFileZipLine,
+    RiCodeBoxLine,
+    RiVideoLine,
+    RiShieldCheckLine,
+} from "react-icons/ri";
 import { searchAPI, notificationsAPI } from "../utils/api";
 
 export default function Navbar({ unreadCount = 0, darkMode, setDarkMode }) {
     const [query, setQuery] = useState("");
     const [results, setResults] = useState(null);
     const [loading, setLoading] = useState(false);
+    const searchRef = useRef(null);
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState([]);
+    const notificationRef = useRef(null);
     const [showNotifications, setShowNotifications] = useState(false);
 
     useEffect(() => {
@@ -73,6 +87,34 @@ export default function Navbar({ unreadCount = 0, darkMode, setDarkMode }) {
 
     useEffect(() => {
 
+        function handleClickOutside(event) {
+
+            if (
+                searchRef.current &&
+                !searchRef.current.contains(event.target)
+            ) {
+                setResults(null);
+            }
+
+            if (
+                notificationRef.current &&
+                !notificationRef.current.contains(event.target)
+            ) {
+                setShowNotifications(false);
+            }
+
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+
+    }, []);
+
+    useEffect(() => {
+
         if (!showNotifications) return;
 
         const loadNotifications = async () => {
@@ -95,10 +137,75 @@ export default function Navbar({ unreadCount = 0, darkMode, setDarkMode }) {
 
     }, [showNotifications]);
 
+    const getNotificationIcon = (notification) => {
+
+        const text =
+            `${notification.title} ${notification.message}`.toLowerCase();
+
+        if (text.includes("share"))
+            return <RiShareForwardLine className="notification-type-icon" />;
+
+        if (text.includes("folder"))
+            return <RiFolderOpenLine className="notification-type-icon" />;
+
+        if (text.includes("security"))
+            return <RiShieldCheckLine className="notification-type-icon" />;
+
+        if (text.includes("file"))
+            return <RiFileTextLine className="notification-type-icon" />;
+
+        return <RiNotification3Line className="notification-type-icon" />;
+    };
+
+    const getSearchFileIcon = (filename) => {
+
+        const ext = filename.split(".").pop().toLowerCase();
+
+        switch (ext) {
+
+            case "png":
+            case "jpg":
+            case "jpeg":
+            case "gif":
+            case "svg":
+            case "webp":
+                return <RiImageLine className="search-icon" />;
+
+            case "mp4":
+            case "avi":
+            case "mov":
+            case "mkv":
+                return <RiVideoLine className="search-icon" />;
+
+            case "zip":
+            case "rar":
+            case "7z":
+                return <RiFileZipLine className="search-icon" />;
+
+            case "js":
+            case "jsx":
+            case "ts":
+            case "tsx":
+            case "java":
+            case "py":
+            case "cpp":
+            case "css":
+            case "html":
+                return <RiCodeBoxLine className="search-icon" />;
+
+            default:
+                return <RiFileTextLine className="search-icon" />;
+        }
+    };
+
+
     return (
         <header className="navbar-modern">
-            <div className="navbar-search">
-                <Search size={18} />
+            <div
+                className="navbar-search"
+                ref={searchRef}
+            >
+                <RiSearch2Line className="search-icon" />
 
                 <input
                     type="text"
@@ -128,7 +235,10 @@ export default function Navbar({ unreadCount = 0, darkMode, setDarkMode }) {
                                         className="search-item"
                                         onClick={() => handleResultClick("file", file)}
                                     >
-                                        📄 {file.original_name}
+                                        <>
+                                            {getSearchFileIcon(file.original_name)}
+                                            <span>{file.original_name}</span>
+                                        </>
                                     </div>
                                 ))}
                             </div>
@@ -144,7 +254,10 @@ export default function Navbar({ unreadCount = 0, darkMode, setDarkMode }) {
                                         className="search-item"
                                         onClick={() => handleResultClick("folder", folder)}
                                     >
-                                        📁 {folder.name}
+                                        <>
+                                            <RiFolderOpenLine className="search-icon" />
+                                            <span>{folder.name}</span>
+                                        </>
                                     </div>
                                 ))}
                             </div>
@@ -160,7 +273,10 @@ export default function Navbar({ unreadCount = 0, darkMode, setDarkMode }) {
                                         className="search-item"
                                         onClick={() => handleResultClick("share", share)}
                                     >
-                                        🔗 Share #{share.id}
+                                        <>
+                                            <RiShareForwardLine className="search-icon" />
+                                            <span>Share #{share.id}</span>
+                                        </>
                                     </div>
                                 ))}
                             </div>
@@ -178,7 +294,10 @@ export default function Navbar({ unreadCount = 0, darkMode, setDarkMode }) {
                                             handleResultClick("notification", notification)
                                         }
                                     >
-                                        🔔 {notification.title}
+                                        <>
+                                            <RiNotification3Line className="search-icon" />
+                                            <span>{notification.title}</span>
+                                        </>
                                     </div>
                                 ))}
                             </div>
@@ -195,14 +314,16 @@ export default function Navbar({ unreadCount = 0, darkMode, setDarkMode }) {
                 )}
                 <kbd className="search-shortcut">CTRL+K</kbd>
             </div>
-
-            <div className="navbar-actions">
+            <div
+                className="navbar-actions"
+                ref={notificationRef}
+            >
                 <button className="nav-icon-btn" onClick={() => setDarkMode(!darkMode)}>
                     {darkMode ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
 
                 <button
-                    className="nav-icon-btn"
+                    className={`nav-icon-btn ${showNotifications ? "active" : ""}`}
                     onClick={() => setShowNotifications(!showNotifications)}
                 >
                     <Bell size={18} />
@@ -244,15 +365,25 @@ export default function Navbar({ unreadCount = 0, darkMode, setDarkMode }) {
                                     }}
                                 >
 
-                                    <div className="notification-title">
+                                    <div className="notification-icon">
 
-                                        {notification.title}
+                                        {getNotificationIcon(notification)}
 
                                     </div>
 
-                                    <div className="notification-message">
+                                    <div className="notification-content">
 
-                                        {notification.message}
+                                        <div className="notification-title">
+
+                                            {notification.title}
+
+                                        </div>
+
+                                        <div className="notification-message">
+
+                                            {notification.message}
+
+                                        </div>
 
                                     </div>
 
