@@ -35,8 +35,14 @@ class LoginAttemptSchema(BaseModel):
     success: int
     failed: int
 
+class UserProfileSchema(BaseModel):
+    name: str
+    role: str
+
 class SecurityDashboardDataSchema(BaseModel):
     stats: List[StatCardSchema]
     login_attempts: List[LoginAttemptSchema]
     events: List[SecurityEventSchema]
     keys: List[EncryptionKeySchema]
+    current_user: UserProfileSchema
+

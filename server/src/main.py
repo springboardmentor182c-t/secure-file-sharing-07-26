@@ -3,17 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.core import engine, Base, SessionLocal
 from src.security.controller import router as security_router
 from src.users.api import router as users_router
-from src.security.service import seed_db
-
 # Create database tables
 Base.metadata.create_all(bind=engine)
-
-# Seed initial data
-db = SessionLocal()
-try:
-    seed_db(db)
-finally:
-    db.close()
 
 app = FastAPI(title="TrustShare Security Dashboard API", version="1.0.0")
 

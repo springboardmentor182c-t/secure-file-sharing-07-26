@@ -41,11 +41,17 @@ interface LoginAttempt {
   failed: number;
 }
 
+interface UserProfile {
+  name: string;
+  role: string;
+}
+
 interface DashboardData {
   stats: StatCard[];
   login_attempts: LoginAttempt[];
   events: SecurityEvent[];
   keys: EncryptionKey[];
+  current_user: UserProfile;
 }
 
 // ─── Badges ────────────────────────────────────────────────────────────────────
@@ -64,7 +70,16 @@ function SeverityBadge({ severity }: { severity: string }) {
 }
 
 // ─── Header / TopBar ───────────────────────────────────────────────────────────
-function TopBar({ title, search, setSearch, actions }: { title: string; search: string; setSearch: (v: string) => void; actions?: React.ReactNode }) {
+function TopBar({ title, search, setSearch, currentUser, actions }: { 
+  title: string; 
+  search: string; 
+  setSearch: (v: string) => void; 
+  currentUser?: UserProfile;
+  actions?: React.ReactNode 
+}) {
+  const initials = currentUser?.name
+    ? currentUser.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "GU";
   return (
     <div className="flex items-center justify-between px-6 py-3.5 border-b border-[#B7A2C9]/08 shrink-0">
       <div className="flex items-center gap-2.5">
@@ -88,10 +103,12 @@ function TopBar({ title, search, setSearch, actions }: { title: string; search: 
         </div>
         {actions}
         <div className="flex items-center gap-2.5 pl-2 border-l border-[#B7A2C9]/10">
-          <div className="w-7 h-7 rounded-full bg-[#4B3A70] flex items-center justify-center text-white text-xs font-semibold shrink-0">AC</div>
+          <div className="w-7 h-7 rounded-full bg-[#4B3A70] flex items-center justify-center text-white text-xs font-semibold shrink-0">
+            {initials}
+          </div>
           <div className="hidden sm:block text-left">
-            <p className="text-white text-xs font-medium leading-none">Alex Chen</p>
-            <p className="text-[#C5C3C4]/50 text-[9px] mt-0.5 leading-none">Security Admin</p>
+            <p className="text-white text-xs font-medium leading-none">{currentUser?.name || "Guest User"}</p>
+            <p className="text-[#C5C3C4]/50 text-[9px] mt-0.5 leading-none">{currentUser?.role || "Viewer"}</p>
           </div>
         </div>
       </div>
@@ -197,7 +214,7 @@ export function SecurityView() {
 
   return (
     <div className="flex flex-col h-full">
-      <TopBar title="Security Dashboard" search={search} setSearch={setSearch} />
+      <TopBar title="Security Dashboard" search={search} setSearch={setSearch} currentUser={data.current_user} />
       <div className="flex-1 overflow-auto p-5 space-y-5">
 
         {/* Stat cards */}
