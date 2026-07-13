@@ -1,16 +1,17 @@
 import os
 import uuid
 import hashlib
-import shutil
 import mimetypes
 from pathlib import Path
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status, UploadFile
 from src.entities.file import File
+from src.entities.folder import Folder
 from src.entities.user import User
 from src.entities.audit_log import AuditLog
 
-UPLOAD_DIR = Path("uploads")
+BASE_DIR = Path(__file__).resolve().parent.parent
+UPLOAD_DIR = BASE_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 
@@ -36,13 +37,18 @@ def get_user_files(db: Session, owner_id: int, folder_id: int | None = None) -> 
 
 
 def get_file(db: Session, file_id: int, owner_id: int) -> File:
-    f = db.query(File).filter(File.id == file_id, File.is_deleted == False).first()
+    f = db.query(File).filter(File.id == file_id, File.owner_id == owner_id, File.is_deleted == False).first()
     if not f:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
     return f
 
 
 def upload_file(db: Session, upload: UploadFile, owner_id: int, folder_id: int | None, encrypted: bool) -> File:
+    if folder_id is not None:
+        folder = db.query(Folder).filter(Folder.id == folder_id, Folder.owner_id == owner_id).first()
+        if not folder:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid folder")
+
     stored_name = f"{uuid.uuid4().hex}{Path(upload.filename).suffix}"
     dest = UPLOAD_DIR / stored_name
 
@@ -82,8 +88,6 @@ def upload_file(db: Session, upload: UploadFile, owner_id: int, folder_id: int |
 
 def delete_file(db: Session, file_id: int, owner_id: int) -> None:
     f = get_file(db, file_id, owner_id)
-    if f.owner_id != owner_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     f.is_deleted = True
 
     # Free up storage
@@ -95,11 +99,11 @@ def delete_file(db: Session, file_id: int, owner_id: int) -> None:
     db.commit()
 
 
-def get_file_path(db: Session, file_id: int) -> tuple[Path, str]:
-    f = db.query(File).filter(File.id == file_id, File.is_deleted == False).first()
+def get_file_path(db: Session, file_id: int, owner_id: int) -> tuple[Path, str]:
+    f = db.query(File).filter(File.id == file_id, File.owner_id == owner_id, File.is_deleted == False).first()
     if not f:
-        raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
     path = UPLOAD_DIR / f.stored_name
     if not path.exists():
-        raise HTTPException(status_code=404, detail="File data not found on disk")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File data not found on disk")
     return path, f.original_name
