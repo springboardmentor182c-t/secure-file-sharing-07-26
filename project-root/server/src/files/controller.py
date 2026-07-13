@@ -58,11 +58,19 @@ def download_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+<<<<<<< HEAD
 
     path, original_name = service.get_file_path(
         db,
         file_id,
         current_user.id,
+=======
+    path, original_name = service.get_file_path(db, file_id, current_user.id)
+    return FileResponse(
+        path=str(path),
+        filename=original_name,
+        media_type="application/octet-stream",
+>>>>>>> ac64a69 (Implement backend file section APIs)
     )
 
     try:
