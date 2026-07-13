@@ -1,4 +1,4 @@
 node_modules/
 Db_schema.sql
 schema.sql
-
+.env

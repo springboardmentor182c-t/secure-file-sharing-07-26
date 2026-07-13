@@ -6,6 +6,7 @@ import {
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from "recharts";
+import "./security-theme.css";
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 interface SecurityEvent {
@@ -46,39 +47,6 @@ interface DashboardData {
   events: SecurityEvent[];
   keys: EncryptionKey[];
 }
-
-// ─── Sandbox Demo Data ────────────────────────────────────────────────────────
-const DEMO_EVENTS: SecurityEvent[] = [
-  { id: 1, ts: "2024-01-15 14:28", event: "Brute Force Attack", source: "185.220.101.34", country: "RU", severity: "critical", blocked: true },
-  { id: 2, ts: "2024-01-15 14:10", event: "Multiple Failed Logins", source: "10.0.2.88", country: "US", severity: "high", blocked: true },
-  { id: 3, ts: "2024-01-15 13:41", event: "API Abuse Attempt", source: "45.33.32.156", country: "NL", severity: "high", blocked: true },
-  { id: 4, ts: "2024-01-15 11:55", event: "Unusual Permission Change", source: "172.16.0.5", country: "US", severity: "medium", blocked: false },
-  { id: 5, ts: "2024-01-14 09:22", event: "Suspicious Download Pattern", source: "192.168.1.99", country: "US", severity: "medium", blocked: false },
-  { id: 6, ts: "2024-01-13 16:45", event: "Geo-Anomaly Login", source: "91.108.4.0", country: "CN", severity: "low", blocked: false },
-];
-
-const DEMO_LOGIN_ATTEMPTS: LoginAttempt[] = [
-  { hour: "00:00", success: 2, failed: 1 },
-  { hour: "04:00", success: 0, failed: 4 },
-  { hour: "08:00", success: 15, failed: 2 },
-  { hour: "12:00", success: 28, failed: 1 },
-  { hour: "16:00", success: 22, failed: 5 },
-  { hour: "20:00", success: 8, failed: 2 },
-];
-
-const DEMO_KEYS: EncryptionKey[] = [
-  { id: "key-001", file: "Q4-Financial-Report.pdf", created: "Jan 15, 2024", rotated: "Jan 15, 2024", algorithm: "AES-256-GCM", status: "active" },
-  { id: "key-002", file: "Design-Assets-2024.zip", created: "Jan 14, 2024", rotated: "Jan 14, 2024", algorithm: "AES-256-GCM", status: "active" },
-  { id: "key-003", file: "Product-Roadmap-2024.docx", created: "Jan 12, 2024", rotated: "Jan 12, 2024", algorithm: "AES-256-GCM", status: "active" },
-  { id: "key-004", file: "Old-File-2023.pdf (deleted)", created: "Oct 5, 2023", rotated: "Nov 1, 2023", algorithm: "AES-256-CBC", status: "rotated" },
-];
-
-const DEMO_STATS: StatCard[] = [
-  { label: "Blocked attacks", value: "47", sub: "last 30 days", color: "#EF4444" },
-  { label: "Failed logins", value: "23", sub: "+5 today", color: "#F59E0B" },
-  { label: "MFA coverage", value: "60%", sub: "3 of 5 users", color: "#22C55E" },
-  { label: "Key rotations", value: "12", sub: "this month", color: "#B7A2C9" },
-];
 
 // ─── Badges ────────────────────────────────────────────────────────────────────
 function SeverityBadge({ severity }: { severity: string }) {
@@ -131,32 +99,29 @@ function TopBar({ title, search, setSearch, actions }: { title: string; search: 
   );
 }
 
+// Read API URL via Vite's environment variable loading
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 // ─── Security Dashboard ────────────────────────────────────────────────────────
-function SecurityView() {
+export function SecurityView() {
   const [search, setSearch] = useState("");
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isDemo, setIsDemo] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [rotating, setRotating] = useState(false);
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/security/dashboard");
+      setError(null);
+      const response = await fetch(`${API_BASE_URL}/api/security/dashboard`);
       if (!response.ok) {
-        throw new Error("Failed response");
+        throw new Error(`Failed to load data (HTTP ${response.status})`);
       }
       const json = await response.json();
       setData(json);
-      setIsDemo(false);
-    } catch (err) {
-      // Fallback to local sandbox mock data if backend server is not running
-      setData({
-        stats: DEMO_STATS,
-        login_attempts: DEMO_LOGIN_ATTEMPTS,
-        events: DEMO_EVENTS,
-        keys: DEMO_KEYS
-      });
-      setIsDemo(true);
+    } catch (err: any) {
+      setError(err.message || "Failed to connect to the security API");
+      setData(null);
     } finally {
       setLoading(false);
     }
@@ -169,21 +134,8 @@ function SecurityView() {
   const handleRotateKeys = async () => {
     if (rotating) return;
     setRotating(true);
-    if (isDemo && data) {
-      // Offline/Demo Mode key rotation emulation
-      setTimeout(() => {
-        const todayStr = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-        setData({
-          ...data,
-          keys: data.keys.map(k => ({ ...k, rotated: todayStr, status: "active" }))
-        });
-        setRotating(false);
-      }, 550);
-      return;
-    }
-
     try {
-      const response = await fetch("http://localhost:8000/api/security/rotate-keys", {
+      const response = await fetch(`${API_BASE_URL}/api/security/rotate-keys`, {
         method: "POST",
       });
       if (!response.ok) {
@@ -206,14 +158,15 @@ function SecurityView() {
     );
   }
 
-  if (!data) {
+  if (error || !data) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
         <ShieldAlert size={40} className="text-red-400 mb-3" />
         <p className="text-white text-sm font-semibold mb-1">Initialization Failed</p>
+        <p className="text-[#C5C3C4]/50 text-xs mb-4">{error || "No dashboard data available."}</p>
         <button
           onClick={() => { setLoading(true); fetchDashboardData(); }}
-          className="px-4 py-2 bg-[#4B3A70] hover:bg-[#4B3A70]/80 text-white text-xs font-semibold rounded-lg transition-colors"
+          className="px-4 py-2 bg-[#4B3A70] hover:bg-[#4B3A70]/80 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
         >
           Retry Load
         </button>
@@ -244,22 +197,6 @@ function SecurityView() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Alert banner for offline demo mode */}
-      {isDemo && (
-        <div className="bg-amber-500/10 border-b border-amber-500/15 px-6 py-2 flex items-center justify-between text-xs text-amber-400">
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={12} className="shrink-0" />
-            <span><strong>Sandbox Demo Mode:</strong> Backend server at port 8000 is offline. Displaying sandbox mock data.</span>
-          </div>
-          <button 
-            onClick={() => { setLoading(true); fetchDashboardData(); }}
-            className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 rounded text-[10px] font-semibold transition-colors"
-          >
-            Retry Connection
-          </button>
-        </div>
-      )}
-
       <TopBar title="Security Dashboard" search={search} setSearch={setSearch} />
       <div className="flex-1 overflow-auto p-5 space-y-5">
 
