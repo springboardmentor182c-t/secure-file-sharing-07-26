@@ -1,47 +1,33 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import "./NotFound.css";
 
 export default function NotFound() {
-  return (
-    <div
-      style={{
-        minHeight: "70vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <div style={{ textAlign: "center" }}>
-        <h1
-          style={{
-            fontSize: "5rem",
-            marginBottom: "10px",
-            fontWeight: 800,
-          }}
-        >
-          404
-        </h1>
+    return (
+        <div className="not-found">
 
-        <h2 style={{ marginBottom: "12px" }}>
-          Page Not Found
-        </h2>
+            <div className="not-found-card">
 
-        <p
-          style={{
-            color: "#64748b",
-            marginBottom: "24px",
-          }}
-        >
-          The page you are looking for does not exist.
-        </p>
+                <h1 className="not-found-code">
+                    404
+                </h1>
 
-        <Link
-          to="/dashboard"
-          className="btn btn-primary"
-        >
-          Go to Dashboard
-        </Link>
-      </div>
-    </div>
-  );
+                <h2 className="not-found-title">
+                    Page Not Found
+                </h2>
+
+                <p className="not-found-description">
+                    The page you are looking for doesn't exist or may have been moved.
+                </p>
+
+                <Link
+                    to="/dashboard"
+                    className="not-found-btn"
+                >
+                    ← Back to Dashboard
+                </Link>
+
+            </div>
+        </div>
+    );
 }
