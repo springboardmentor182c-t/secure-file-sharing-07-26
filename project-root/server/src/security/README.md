@@ -15,7 +15,7 @@ This README documents the module I was assigned within the larger TrustShare pro
 **Author:** Badal Kumar Rai
 **Role:** Encryption & Security Module — TrustShare Secure File-Sharing System
 **Email:** badalrai242@gmail.com
-**GitHub:** [@your-github-handle](https://github.com/badalrai21)
+**GitHub:** [@badalrai21](https://github.com/badalrai21)
 
 ---
 
