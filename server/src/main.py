@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.entities.user import User
+from src.entities.file import File
+from src.entities.folder import Folder
+from src.entities.file_category import FileCategory
 from src.api import api_router
 
 app = FastAPI(

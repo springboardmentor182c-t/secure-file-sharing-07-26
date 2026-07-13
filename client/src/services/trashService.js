@@ -2,7 +2,7 @@ import axios from "axios";
 
 
 // Backend API URL
-const API_URL = "http://127.0.0.1:8000/trash";
+const API_URL = `${process.env.REACT_APP_API_URL}/trash`;
 
 
 // Axios instance
