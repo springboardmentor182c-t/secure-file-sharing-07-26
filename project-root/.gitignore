@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.env.local
+dist/
+build/
+.venv/
+*.db
+uploads/
+venv/
