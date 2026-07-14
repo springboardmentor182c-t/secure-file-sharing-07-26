@@ -9,6 +9,13 @@ const actionIconPaths = {
   folder: ['M3.5 6.5A1.5 1.5 0 0 1 5 5h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 18H5a1.5 1.5 0 0 1-1.5-1.5v-10Z'],
   share: ['M8.5 12.5 15.5 8.5', 'M8.5 11.5 15.5 15.5', 'M6.5 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z', 'M17.5 9.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z', 'M17.5 19.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z'],
   clock: ['M12 7v5l3 2', 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z'],
+  lock: [
+  'M7 11V8a5 5 0 0 1 10 0v3',
+  'M6 11h12v9H6z',
+],
+shield: [
+  'M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6l7-3Z',
+],
 };
 
 function ActionIcon({ name }) {
@@ -26,7 +33,7 @@ function ActionIcon({ name }) {
 export default function QuickActions() {
   function handleAction(actionId) {
     // TODO: Connect to the assigned feature modules when upload, folder, sharing, and files pages are available.
-    console.info(`Dashboard quick action selected: ${actionId}`);
+    alert(`Selected action: ${actionId}`);
   }
 
   return (
