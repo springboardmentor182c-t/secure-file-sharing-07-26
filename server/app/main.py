@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import Base, engine
 from app.routers import users, stats, system_health
 from app.core.scheduler import start_scheduler
-
+from app.models import user, file, share_link, audit_event, service_health
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Admin Dashboard API")

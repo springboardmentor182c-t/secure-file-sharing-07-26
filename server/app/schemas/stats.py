@@ -6,6 +6,7 @@ class SummaryStats(BaseModel):
     active_users: int
     total_storage_gb: float
     files_this_month: int
+    active_share_links: int
 
 class UserStorage(BaseModel):
     user: str

@@ -41,6 +41,7 @@ export default function AdminDashboard() {
               <StatCard label="Total users" value={summary.total_users} sublabel={`${summary.active_users} active now`} />
               <StatCard label="Total storage used" value={`${summary.total_storage_gb} GB`} />
               <StatCard label="Files this month" value={summary.files_this_month} />
+               <StatCard label="Share links active" value={summary.active_share_links} />
             </div>
           )}
 
