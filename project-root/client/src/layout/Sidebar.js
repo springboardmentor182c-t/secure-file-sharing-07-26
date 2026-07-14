@@ -67,6 +67,8 @@ export default function Sidebar({
   unreadCount = 0,
   sidebarOpen,
   setSidebarOpen,
+  sidebarCollapsed,
+  setSidebarCollapsed,
 }) {
 
   const { user, logout } = useAuth();
@@ -109,9 +111,10 @@ export default function Sidebar({
       )}
 
       <aside
-        className={`sidebar-modern ${
-          sidebarOpen ? "sidebar-open" : ""
-        }`}
+        className={`sidebar-modern
+          ${sidebarOpen ? "sidebar-open" : ""}
+          ${sidebarCollapsed ? "sidebar-collapsed" : ""}
+        `}
       >
         {/* Mobile Close */}
 <div className="sidebar-header-mobile">
@@ -136,20 +139,33 @@ export default function Sidebar({
       <ShieldCheck size={18} />
     </div>
 
-    <div className="sidebar-logo-text">
-      <span className="brand-title">
-        TrustShare
-      </span>
+    {!sidebarCollapsed && (
+      <>
+        <div className="sidebar-logo-text">
+          <span className="brand-title">
+            TrustShare
+          </span>
 
-      <span className="brand-subtitle">
-        Secure Sharing
-      </span>
-    </div>
+          <span className="brand-subtitle">
+            Secure Sharing
+          </span>
+        </div>
 
-    <span className="sidebar-beta">
-      Beta
-    </span>
+        <span className="sidebar-beta">
+          Beta
+        </span>
+      </>
+    )}
 
+  </button>
+
+  <button
+    className="sidebar-collapse-btn"
+    onClick={() =>
+      setSidebarCollapsed(!sidebarCollapsed)
+    }
+  >
+    {sidebarCollapsed ? "»" : "«"}
   </button>
 
 </div>
@@ -173,11 +189,15 @@ export default function Sidebar({
         {item.icon}
       </span>
 
-      <span className="sidebar-link-text">
-        {item.label}
-      </span>
+      {!sidebarCollapsed && (
+        <span className="sidebar-link-text">
+          {item.label}
+        </span>
+      )}
 
-      {item.badge && unreadCount > 0 && (
+      {!sidebarCollapsed &&
+        item.badge &&
+        unreadCount > 0 && (
 
         <span className="sidebar-link-badge">
           {unreadCount}
@@ -210,22 +230,31 @@ export default function Sidebar({
       {initials}
     </div>
 
-    <div className="sidebar-user-info">
+    {!sidebarCollapsed && (
 
-      <span className="sidebar-user-name">
-        {user?.name || "Badal"}
-      </span>
+      <div className="sidebar-user-info">
 
-      <span className="sidebar-user-email">
-        {user?.email || "gues@user.com"}
-      </span>
+        <span className="sidebar-user-name">
+          {user?.name || "Badal"}
+        </span>
 
-    </div>
+        <span className="sidebar-user-email">
+          {user?.email || "guest@user.com"}
+        </span>
 
-    <ChevronDown
-      size={16}
-      className="sidebar-chevron"
-    />
+      </div>
+
+      )}
+
+
+    {!sidebarCollapsed && (
+
+      <ChevronDown
+        size={16}
+        className="sidebar-chevron"
+      />
+
+      )}
 
   </button>
 
@@ -235,9 +264,11 @@ export default function Sidebar({
   >
     <LogOut size={16} />
 
-    <span>
-      Sign Out
-    </span>
+   {!sidebarCollapsed && (
+      <span>
+        Sign Out
+      </span>
+    )}
 
   </button>
 

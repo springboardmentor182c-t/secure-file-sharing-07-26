@@ -105,4 +105,13 @@ export const auditAPI = {
   list: (limit = 50) => api.get('/api/audit/', { params: { limit } }),
 };
 
+// ── Search ───────────────────────────────────────────────────────────────
+
+export const searchAPI = {
+  search: (query) =>
+    api.get("/api/search/", {
+      params: { q: query },
+    }),
+};
+
 export default api;

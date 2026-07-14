@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from src.activity.controller import router as activity_router
 from fastapi.middleware.cors import CORSMiddleware
+from src.search.controller import router as search_router
 from src.auth.controller import router as auth_router
 from src.users.controller import router as users_router
 from src.files.controller import router as files_router
@@ -54,6 +55,14 @@ def create_app() -> FastAPI:
     @app.get("/health", tags=["System"])
     def health():
         return {"status": "ok", "service": "TrustShare API", "version": "2.0.0"}
+    
+
+    #---Search Bar--------
+    app.include_router(
+    search_router,
+    prefix="/api/search",
+    tags=["Search"],
+)
 
     return app
 

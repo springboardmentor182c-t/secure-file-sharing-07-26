@@ -275,7 +275,7 @@
 
 body.dark .sidebar-modern{
     background:#161E2E;
-    border-right:1px solid #2B3648;
+    border-right:1px solid #02eb77;
 }
 
 body.dark .sidebar-logo{
@@ -391,4 +391,68 @@ body.dark .sidebar-logout{
 body.dark .sidebar-logout:hover{
     background:#7F1D1D;
     color:#FFFFFF;
+}
+
+/* ===========================================
+   Desktop Collapsible Sidebar
+=========================================== */
+
+.sidebar-modern{
+    transition:width .25s ease;
+}
+
+.sidebar-modern.sidebar-collapsed{
+    width:80px;
+}
+
+.sidebar-modern.sidebar-collapsed .sidebar-logo{
+    justify-content:center;
+}
+
+.sidebar-modern.sidebar-collapsed .sidebar-link{
+    justify-content:center;
+    padding:12px;
+}
+
+.sidebar-modern.sidebar-collapsed .sidebar-user{
+    justify-content:center;
+}
+
+.sidebar-modern.sidebar-collapsed .sidebar-logout{
+    justify-content:center;
+}
+
+.sidebar-collapse-btn{
+
+    border:none;
+
+    background:transparent;
+
+    cursor:pointer;
+
+    color:var(--text-secondary);
+
+    font-size:18px;
+
+    width:32px;
+
+    height:32px;
+
+    border-radius:8px;
+
+    transition:.2s;
+}
+
+.sidebar-collapse-btn:hover{
+
+    background:rgba(255,255,255,.08);
+
+}
+
+@media (max-width:768px){
+.sidebar-collapse-btn{
+display:none;
+
+}
+
 }
