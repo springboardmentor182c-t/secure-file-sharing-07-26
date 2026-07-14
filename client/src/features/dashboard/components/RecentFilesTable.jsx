@@ -17,7 +17,7 @@ export default function RecentFilesTable({ files }) {
         <table className="min-w-[760px] w-full divide-y divide-[#E2E8F0] text-left">
           <thead className="bg-[#F8FAFC]">
             <tr>
-              {['File name', 'Type', 'Owner', 'Last modified', 'Size', 'Status'].map((heading) => (
+              {['File name', 'Type', 'Owner', 'Last modified', 'Size', 'Encryption', 'Status'].map((heading) => (
                 <th key={heading} scope="col" className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#64748B]">
                   {heading}
                 </th>
@@ -39,6 +39,9 @@ export default function RecentFilesTable({ files }) {
                 <td className="px-5 py-4 text-sm text-[#0F172A]">{file.owner}</td>
                 <td className="px-5 py-4 text-sm text-[#64748B]">{file.lastModified}</td>
                 <td className="px-5 py-4 text-sm text-[#64748B]">{file.size}</td>
+                <td className="px-5 py-4 text-sm font-medium text-[#16A34A]">
+                   AES-256
+                </td>
                 <td className="px-5 py-4">
                   <span
                     className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${
