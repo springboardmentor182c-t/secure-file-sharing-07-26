@@ -2,9 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from src.database.core import get_db
 from src.auth import models, service
-from src.auth.dependencies import get_current_user, decode_token, create_access_token, create_refresh_token
+from src.auth.dependencies import (
+    get_current_user,
+    decode_token,
+    create_access_token,
+    create_refresh_token,
+)
 from src.entities.user import User
 from fastapi.responses import RedirectResponse
+from fastapi.security import OAuth2PasswordRequestForm
 
 router = APIRouter()
 
@@ -24,10 +30,42 @@ def login(credentials: models.LoginRequest, db: Session = Depends(get_db)):
     if user.mfa_enabled:
         return service.build_mfa_pending_response(user)
         
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Account suspended"
+        )
     return service._build_token_response(user)
 
 
-@router.post("/signup", response_model=models.TokenResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/login/swagger", response_model=models.TokenResponse)
+def swagger_login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):
+    user = service.authenticate_user(
+        db,
+        form_data.username,  # username field carries the email
+        form_data.password,
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account suspended",
+        )
+
+    return service._build_token_response(user)
+
+
+@router.post(
+    "/signup", response_model=models.TokenResponse, status_code=status.HTTP_201_CREATED
+)
 def signup(data: models.SignupRequest, db: Session = Depends(get_db)):
     return service.register_user(db, data)
 
@@ -41,11 +79,15 @@ def me(current_user: User = Depends(get_current_user)):
 def refresh(body: models.RefreshRequest, db: Session = Depends(get_db)):
     payload = decode_token(body.refresh_token)
     if payload.get("type") != "refresh":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        )
     user_id = payload.get("sub")
     user = db.query(User).filter(User.id == int(user_id)).first()
     if not user or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
+        )
     return service._build_token_response(user)
 
 
