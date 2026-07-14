@@ -19,6 +19,9 @@ export default function DashboardHeader({ user }) {
             {user.greeting}, {user.name}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#64748B] sm:text-base">{user.subtitle}</p>
+          <p className="mt-2 text-sm font-medium text-[#4F46E5]">
+            🔒 End-to-End Encryption Enabled | AES-256 Protected
+          </p>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:justify-end">
