@@ -193,6 +193,13 @@ export const mockDashboardData = {
       time: '2 hrs ago',
       type: 'security',
     },
+    {
+  id: 'notification-5',
+  title: 'Authentication verified',
+  description: 'Multi-Factor Authentication verified successfully',
+  time: 'Just now',
+  type: 'security',
+},
   ],
   uploadTrend: [
     { day: 'Mon', uploads: 18, shared: 12 },
