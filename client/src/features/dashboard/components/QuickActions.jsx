@@ -59,6 +59,17 @@ export default function QuickActions() {
             </span>
             <span className="mt-3 block text-sm font-semibold text-[#0F172A]">{action.label}</span>
             <span className="mt-1 block text-sm text-[#64748B]">{action.description}</span>
+             {action.icon === 'lock' && (
+  <span className="mt-2 inline-block rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
+    AES-256 Protected
+  </span>
+)}
+
+{action.icon === 'shield' && (
+  <span className="mt-2 inline-block rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700">
+    Secure Authentication
+  </span>
+)}
           </button>
         ))}
       </div>
