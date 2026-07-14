@@ -13,6 +13,8 @@ class FileOut(BaseModel):
     version: int
     owner_id: int
     folder_id: Optional[int]
+    download_count: int
+    last_downloaded_at: Optional[datetime]
     created_at: datetime
     updated_at: Optional[datetime]
 
