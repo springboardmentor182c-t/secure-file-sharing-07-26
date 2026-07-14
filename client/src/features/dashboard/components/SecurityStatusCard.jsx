@@ -20,6 +20,12 @@ export default function SecurityStatusCard({ security }) {
           <p className="mt-3 text-sm text-[#64748B]">
   Encryption Level: <span className="font-semibold text-[#0F172A]">AES-256 Bit</span>
 </p>
+<p className="mt-2 text-sm text-[#64748B]">
+  Authentication: <span className="font-semibold text-[#16A34A]">Active</span>
+</p>
+<p className="mt-2 text-sm text-[#64748B]">
+  Security Status: <span className="font-semibold text-[#16A34A]">Protected</span>
+</p>
         </div>
         <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#16A34A]">
           Encrypted

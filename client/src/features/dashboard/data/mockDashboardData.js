@@ -157,6 +157,12 @@ export const mockDashboardData = {
     { id: 'sharing', label: 'Role-Based Access Control', value: 'Enabled', tone: 'success' },
     { id: 'logging', label: 'Secure File Transfer', value: 'Running', tone: 'success' },
     { id: 'virus', label: 'Virus Scanning', value: 'No threats detected', tone: 'success' },
+    {
+  id: 'authentication',
+  label: 'Authentication Status',
+  value: 'Active',
+  tone: 'success',
+},
   ],
   notifications: [
     {
