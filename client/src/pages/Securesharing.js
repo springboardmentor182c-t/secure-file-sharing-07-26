@@ -1,74 +1,47 @@
 import React, { useState } from 'react';
+import './Securesharing.css'; 
+// Ensure lucide-react is installed for icons
+import { Link2, Copy, Eye, Download, Calendar, X, DownloadCloud, Edit, MessageSquare } from 'lucide-react';
 
-function SecureSharing() {
-  // 1. Form Inputs ke liye State variables
-  const [selectedFile, setSelectedFile] = useState('');
+const SecureSharing = () => {
+  // Form State
   const [accessLevel, setAccessLevel] = useState('View Only');
-  const [expiry, setExpiry] = useState('7 days');
-  const [maxDownloads, setMaxDownloads] = useState(10);
+  const [usePassword, setUsePassword] = useState(false);
   
-  // Extra Added Security Features (Jo humne discuss kiye the)
-  const [passwordProtect, setPasswordProtect] = useState(false);
-  const [password, setPassword] = useState('');
-
-  // 2. Mock Data: Right panel mein links list dikhane ke liye temporary array
-  const [activeLinks, setActiveLinks] = useState([
-    { id: 1, file: 'Q3-Financial-Report.pdf', url: 'https://vault.sh/s/Xk9m3P', status: 'Active', date: 'Today' },
-    { id: 2, file: 'Product-Roadmap-2025.pptx', url: 'https://vault.sh/s/R7nQ2V', status: 'Active', date: 'Yesterday' },
-    { id: 3, file: 'brand-guidelines-v2.pdf', url: 'https://vault.sh/s/T5pL8W', status: 'Expired', date: 'Jun 28' }
-  ]);
-
-  // 3. Link generation function (Abhi ke liye alert dikhayega)
-  const handleGenerateLink = (e) => {
-    e.preventDefault();
-    alert(`Link generation trigger hua: \nFile: ${selectedFile} \nAccess: ${accessLevel} \nPassword Protected: ${passwordProtect ? 'Yes' : 'No'}`);
-  };
+  // Right Panel Tabs State
+  const [activeTab, setActiveTab] = useState('Share Links');
 
   return (
-    <div style={{ padding: '24px', backgroundColor: '#FAF9F6', minHeight: '100vh' }}>
-      <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px', color: '#334155' }}>Secure Sharing</h2>
-      
-      {/* Do Parts ka Main Layout Container */}
-      <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+    <div className="sharing-container">
+      {/* Page Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-[#232323]">Secure Sharing</h1>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* ================= LEFT PANEL ================= */}
-        <div style={{ flex: '1', minWidth: '320px', backgroundColor: '#fff', padding: '24px', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Create Share Link</h3>
+        {/* LEFT PANEL: Create Share Link */}
+        <div className="card-panel lg:col-span-1">
+          <h2 className="text-lg font-bold text-[#232323] mb-5">Create Share Link</h2>
           
-          <form onSubmit={handleGenerateLink}>
-            {/* File Dropdown */}
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '14px', marginBottom: '6px', fontWeight: '500' }}>Select File</label>
-              <select 
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                value={selectedFile} 
-                onChange={(e) => setSelectedFile(e.target.value)}
-                required
-              >
-                <option value="">-- Choose a file --</option>
-                <option value="Q3-Financial-Report.pdf">Q3-Financial-Report.pdf</option>
-                <option value="Product-Roadmap-2025.pptx">Product-Roadmap-2025.pptx</option>
+          <form className="flex flex-col gap-5">
+            <div>
+              <label className="block text-sm text-[#8A8178] mb-1.5">Select File</label>
+              <select className="custom-input bg-white">
+                <option>Q3-Financial-Report.pdf</option>
+                <option>Product-Roadmap-2025.pptx</option>
               </select>
             </div>
 
-            {/* Access Level Grid Buttons */}
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '14px', marginBottom: '6px', fontWeight: '500' }}>Access Level</label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div>
+              <label className="block text-sm text-[#8A8178] mb-1.5">Access Level</label>
+              <div className="grid grid-cols-2 gap-3">
                 {['View Only', 'Download', 'Comment', 'Edit'].map((level) => (
                   <button
                     key={level}
                     type="button"
+                    className={`access-btn ${accessLevel === level ? 'selected' : ''}`}
                     onClick={() => setAccessLevel(level)}
-                    style={{
-                      padding: '10px',
-                      borderRadius: '8px',
-                      border: '1px solid #cbd5e1',
-                      cursor: 'pointer',
-                      fontWeight: '500',
-                      backgroundColor: accessLevel === level ? '#5A4A42' : '#fff',
-                      color: accessLevel === level ? '#fff' : '#475569'
-                    }}
                   >
                     {level}
                   </button>
@@ -76,100 +49,222 @@ function SecureSharing() {
               </div>
             </div>
 
-            {/* Expiry */}
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '14px', marginBottom: '6px', fontWeight: '500' }}>Expiry</label>
-              <select 
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                value={expiry}
-                onChange={(e) => setExpiry(e.target.value)}
-              >
-                <option value="1 day">1 day</option>
-                <option value="7 days">7 days</option>
-                <option value="30 days">30 days</option>
+            <div>
+              <label className="block text-sm text-[#8A8178] mb-1.5">Expiry</label>
+              <select className="custom-input bg-white">
+                <option>7 days</option>
+                <option>30 days</option>
               </select>
             </div>
 
-            {/* Max Downloads */}
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '14px', marginBottom: '6px', fontWeight: '500' }}>Max Downloads</label>
-              <input 
-                type="number" 
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                value={maxDownloads}
-                onChange={(e) => setMaxDownloads(e.target.value)}
-                min="1"
-              />
+            <div>
+              <label className="block text-sm text-[#8A8178] mb-1.5">Max Downloads</label>
+              <input type="number" className="custom-input" defaultValue="10" min="1" />
             </div>
 
-            {/* Security Extra Features: Password Protected checkbox */}
-            <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="flex items-center gap-2 mt-1">
               <input 
                 type="checkbox" 
-                id="pwdProtect" 
-                checked={passwordProtect}
-                onChange={(e) => setPasswordProtect(e.target.checked)}
+                id="protect" 
+                className="w-4 h-4 accent-[#685D54]"
+                checked={usePassword}
+                onChange={(e) => setUsePassword(e.target.checked)}
               />
-              <label htmlFor="pwdProtect" style={{ fontSize: '14px', cursor: 'pointer' }}>Protect link with password</label>
+              <label htmlFor="protect" className="text-sm font-medium text-[#232323] cursor-pointer">
+                Require Password to Access
+              </label>
             </div>
 
-            {passwordProtect && (
-              <div style={{ marginBottom: '16px' }}>
-                <input 
-                  type="password" 
-                  placeholder="Set custom password" 
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+            {usePassword && (
+              <div className="animate-fade-in">
+                <input type="password" placeholder="Enter a strong password" className="custom-input" />
               </div>
             )}
 
-            {/* Submit */}
-            <button 
-              type="submit" 
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: '#5A4A42', color: '#fff', fontWeight: '600', cursor: 'pointer', marginTop: '10px' }}
-            >
-              🔗 Generate Link
-            </button>
+            <div className="mt-2">
+              <button type="button" className="btn-primary">
+                <Link2 size={18} />
+                Generate Link
+              </button>
+            </div>
           </form>
         </div>
 
-        {/* ================= RIGHT PANEL ================= */}
-        <div style={{ flex: '1.5', minWidth: '350px', backgroundColor: '#fff', padding: '24px', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Active Share Links</h3>
+        {/* RIGHT PANEL: Tabs & Content */}
+        <div className="card-panel lg:col-span-2">
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {activeLinks.map((link) => (
-              <div key={link.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
-                <div>
-                  <h4 style={{ fontSize: '14px', fontWeight: '600', margin: '0 0 4px 0' }}>{link.file}</h4>
-                  <p style={{ fontSize: '12px', color: '#2563eb', fontFamily: 'monospace', margin: '0 0 4px 0' }}>{link.url}</p>
-                  <span style={{ fontSize: '10px', color: '#94a3b8' }}>{link.date}</span>
-                </div>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{
-                    fontSize: '12px',
-                    padding: '4px 8px',
-                    borderRadius: '12px',
-                    fontWeight: '500',
-                    backgroundColor: link.status === 'Active' ? '#dcfce7' : '#fee2e2',
-                    color: link.status === 'Active' ? '#15803d' : '#b91c1c'
-                  }}>
-                    {link.status}
-                  </span>
-                  <button style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#94a3b8' }}>&times;</button>
-                </div>
-              </div>
+          {/* Tabs Navigation */}
+          <div className="tabs-header">
+            {['Share Links', 'Access Levels', 'Share History'].map((tab) => (
+              <button 
+                key={tab}
+                className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab}
+              </button>
             ))}
           </div>
-        </div>
 
+          {/* TAB CONTENT: Share Links */}
+          {activeTab === 'Share Links' && (
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-[#232323]">Active Share Links</h3>
+                <span className="text-xs bg-[#F8F6F4] px-3 py-1 rounded-full text-[#685D54]">2 active</span>
+              </div>
+
+              {/* Active Link Item 1 */}
+              <div className="link-card">
+                <div>
+                  <h4 className="font-semibold text-[#232323]">Q3-Financial-Report.pdf</h4>
+                  <div className="flex items-center gap-2 text-sm text-[#8A8178] mt-1">
+                    <span>https://vault.sh/s/Xk9m3P</span>
+                    <button className="hover:text-[#232323]"><Copy size={14} /></button>
+                  </div>
+                  <div className="link-meta">
+                    <span className="flex items-center gap-1"><Eye size={14}/> View Only</span>
+                    <span className="flex items-center gap-1"><Calendar size={14}/> Jul 13, 2025</span>
+                    <span className="flex items-center gap-1"><DownloadCloud size={14}/> 3/10</span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-3">
+                  <span className="status-badge active">Active</span>
+                  <button className="text-red-400 hover:text-red-600"><X size={16} /></button>
+                </div>
+              </div>
+
+              {/* Expired Link Item */}
+              <div className="link-card">
+                <div>
+                  <h4 className="font-semibold text-[#232323]">brand-guidelines-v2.pdf</h4>
+                  <div className="flex items-center gap-2 text-sm text-[#8A8178] mt-1">
+                    <span>https://vault.sh/s/T5pL8W</span>
+                    <button className="hover:text-[#232323]"><Copy size={14} /></button>
+                  </div>
+                  <div className="link-meta">
+                    <span className="flex items-center gap-1"><Eye size={14}/> View Only</span>
+                    <span className="flex items-center gap-1 text-red-500"><Calendar size={14}/> Expired</span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-3">
+                  <span className="status-badge expired">Expired</span>
+                  <button className="text-red-400 hover:text-red-600"><X size={16} /></button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB CONTENT: Access Levels */}
+          {activeTab === 'Access Levels' && (
+            <div className="animate-fade-in">
+              <div className="flex justify-between items-center mb-5">
+                <h3 className="font-bold text-[#232323]">Access Permissions Guide</h3>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                
+                {/* View Only Role */}
+                <div className="p-4 border border-[#EFEAE6] rounded-xl flex items-start gap-4 hover:bg-[#F8F6F4] transition-colors">
+                  <div className="bg-blue-50 p-2 rounded-lg text-blue-500">
+                    <Eye size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-[#232323] text-sm">View Only</h4>
+                    <p className="text-xs text-[#8A8178] mt-1">Recipients can only read the file online. Downloading, copying, and printing are disabled.</p>
+                  </div>
+                </div>
+
+                {/* Download Role */}
+                <div className="p-4 border border-[#EFEAE6] rounded-xl flex items-start gap-4 hover:bg-[#F8F6F4] transition-colors">
+                  <div className="bg-green-50 p-2 rounded-lg text-green-500">
+                    <DownloadCloud size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-[#232323] text-sm">Download</h4>
+                    <p className="text-xs text-[#8A8178] mt-1">Recipients can view the file and download a local copy to their device.</p>
+                  </div>
+                </div>
+
+                {/* Comment Role */}
+                <div className="p-4 border border-[#EFEAE6] rounded-xl flex items-start gap-4 hover:bg-[#F8F6F4] transition-colors">
+                  <div className="bg-yellow-50 p-2 rounded-lg text-yellow-600">
+                    <MessageSquare size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-[#232323] text-sm">Comment</h4>
+                    <p className="text-xs text-[#8A8178] mt-1">Recipients can view the file and add feedback or notes. They cannot modify the original content.</p>
+                  </div>
+                </div>
+
+                {/* Edit Role */}
+                <div className="p-4 border border-[#EFEAE6] rounded-xl flex items-start gap-4 hover:bg-[#F8F6F4] transition-colors">
+                  <div className="bg-orange-50 p-2 rounded-lg text-orange-500">
+                    <Edit size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-[#232323] text-sm">Edit</h4>
+                    <p className="text-xs text-[#8A8178] mt-1">Full access. Recipients can modify content, share with others, and change file settings.</p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* TAB CONTENT: Share History */}
+          {activeTab === 'Share History' && (
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-[#232323]">Share History</h3>
+                <button className="text-sm text-[#685D54] flex items-center gap-1 hover:underline">
+                  <Download size={14} /> Export
+                </button>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="history-table">
+                  <thead>
+                    <tr>
+                      <th>Recipient</th>
+                      <th>File</th>
+                      <th>Action</th>
+                      <th>Time</th>
+                      <th>IP Address</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>john.doe@acme.com</td>
+                      <td>Q3-Financial-Report.pdf</td>
+                      <td><span className="action-pill">Viewed</span></td>
+                      <td>Today 11:04 AM</td>
+                      <td>98.23.14.55</td>
+                    </tr>
+                    <tr>
+                      <td>finance@partner.io</td>
+                      <td>annual-audit-2024.xlsx</td>
+                      <td><span className="action-pill">Downloaded</span></td>
+                      <td>Today 09:30 AM</td>
+                      <td>192.168.4.12</td>
+                    </tr>
+                    <tr>
+                      <td>hr@acme.com</td>
+                      <td>employee-contracts-2024.doc</td>
+                      <td><span className="action-pill expired">Link Expired</span></td>
+                      <td>Jul 3, 10:00 AM</td>
+                      <td>--</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
   );
-}
+};
 
 export default SecureSharing;

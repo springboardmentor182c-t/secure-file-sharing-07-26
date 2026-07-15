@@ -1,0 +1,193 @@
+/* Securesharing.css - All custom styles for the page */
+
+.sharing-container {
+  background-color: #F8F6F4;
+  min-height: 100vh;
+  padding: 32px;
+}
+
+.card-panel {
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+  border: 1px solid #EFEAE6;
+}
+
+/* Custom Input Styling */
+.custom-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #E5E0DB;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #232323;
+  outline: none;
+  transition: all 0.3s ease;
+  background-color: white;
+}
+
+.custom-input:focus {
+  border-color: #6D5548;
+  box-shadow: 0 0 0 2px rgba(109, 85, 72, 0.1);
+}
+
+/* Access Level Buttons */
+.access-btn {
+  padding: 10px;
+  border: 1px solid #E5E0DB;
+  border-radius: 24px;
+  background: transparent;
+  color: #685D54;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.access-btn.selected {
+  border-color: #6D5548;
+  color: #6D5548;
+  background-color: rgba(109, 85, 72, 0.05);
+}
+
+.access-btn:hover:not(.selected) {
+  background-color: #F8F6F4;
+}
+
+/* Primary Button */
+.btn-primary {
+  width: 100%;
+  padding: 12px;
+  background-color: #685D54;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary:hover {
+  background-color: #554a43;
+}
+
+/* Tabs Styling */
+.tabs-header {
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid #EFEAE6;
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 10px 4px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #8A8178;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+.tab-btn.active {
+  color: #232323;
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #6D5548;
+}
+
+/* Active Link Cards */
+.link-card {
+  padding: 16px 0;
+  border-bottom: 1px solid #EFEAE6;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.link-card:last-child {
+  border-bottom: none;
+}
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  background-color: #ECFDF3;
+  color: #16A34A;
+}
+
+.status-badge.expired {
+  background-color: #FDECEC;
+  color: #DC2626;
+}
+
+.link-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+  color: #8A8178;
+  font-size: 13px;
+}
+
+/* --- HISTORY TABLE STYLES --- */
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.history-table th {
+  padding: 12px 16px;
+  color: #8A8178;
+  font-size: 13px;
+  font-weight: 500;
+  border-bottom: 1px solid #EFEAE6;
+  white-space: nowrap; /* Taki headings ek line mein rahein */
+}
+
+.history-table td {
+  padding: 16px;
+  font-size: 14px;
+  color: #232323;
+  border-bottom: 1px solid #EFEAE6;
+}
+
+/* Action Status Pills */
+.action-pill {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  background-color: #F8F6F4;
+  color: #685D54;
+  display: inline-block;
+}
+
+.action-pill.expired {
+  background-color: transparent;
+  color: #DC2626;
+  padding: 0;
+}
