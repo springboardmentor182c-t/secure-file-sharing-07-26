@@ -7,9 +7,9 @@ import { useAnalytics } from '../context/AnalyticsContext';
 export default function PageContainer({ children }) {
   const { isAuthenticated } = useAnalytics();
   const location = useLocation();
-  const isFilesPage = location.pathname === '/files';
+  const isCustomLayout = location.pathname === '/files' || location.pathname === '/settings';
 
-  if (isFilesPage) {
+  if (isCustomLayout) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
         {children}
