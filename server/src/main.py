@@ -68,3 +68,4 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "ok", "service": "Secure File Sharing System API"}
+

@@ -9,5 +9,17 @@ from src.entities.file import File  # noqa: F401
 from src.entities.shared_link import SharedLink  # noqa: F401
 from src.entities.access_log import AccessLog  # noqa: F401
 from src.entities.notification import Notification  # noqa: F401
+from src.entities.security_event import SecurityEvent  # noqa: F401
+from src.entities.encryption_key import EncryptionKey  # noqa: F401
 
-__all__ = ["Base", "User", "File", "SharedLink", "AccessLog", "Notification"]
+__all__ = [
+    "Base",
+    "User",
+    "File",
+    "SharedLink",
+    "AccessLog",
+    "Notification",
+    "SecurityEvent",
+    "EncryptionKey",
+]
+

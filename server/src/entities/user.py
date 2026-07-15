@@ -17,7 +17,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.entities.base import Base
 from src.entities.guid import GUID
 
-
 class User(Base):
     __tablename__ = "users"
 
@@ -27,3 +26,4 @@ class User(Base):
 
     files = relationship("File", back_populates="owner", cascade="all, delete-orphan")
     shared_links = relationship("SharedLink", back_populates="owner", cascade="all, delete-orphan")
+
