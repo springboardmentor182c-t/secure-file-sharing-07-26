@@ -115,7 +115,7 @@ Open:
 http://localhost:5173
 ```
 
-The frontend calls FastAPI first. If the backend is unavailable during development, it falls back to local dashboard mock data from `client/src/features/dashboard/data/mockDashboardData.js`.
+The frontend loads all dashboard content from the FastAPI endpoints backed by PostgreSQL. When the API is unavailable, the dashboard shows an error state with a retry action instead of displaying hardcoded fallback data.
 
 ## Integration
 

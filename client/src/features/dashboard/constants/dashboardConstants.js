@@ -21,9 +21,9 @@ export const FOCUS_RING_CLASS =
 export const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: 'grid', active: true },
   { id: 'my-files', label: 'My Files', icon: 'file' },
-  { id: 'shared', label: 'Shared with Me', icon: 'share', badge: '4' },
+  { id: 'shared', label: 'Shared with Me', icon: 'share' },
   { id: 'activity', label: 'Activity', icon: 'pulse' },
-  { id: 'notifications', label: 'Notifications', icon: 'bell', badge: '12' },
+  { id: 'notifications', label: 'Notifications', icon: 'bell' },
   { id: 'analytics', label: 'Analytics', icon: 'chart' },
   { id: 'admin', label: 'Admin', icon: 'shield' },
   { id: 'settings', label: 'Settings', icon: 'settings' },

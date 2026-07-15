@@ -39,7 +39,7 @@ function NavIcon({ name }) {
   );
 }
 
-function Sidebar({ user }) {
+function Sidebar({ notificationCount, sharedFileCount, user }) {
   return (
     <aside className="border-b border-[#E2E8F0] bg-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-80 lg:shrink-0 lg:flex-col lg:border-b-0 lg:border-r">
       <div className="flex items-center justify-between gap-4 px-5 py-5 lg:px-6">
@@ -57,19 +57,23 @@ function Sidebar({ user }) {
       </div>
 
       <nav aria-label="Dashboard navigation" className="flex gap-2 overflow-x-auto px-4 pb-4 lg:block lg:space-y-2 lg:overflow-visible lg:px-5">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            className={`flex min-w-fit items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition lg:w-full ${
-              item.active ? 'bg-gradient-to-r from-[#2863FF] to-[#4828F4] text-white shadow-soft' : 'text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A]'
-            } ${FOCUS_RING_CLASS}`}
-            type="button"
-          >
-            <NavIcon name={item.icon} />
-            <span className="flex-1 text-left">{item.label}</span>
-            {item.badge && <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-[#315BFF]">{item.badge}</span>}
-          </button>
-        ))}
+        {NAV_ITEMS.map((item) => {
+          const badge = item.id === 'shared' ? sharedFileCount : item.id === 'notifications' ? notificationCount : null;
+
+          return (
+            <button
+              key={item.id}
+              className={`flex min-w-fit items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition lg:w-full ${
+                item.active ? 'bg-gradient-to-r from-[#2863FF] to-[#4828F4] text-white shadow-soft' : 'text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A]'
+              } ${FOCUS_RING_CLASS}`}
+              type="button"
+            >
+              <NavIcon name={item.icon} />
+              <span className="flex-1 text-left">{item.label}</span>
+              {badge > 0 && <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-[#315BFF]">{badge}</span>}
+            </button>
+          );
+        })}
       </nav>
 
       <div className="mt-auto hidden border-t border-[#E2E8F0] p-6 lg:block">
@@ -106,7 +110,11 @@ export default function Dashboard() {
   return (
     <main className="min-h-screen bg-[#F8FAFC] text-[#0F172A]">
       <div className="lg:flex">
-        <Sidebar user={dashboardData.user} />
+        <Sidebar
+          notificationCount={dashboardData.notifications.length}
+          sharedFileCount={dashboardData.sharedFiles.total}
+          user={dashboardData.user}
+        />
         <div className="min-w-0 flex-1">
           <DashboardHeader user={dashboardData.user} />
           <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 lg:px-8">
