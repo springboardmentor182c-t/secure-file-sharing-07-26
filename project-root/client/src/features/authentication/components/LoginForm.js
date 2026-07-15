@@ -1,57 +1,148 @@
-import React, { useState } from 'react';
-import FormInput from '../../../components/Form/FormInput';
-import { useAnalytics } from '../../../context/AnalyticsContext';
-import { login } from '../services/login';
+import React, { useState } from "react";
+import "./Login.css";
+import {
+  FaGoogle,
+  FaMicrosoft,
+  FaGithub,
+  FaEnvelope,
+  FaLock,
+  FaShieldAlt,
+} from "react-icons/fa";
 
-const LoginForm = ({ onSuccess }) => {
-  const { trackEvent } = useAnalytics();
-  const [form, setForm] = useState({ email: '', password: '' });
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [serverError, setServerError] = useState('');
-
-  const validate = () => {
-    const errs = {};
-    if (!form.email) errs.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(form.email)) errs.email = 'Invalid email format';
-    if (!form.password) errs.password = 'Password is required';
-    return errs;
-  };
+function Login() {
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    remember: false,
+  });
 
   const handleChange = (e) => {
-    const { id, value } = e.target;
-    setForm((prev) => ({ ...prev, [id]: value }));
-    setErrors((prev) => ({ ...prev, [id]: '' }));
+    const { name, value, checked, type } = e.target;
+
+    setFormData({
+      ...formData,
+      [name]: type === "checkbox" ? checked : value,
+    });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    const errs = validate();
-    if (Object.keys(errs).length > 0) return setErrors(errs);
-    setLoading(true);
-    setServerError('');
-    try {
-      const data = await login(form.email, form.password);
-      trackEvent('login_success', { email: form.email });
-      onSuccess?.(data);
-    } catch (err) {
-      setServerError(err.message || 'Login failed. Please try again.');
-      trackEvent('login_error', { email: form.email });
-    } finally {
-      setLoading(false);
-    }
+
+    console.log("Login Data:", formData);
+
+    // API call here
+    // axios.post("/api/login", formData)
   };
 
   return (
-    <form onSubmit={handleSubmit} noValidate>
-      <FormInput id="email" label="Email" type="email" value={form.email} onChange={handleChange} error={errors.email} required placeholder="you@example.com" />
-      <FormInput id="password" label="Password" type="password" value={form.password} onChange={handleChange} error={errors.password} required placeholder="••••••••" />
-      {serverError && <p style={{ color: 'var(--danger)', fontSize: '13px', marginBottom: '12px' }}>{serverError}</p>}
-      <button type="submit" disabled={loading} style={{ width: '100%', padding: '12px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '15px', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>
-        {loading ? 'Signing in…' : 'Sign In'}
-      </button>
-    </form>
-  );
-};
+    <div className="login-page">
+      {/* Animated Background */}
+      <div className="background-animation">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
 
-export default LoginForm;
+      {/* Login Card */}
+      <div className="login-card">
+        <div className="logo-section">
+          <div className="logo-circle">
+            <FaShieldAlt />
+          </div>
+          <h1>SecureShare</h1>
+        </div>
+
+        <h2>Welcome back</h2>
+
+        <p className="subtitle">
+          Sign in to your SecureShare account
+        </p>
+
+        {/* Social Buttons */}
+        <div className="social-buttons">
+          <button type="button">
+            <FaGoogle />
+            Google
+          </button>
+
+          <button type="button">
+            <FaMicrosoft />
+            Microsoft
+          </button>
+
+          <button type="button">
+            <FaGithub />
+            GitHub
+          </button>
+        </div>
+
+        <div className="divider">
+          <span>or continue with email</span>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="input-group">
+            <label>Email</label>
+
+            <div className="input-box">
+              <FaEnvelope />
+
+              <input
+                type="email"
+                name="email"
+                placeholder="alex@company.com"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="input-group">
+            <label>Password</label>
+
+            <div className="input-box">
+              <FaLock />
+
+              <input
+                type="password"
+                name="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="options">
+            <label>
+              <input
+                type="checkbox"
+                name="remember"
+                checked={formData.remember}
+                onChange={handleChange}
+              />
+              Remember me
+            </label>
+
+            <a href="/">Forgot password?</a>
+          </div>
+
+          <button className="signin-btn" type="submit">
+            Sign In
+          </button>
+        </form>
+
+        <p className="signup-text">
+          Don't have an account?
+          <span> Sign up free</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default Login;
