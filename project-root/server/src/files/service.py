@@ -196,7 +196,7 @@ def upload_file(
 
     # Validate upload
 
-    validate_upload(upload, file_size)
+    validate_upload(db, upload, file_size,)
 
     # Sanitize filename
 

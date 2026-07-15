@@ -1,69 +1,14 @@
 from pathlib import Path
+
 from fastapi import HTTPException, UploadFile, status
+from sqlalchemy.orm import Session
 
-# Configuration
-
-MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
-
-ALLOWED_EXTENSIONS = {
-    ".txt",
-    ".pdf",
-    ".png",
-    ".jpg",
-    ".jpeg",
-    ".gif",
-    ".bmp",
-    ".webp",
-    ".doc",
-    ".docx",
-    ".xls",
-    ".xlsx",
-    ".ppt",
-    ".pptx",
-    ".csv",
-    ".zip",
-    ".rar",
-    ".7z",
-    ".mp4",
-    ".mp3",
-    ".wav",
-    ".json",
-    ".xml",
-}
-
-ALLOWED_MIME_TYPES = {
-    "text/plain",
-    "application/pdf",
-    "image/png",
-    "image/jpeg",
-    "image/gif",
-    "image/bmp",
-    "image/webp",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/vnd.ms-excel",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "application/vnd.ms-powerpoint",
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    "text/csv",
-    "application/json",
-    "application/xml",
-    "text/xml",
-    "application/zip",
-    "application/x-rar-compressed",
-    "application/x-7z-compressed",
-    "application/x-zip-compressed",
-    "application/octet-stream",
-    "video/mp4",
-    "audio/mpeg",
-    "audio/wav",
-}
-
-
-# Upload Validation
+from src.entities.allowed_file_type import AllowedFileType
+from src.security.config_service import get_config
 
 
 def validate_upload(
+    db: Session,
     upload: UploadFile,
     file_size: int,
 ):
@@ -88,7 +33,15 @@ def validate_upload(
 
     # Maximum size
 
-    if file_size > MAX_FILE_SIZE:
+    max_file_size = int(
+        get_config(
+            db,
+            "MAX_FILE_SIZE",
+            "104857600",
+        )
+    )
+
+    if file_size > max_file_size:
 
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -97,9 +50,18 @@ def validate_upload(
 
     extension = Path(upload.filename).suffix.lower()
 
-    # Extension validation
+    # Check allowed extension
 
-    if extension not in ALLOWED_EXTENSIONS:
+    allowed_type = (
+        db.query(AllowedFileType)
+        .filter(
+            AllowedFileType.extension == extension,
+            AllowedFileType.is_active == True,
+        )
+        .first()
+    )
+
+    if not allowed_type:
 
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -108,7 +70,10 @@ def validate_upload(
 
     # MIME validation
 
-    if upload.content_type and upload.content_type not in ALLOWED_MIME_TYPES:
+    if (
+        upload.content_type
+        and upload.content_type != allowed_type.mime_type
+    ):
 
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
