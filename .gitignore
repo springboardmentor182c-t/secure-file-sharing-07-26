@@ -15,3 +15,35 @@ logs/
 *.log
 .DS_Store
 Thumbs.db
+# Dependency folders
+node_modules/
+
+# Production build outputs
+dist/
+build/
+
+# Testing and coverage logs
+coverage/
+*.log
+logs/
+
+# Environments and Secrets
+.env
+.env.*
+environment.ts
+environment.prod.ts
+
+# Python local virtual environments & cache
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# OS specific system files
+.DS_Store
+Thumbs.db
+
+# Project specific optional files
+package-lock.json
