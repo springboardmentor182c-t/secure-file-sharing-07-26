@@ -1,3 +1,20 @@
+node_modules/
+.npm-cache/
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+!client/.env.example
+!server/.env.example
+logs/
+*.log
+.DS_Store
+Thumbs.db
 # Dependency folders
 node_modules/
 
