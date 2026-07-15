@@ -1,7 +1,5 @@
 from sqlalchemy.orm import Session
-
-from src.entities.allowed_file_type import AllowedFileType
-
+from src.security.models.allowed_file_type import AllowedFileType
 
 DEFAULT_FILE_TYPES = [
     (".txt", "text/plain"),
@@ -13,11 +11,17 @@ DEFAULT_FILE_TYPES = [
     (".bmp", "image/bmp"),
     (".webp", "image/webp"),
     (".doc", "application/msword"),
-    (".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+    (
+        ".docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ),
     (".xls", "application/vnd.ms-excel"),
     (".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
     (".ppt", "application/vnd.ms-powerpoint"),
-    (".pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"),
+    (
+        ".pptx",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ),
     (".csv", "text/csv"),
     (".zip", "application/zip"),
     (".rar", "application/x-rar-compressed"),
@@ -36,9 +40,7 @@ def seed_allowed_file_types(db: Session):
 
         exists = (
             db.query(AllowedFileType)
-            .filter(
-                AllowedFileType.extension == extension
-            )
+            .filter(AllowedFileType.extension == extension)
             .first()
         )
 

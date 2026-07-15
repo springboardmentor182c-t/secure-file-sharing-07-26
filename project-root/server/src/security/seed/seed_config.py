@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
-
-from src.entities.app_config import AppConfig
+from src.security.models.app_config import AppConfig
 
 DEFAULT_CONFIGS = [
     {

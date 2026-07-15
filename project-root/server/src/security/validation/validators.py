@@ -3,8 +3,8 @@ from pathlib import Path
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from src.entities.allowed_file_type import AllowedFileType
-from src.security.config_service import get_config
+from src.security.models.allowed_file_type import AllowedFileType
+from src.security.services.config_service import get_config
 
 
 def validate_upload(
@@ -70,10 +70,7 @@ def validate_upload(
 
     # MIME validation
 
-    if (
-        upload.content_type
-        and upload.content_type != allowed_type.mime_type
-    ):
+    if upload.content_type and upload.content_type != allowed_type.mime_type:
 
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

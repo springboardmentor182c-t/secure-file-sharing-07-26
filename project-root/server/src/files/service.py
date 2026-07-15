@@ -17,7 +17,7 @@ from src.security.exceptions import KeyManagementError
 
 # Security Module
 
-from src.security.validators import (
+from src.security.validation.validators import (
     validate_upload,
 )
 
