@@ -1,16 +1,71 @@
-# React + Vite
+# React Frontend — Springboard Tasks
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the React frontend for the Springboard internship project.
 
-Currently, two official plugins are available:
+## Directory Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```text
+client/
+├── public/
+│   ├── index.html
+│   ├── favicon.ico
+│   └── logo.svg
+└── src/
+    ├── assets/
+    │   ├── global.css        # Design system + CSS variables
+    │   └── logo.svg
+    ├── components/
+    │   ├── Form/             # Checkbox, FormInput, FormSelect, RadioButton
+    │   ├── Buttons/          # ButtonGroup, Dropdown
+    │   └── Modals/           # Modal
+    ├── context/
+    │   └── AnalyticsContext.js   # Auth state, theme, user session
+    ├── data/
+    │   ├── configValues.json
+    │   ├── constants.js
+    │   └── defaultTools.json
+    ├── features/
+    │   └── authentication/
+    │       ├── components/   # LoginForm, SignupForm
+    │       ├── hooks/        # useSignup, useVerifyPassword
+    │       └── services/     # login, signup, getUsers
+    ├── hooks/
+    │   ├── useFetch.js       # Generic authenticated fetch hook
+    │   └── useLocalStorage.js
+    ├── layout/
+    │   ├── Navbar.js         # Sticky top navigation
+    │   ├── PageContainer.js  # Layout wrapper (Navbar + Sidebar + main)
+    │   └── Sidebar.js        # Left navigation sidebar
+    ├── pages/
+    │   ├── Home.js           # Dashboard / Todo management
+    │   ├── Login.js
+    │   ├── Settings.js       # Profile + Theme preferences
+    │   └── Signup.js
+    ├── tests/                # Placeholder for component tests
+    ├── utils/
+    │   ├── formatCurrency.js
+    │   ├── formatDate.js
+    │   └── tests/            # Placeholder for utility tests
+    ├── App.js                # Router + Protected routes
+    ├── index.js              # React entry point
+    └── reportWebVitals.js
+```
 
-## React Compiler
+## Running the App
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+npm start
+```
 
-## Expanding the ESLint configuration
+The app will be served at `http://localhost:3000`.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The `proxy` field in `package.json` forwards all `/api/` calls to `http://localhost:8000`.
+Make sure the FastAPI backend is running before starting the React dev server.
+
+## Key Design Choices
+
+- **Dark mode by default** with a live theme toggle (persisted to server)
+- **Protected routes** — unauthenticated users are redirected to `/login`
+- **AnalyticsContext** — shared global state for auth token, user profile, and theme
+- **`useFetch`** hook — pre-configured with Authorization headers and auto-logout on 401

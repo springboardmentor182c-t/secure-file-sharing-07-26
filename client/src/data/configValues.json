@@ -1,0 +1,10 @@
+{
+  "appName": "Springboard Tasks",
+  "version": "1.0.0",
+  "apiPrefix": "/api",
+  "features": {
+    "darkMode": true,
+    "priorityTags": true,
+    "dueDateReminders": false
+  }
+}

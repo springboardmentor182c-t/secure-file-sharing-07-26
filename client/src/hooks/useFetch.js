@@ -1,21 +1,57 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from 'react';
+import { useAnalytics } from '../context/AnalyticsContext';
 
-export function useFetch(fetchFn) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function useFetch() {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { token, logoutUser } = useAnalytics();
 
-  const load = useCallback(() => {
+  const request = useCallback(async (url, options = {}) => {
     setLoading(true);
-    fetchFn()
-      .then((result) => setData(result))
-      .catch((err) => setError(err))
-      .finally(() => setLoading(false));
-  }, [fetchFn]);
+    setError(null);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
 
-  return { data, loading, error, refetch: load };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      });
+
+      if (response.status === 401) {
+        logoutUser();
+        throw new Error('Session expired. Please log in again.');
+      }
+
+      if (response.status === 204) {
+        return null;
+      }
+
+      const contentType = response.headers.get('content-type');
+      let data = null;
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      }
+
+      if (!response.ok) {
+        throw new Error(data?.detail || 'Request failed');
+      }
+
+      return data;
+    } catch (err) {
+      setError(err.message || 'Something went wrong');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [token, logoutUser]);
+
+  return { request, loading, error };
 }

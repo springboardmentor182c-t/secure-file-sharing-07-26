@@ -1,6 +1,39 @@
-node_modules/
-.env
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+.venv/
 venv/
-server/venv/
+ENV/
+env/
+.pytest_cache/
+*.db
+*.sqlite3
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# React build output
+client/build/
+
+# IDEs & System
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+Thumbs.db
+.DS_Store
+.agents/
+.gemini/

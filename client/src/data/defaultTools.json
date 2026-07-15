@@ -1,0 +1,12 @@
+[
+  {
+    "id": "react-dev",
+    "name": "React Developer Tools",
+    "url": "https://react.dev"
+  },
+  {
+    "id": "fastapi-docs",
+    "name": "Swagger UI Docs",
+    "url": "/docs"
+  }
+]
