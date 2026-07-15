@@ -1,42 +1,35 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
-const AnalyticsContext = createContext(null);
+const AnalyticsContext = createContext();
 
-/**
- * AnalyticsProvider — tracks page views and custom events
- */
-export const AnalyticsProvider = ({ children }) => {
-  const [events, setEvents] = useState([]);
+export function AnalyticsProvider({ children }) {
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
-  const trackEvent = useCallback((eventName, properties = {}) => {
-    const event = {
-      name: eventName,
-      properties,
-      timestamp: new Date().toISOString(),
-    };
-    setEvents((prev) => [...prev, event]);
-    // TODO: Send to analytics backend
-    console.log('[Analytics]', event);
-  }, []);
+  // Default user — no login required
+  const user = {
+    full_name: 'Alex Johnson',
+    email: 'alex.johnson@secureshare.com',
+    role: 'Admin',
+  };
 
-  const trackPageView = useCallback((page) => {
-    trackEvent('page_view', { page });
-  }, [trackEvent]);
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    localStorage.setItem('theme', next);
+    document.documentElement.setAttribute('data-theme', next);
+  };
+
+  const logoutUser = () => {
+    // No-op: auth removed
+  };
 
   return (
-    <AnalyticsContext.Provider value={{ events, trackEvent, trackPageView }}>
+    <AnalyticsContext.Provider value={{ user, theme, toggleTheme, logoutUser }}>
       {children}
     </AnalyticsContext.Provider>
   );
-};
+}
 
-/**
- * Custom hook to consume analytics context
- */
-export const useAnalytics = () => {
-  const ctx = useContext(AnalyticsContext);
-  if (!ctx) throw new Error('useAnalytics must be used inside <AnalyticsProvider>');
-  return ctx;
-};
-
-export default AnalyticsContext;
+export function useAnalytics() {
+  return useContext(AnalyticsContext);
+}

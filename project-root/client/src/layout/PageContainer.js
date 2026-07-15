@@ -1,23 +1,43 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
+import Navbar from './Navbar';
+import Sidebar from './Sidebar';
+import { useAnalytics } from '../context/AnalyticsContext';
 
-/**
- * PageContainer — wraps main page content with consistent padding and max-width
- */
-const PageContainer = ({ children, maxWidth = '1100px' }) => {
+export default function PageContainer({ children }) {
+  const { isAuthenticated } = useAnalytics();
+  const location = useLocation();
+  const isCustomLayout = location.pathname === '/files' || location.pathname === '/settings';
+
+  if (isCustomLayout) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
+        {children}
+      </div>
+    );
+  }
+
   return (
-    <main
-      style={{
-        flex: 1,
-        padding: '32px 24px',
-        maxWidth,
-        width: '100%',
-        margin: '0 auto',
-        minHeight: 'calc(100vh - 60px)',
-      }}
-    >
-      {children}
-    </main>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-primary)' }}>
+      <Navbar />
+      
+      <div style={{ display: 'flex', flex: 1, position: 'relative' }}>
+        {isAuthenticated && <Sidebar />}
+        
+        <main
+          style={{
+            flex: 1,
+            padding: '40px',
+            overflowY: 'auto',
+            maxHeight: isAuthenticated ? 'calc(100vh - 70px)' : 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '24px'
+          }}
+        >
+          {children}
+        </main>
+      </div>
+    </div>
   );
-};
-
-export default PageContainer;
+}
