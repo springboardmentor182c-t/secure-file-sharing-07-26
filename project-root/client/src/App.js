@@ -5,8 +5,13 @@ import ProtectedRoute from './layout/ProtectedRoute';
 import NotFound from "./pages/NotFound";
 import Navbar from './layout/Navbar';
 import Sidebar from './layout/Sidebar';
+import ThemeToggle from './components/ThemeToggle';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import VerifyOtp from './pages/VerifyOtp';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import OAuthCallback from './pages/OAuthCallback';
 import Dashboard from './pages/Dashboard';
 import Files from './pages/Files';
 import Sharing from './pages/Sharing';
@@ -52,10 +57,15 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
+        <ThemeToggle />
         <Routes>
           {/* Public routes */}
           <Route path="/login"  element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/verify-otp" element={<VerifyOtp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/oauth-callback" element={<OAuthCallback />} />
 
           {/* Protected routes */}
           <Route

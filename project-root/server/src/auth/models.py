@@ -34,11 +34,31 @@ class UserOut(BaseModel):
 
 
 class TokenResponse(BaseModel):
-    access_token: str
-    refresh_token: str
+    access_token: Optional[str] = None
+    refresh_token: Optional[str] = None
     token_type: str = "bearer"
-    user: UserOut
+    user: Optional[UserOut] = None
+    mfa_required: bool = False
+    mfa_token: Optional[str] = None
 
 
 class MeResponse(BaseModel):
     user: UserOut
+
+
+class VerifyOTPRequest(BaseModel):
+    mfa_token: str
+    code: str
+
+
+class ResendOTPRequest(BaseModel):
+    mfa_token: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Navbar.css";
 import { Bell, Moon, Sun } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 import {
     RiSearch2Line,
     RiFileTextLine,
@@ -16,12 +17,13 @@ import {
 } from "react-icons/ri";
 import { searchAPI, notificationsAPI } from "../utils/api";
 
-export default function Navbar({ unreadCount = 0, darkMode, setDarkMode }) {
+export default function Navbar({ unreadCount = 0}) {
     const [query, setQuery] = useState("");
     const [results, setResults] = useState(null);
     const [loading, setLoading] = useState(false);
     const searchRef = useRef(null);
     const navigate = useNavigate();
+    const { theme, toggleTheme } = useTheme();
     const [notifications, setNotifications] = useState([]);
     const notificationRef = useRef(null);
     const [showNotifications, setShowNotifications] = useState(false);

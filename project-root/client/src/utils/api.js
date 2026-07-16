@@ -9,7 +9,7 @@ const api = axios.create({
 
 // ── Request interceptor: attach JWT ────────────────────────────────────────
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
+  const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -21,22 +21,25 @@ api.interceptors.response.use(
     const originalRequest = err.config;
     if (err.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const refreshToken = localStorage.getItem('refresh_token');
+      const refreshToken = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token');
       if (refreshToken) {
         try {
           const { data } = await axios.post(`${BASE_URL}/api/auth/refresh`, {
             refresh_token: refreshToken,
           });
-          localStorage.setItem('access_token', data.access_token);
-          localStorage.setItem('refresh_token', data.refresh_token);
+          const storage = localStorage.getItem('refresh_token') ? localStorage : sessionStorage;
+          storage.setItem('access_token', data.access_token);
+          storage.setItem('refresh_token', data.refresh_token);
           originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
           return api(originalRequest);
         } catch {
           localStorage.clear();
+          sessionStorage.clear();
           window.location.href = '/login';
         }
       } else {
         localStorage.clear();
+        sessionStorage.clear();
         window.location.href = '/login';
       }
     }
@@ -50,6 +53,12 @@ export const authAPI = {
   signup: (name, email, password) => api.post('/api/auth/signup', { name, email, password }),
   me: () => api.get('/api/auth/me'),
   logout: () => api.post('/api/auth/logout'),
+  verifyOTP: (mfa_token, code) => api.post('/api/auth/verify-otp', { mfa_token, code }),
+  resendOTP: (mfa_token) => api.post('/api/auth/resend-otp', { mfa_token }),
+  forgotPassword: (email) => api.post('/api/auth/forgot-password', { email }),
+  resetPassword: (token, new_password) => api.post('/api/auth/reset-password', { token, new_password }),
+  oauthToken: (provider, code) => api.post('/api/auth/oauth/token', { provider, code }),
+  updateProfile: (data) => api.patch('/api/users/me', data),
 };
 
 // ── Files ─────────────────────────────────────────────────────────────────
