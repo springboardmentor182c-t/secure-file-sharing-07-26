@@ -18,6 +18,22 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ForgotPasswordResponse(BaseModel):
+    message: str
+    # DEV ONLY: normally the reset link is emailed. With no mail server configured,
+    # the token is returned here so the flow is testable locally.
+    reset_token: str
+
+
+class ResetPasswordRequest(BaseModel):
+    reset_token: str
+    new_password: str
+
+
 class UserOut(BaseModel):
     id: int
     name: str
@@ -42,3 +58,28 @@ class TokenResponse(BaseModel):
 
 class MeResponse(BaseModel):
     user: UserOut
+
+
+# ADD THESE BELOW 👇
+
+class MFAChallengeResponse(BaseModel):
+    mfa_token: str
+    mfa_required: bool = True
+
+
+class MFAVerifyRequest(BaseModel):
+    mfa_token: str
+    code: str
+
+
+class MFASetupResponse(BaseModel):
+    secret: str
+    otpauth_uri: str
+
+
+class MFAEnableRequest(BaseModel):
+    code: str
+
+
+class MFADisableRequest(BaseModel):
+    code: str

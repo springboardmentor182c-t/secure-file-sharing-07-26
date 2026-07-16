@@ -1,8 +1,13 @@
 import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import "./signup.css";
 import { FaGoogle, FaGithub, FaMicrosoft } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
 
 function Signup() {
+  const { register } = useAuth();
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -12,6 +17,8 @@ function Signup() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -20,16 +27,26 @@ function Signup() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match!");
+      setError("Passwords do not match!");
       return;
     }
 
-    alert("Account Created Successfully!");
-    console.log(formData);
+    setSubmitting(true);
+    try {
+      await register(formData.name, formData.email, formData.password);
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      setError(
+        err.response?.data?.detail || "Could not create account"
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -148,14 +165,26 @@ function Signup() {
             </div>
           </div>
 
-          <button type="submit" className="signup-btn">
-            🚀 Create Account
+          {error && (
+            <p style={{
+              marginTop: "16px",
+              padding: "10px 14px",
+              borderRadius: "8px",
+              background: "rgba(220, 38, 38, 0.12)",
+              color: "#f87171",
+              fontSize: "14px",
+              textAlign: "center",
+            }}>{error}</p>
+          )}
+
+          <button type="submit" className="signup-btn" disabled={submitting}>
+            {submitting ? "Creating..." : "🚀 Create Account"}
           </button>
         </form>
 
         <div className="signin-link">
           Already have an account?
-          <a href="/"> Sign In</a>
+          <Link to="/login"> Sign In</Link>
         </div>
       </div>
     </div>

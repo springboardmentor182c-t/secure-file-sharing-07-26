@@ -154,6 +154,21 @@
   text-decoration: none;
 }
 
+.login-error {
+  margin-top: 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(220, 38, 38, 0.12);
+  color: #f87171;
+  font-size: 14px;
+  text-align: center;
+}
+
+.signin-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .signin-btn {
   width: 100%;
   margin-top: 25px;
