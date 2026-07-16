@@ -9,57 +9,11 @@ import {
 } from "recharts";
 import "./shared-theme.css";
 
-// ─── Interfaces ───────────────────────────────────────────────────────────────
-interface UserMini {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-}
-
-interface SharedFile {
-  id: number;
-  name: string;
-  size: string;
-  created_at: string;
-  checksum: string;
-  security_status: string;
-  file_type: string;
-  owner: UserMini;
-}
-
-interface FileShare {
-  id: number;
-  permission: string;
-  shared_at: string;
-  file: SharedFile;
-  shared_with: UserMini;
-}
-
-interface StatCard {
-  label: string;
-  value: string;
-  sub: string;
-  color: string;
-}
-
-interface ShareActivity {
-  day: string;
-  downloads: number;
-  shares: number;
-}
-
-interface SharedFilesDashboardData {
-  shares: FileShare[];
-  stats: StatCard[];
-  activity: ShareActivity[];
-}
-
 // Read API URL via Vite's environment variable loading
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 // ─── File Type Icon Helper ───────────────────────────────────────────────────
-function FileIcon({ type, size = 18, className = "" }: { type: string; size?: number; className?: string }) {
+function FileIcon({ type, size = 18, className = "" }) {
   switch (type.toLowerCase()) {
     case "pdf":
       return <FileText size={size} className={`text-red-400 ${className}`} />;
@@ -75,7 +29,7 @@ function FileIcon({ type, size = 18, className = "" }: { type: string; size?: nu
 }
 
 // ─── Security Status Badge Helper ─────────────────────────────────────────────
-function SecurityBadge({ status }: { status: string }) {
+function SecurityBadge({ status }) {
   switch (status.toLowerCase()) {
     case "clean":
       return (
@@ -101,12 +55,12 @@ function SecurityBadge({ status }: { status: string }) {
 export function SharedFilesView() {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [data, setData] = useState<SharedFilesDashboardData | null>(null);
+  const [viewMode, setViewMode] = useState("grid");
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedShare, setSelectedShare] = useState<FileShare | null>(null);
-  const [revokingId, setRevokingId] = useState<number | null>(null);
+  const [error, setError] = useState(null);
+  const [selectedShare, setSelectedShare] = useState(null);
+  const [revokingId, setRevokingId] = useState(null);
 
   // States for sharing new files
   const [showShareModal, setShowShareModal] = useState(false);
@@ -118,7 +72,7 @@ export function SharedFilesView() {
   const [shareOwnerName, setShareOwnerName] = useState("");
   const [isSharing, setIsSharing] = useState(false);
 
-  const handleShareFile = async (e: React.FormEvent) => {
+  const handleShareFile = async (e) => {
     e.preventDefault();
     if (!shareFileName.trim() || !shareRecipientEmail.trim() || !shareOwnerName.trim()) {
       alert("Please fill in all required fields.");
@@ -151,7 +105,7 @@ export function SharedFilesView() {
       
       // Refresh the view
       await fetchDashboardData();
-    } catch (err: any) {
+    } catch (err) {
       alert("Error sharing file: " + err.message);
     } finally {
       setIsSharing(false);
@@ -167,7 +121,7 @@ export function SharedFilesView() {
       }
       const json = await response.json();
       setData(json);
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || "Failed to connect to the files sharing API");
     } finally {
       setLoading(false);
@@ -178,7 +132,7 @@ export function SharedFilesView() {
     fetchDashboardData();
   }, []);
 
-  const handleRevokeShare = async (shareId: number) => {
+  const handleRevokeShare = async (shareId) => {
     if (confirm("Are you sure you want to remove your access to this file?")) {
       setRevokingId(shareId);
       try {
@@ -190,7 +144,7 @@ export function SharedFilesView() {
         }
         setSelectedShare(null);
         await fetchDashboardData();
-      } catch (err: any) {
+      } catch (err) {
         alert("Error: " + err.message);
       } finally {
         setRevokingId(null);
@@ -231,7 +185,7 @@ export function SharedFilesView() {
     return matchesSearch && matchesType;
   });
 
-  const iconMap: Record<string, any> = {
+  const iconMap = {
     "Shared files": Link2,
     "Shared storage": HardDrive,
     "Collaborators": Users,
