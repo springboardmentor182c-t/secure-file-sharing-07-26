@@ -1,5 +1,14 @@
-from fastapi import APIRouter, Depends, UploadFile, File as FastAPIFile, Query, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import (
+    APIRouter,
+    Depends,
+    UploadFile,
+    File as FastAPIFile,
+    Query,
+    HTTPException,
+)
+from fastapi.responses import StreamingResponse
+from io import BytesIO
+import os
 from sqlalchemy.orm import Session
 from typing import Optional
 from src.database.core import get_db
@@ -49,12 +58,30 @@ def download_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    path, original_name = service.get_file_path(db, file_id)
-    return FileResponse(
-        path=str(path),
-        filename=original_name,
-        media_type="application/octet-stream",
+
+    path, original_name = service.get_file_path(
+        db,
+        file_id,
+        current_user.id,
     )
+
+    try:
+
+        with open(path, "rb") as file:
+
+            data = file.read()
+
+        return StreamingResponse(
+            BytesIO(data),
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f'attachment; filename="{original_name}"'},
+        )
+
+    finally:
+
+        if os.path.exists(path):
+
+            os.remove(path)
 
 
 @router.delete("/{file_id}", status_code=204)
@@ -64,3 +91,22 @@ def delete_file(
     current_user: User = Depends(get_current_user),
 ):
     service.delete_file(db, file_id, current_user.id)
+
+
+@router.post("/{file_id}/rotate-key", status_code=200)
+def rotate_key(
+    file_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Rotate the AES-256 encryption key for a file.
+    """
+
+    service.rotate_file_key(
+        db=db,
+        file_id=file_id,
+        owner_id=current_user.id,
+    )
+
+    return {"message": "Encryption key rotated successfully."}
