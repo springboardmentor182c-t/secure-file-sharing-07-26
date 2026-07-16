@@ -74,13 +74,9 @@ function PanelHeader({ action, onAction, title }) {
 
 export default function DashboardOverview({ dashboardData, user }) {
   const navigate = useNavigate();
-  const { analytics, files, notifications, shares } = dashboardData;
+  const { analytics, files, notifications } = dashboardData;
   const recentFiles = files.slice(0, 6);
   const recentNotifications = notifications.slice(0, 4);
-  const activeShares = shares.filter((share) => share.is_active);
-  const unreadNotifications = notifications.filter(
-    (notification) => !notification.is_read,
-  );
   const uploadTrend = analytics.upload_trend || [];
   const fileTypes = Object.entries(analytics.top_file_types || {}).sort(
     (left, right) => right[1] - left[1],
@@ -107,7 +103,7 @@ export default function DashboardOverview({ dashboardData, user }) {
     {
       icon: Link2,
       label: 'Active links',
-      meta: `${shares.length} total share links`,
+      meta: `${analytics.total_share_links} total share links`,
       tone: 'purple',
       value: analytics.active_share_links,
     },
@@ -121,9 +117,9 @@ export default function DashboardOverview({ dashboardData, user }) {
     {
       icon: Bell,
       label: 'Unread alerts',
-      meta: `${notifications.length} total notifications`,
+      meta: `${analytics.total_notifications} total notifications`,
       tone: 'amber',
-      value: unreadNotifications.length,
+      value: analytics.unread_notifications,
     },
   ];
 
@@ -284,16 +280,14 @@ export default function DashboardOverview({ dashboardData, user }) {
                 <Link2 aria-hidden="true" size={18} />
                 Active links
               </span>
-              <strong>{activeShares.length}</strong>
+              <strong>{analytics.active_share_links}</strong>
             </div>
             <div className="dashboard-share-summary">
               <span>
                 <Download aria-hidden="true" size={18} />
                 Total accesses
               </span>
-              <strong>
-                {shares.reduce((total, share) => total + share.access_count, 0)}
-              </strong>
+              <strong>{analytics.total_share_views}</strong>
             </div>
           </section>
 
