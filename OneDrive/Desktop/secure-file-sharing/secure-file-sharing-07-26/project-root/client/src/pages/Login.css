@@ -1,0 +1,198 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.login-page {
+  min-height: 100vh;
+  background: linear-gradient(
+    135deg,
+    #101b4f,
+    #162768,
+    #1f2f80
+  );
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+  font-family: "Segoe UI", sans-serif;
+}
+
+.bg-circles span {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+}
+
+.bg-circles span:nth-child(1) {
+  width: 350px;
+  height: 350px;
+  top: -100px;
+  left: -100px;
+}
+
+.bg-circles span:nth-child(2) {
+  width: 450px;
+  height: 450px;
+  right: -150px;
+  top: -50px;
+}
+
+.bg-circles span:nth-child(3) {
+  width: 300px;
+  height: 300px;
+  bottom: -100px;
+  left: 10%;
+}
+
+.bg-circles span:nth-child(4) {
+  width: 250px;
+  height: 250px;
+  bottom: 10%;
+  right: 15%;
+}
+
+.login-card {
+  width: 580px;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px;
+  padding: 40px;
+  color: white;
+  z-index: 10;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.logo h2 {
+  font-size: 32px;
+}
+
+.logo-icon {
+  font-size: 32px;
+}
+
+.login-card h1 {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 42px;
+}
+
+.login-card p {
+  text-align: center;
+  color: #bfc8e8;
+  margin-top: 10px;
+}
+
+.social-buttons {
+  display: flex;
+  gap: 15px;
+  margin-top: 35px;
+}
+
+.social-buttons button {
+  flex: 1;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: transparent;
+  color: white;
+  cursor: pointer;
+}
+
+.divider {
+  text-align: center;
+  margin: 30px 0;
+  color: #bfc8e8;
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.input-box {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 50px;
+  padding: 15px 20px;
+}
+
+.input-box svg {
+  color: gray;
+}
+
+.input-box input {
+  width: 100%;
+  border: none;
+  outline: none;
+  margin-left: 10px;
+  font-size: 16px;
+}
+
+.options {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.options a {
+  color: #5ca9ff;
+  text-decoration: none;
+}
+
+.signin-btn {
+  width: 100%;
+  margin-top: 25px;
+  padding: 16px;
+  border: none;
+  border-radius: 50px;
+  background: #2563eb;
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.signin-btn svg {
+  margin-right: 8px;
+}
+
+.signup-link {
+  text-align: center;
+  margin-top: 25px;
+}
+
+.signup-link a {
+  color: #60a5fa;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+@media(max-width:768px) {
+  .login-card {
+    width: 95%;
+    padding: 25px;
+  }
+
+  .social-buttons {
+    flex-direction: column;
+  }
+
+  .login-card h1 {
+    font-size: 32px;
+  }
+}
