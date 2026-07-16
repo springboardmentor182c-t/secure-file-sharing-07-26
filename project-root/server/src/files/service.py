@@ -17,7 +17,7 @@ from src.security.exceptions import KeyManagementError
 
 # Security Module
 
-from src.security.validators import (
+from src.security.validation.validators import (
     validate_upload,
 )
 
@@ -196,7 +196,7 @@ def upload_file(
 
     # Validate upload
 
-    validate_upload(upload, file_size)
+    validate_upload(db, upload, file_size,)
 
     # Sanitize filename
 
