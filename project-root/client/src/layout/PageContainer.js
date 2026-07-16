@@ -1,23 +1,11 @@
-import React from 'react';
+import "./PageContainer.css";
 
-/**
- * PageContainer — wraps main page content with consistent padding and max-width
- */
-const PageContainer = ({ children, maxWidth = '1100px' }) => {
-  return (
-    <main
-      style={{
-        flex: 1,
-        padding: '32px 24px',
-        maxWidth,
-        width: '100%',
-        margin: '0 auto',
-        minHeight: 'calc(100vh - 60px)',
-      }}
-    >
-      {children}
-    </main>
-  );
-};
-
-export default PageContainer;
+export default function PageContainer({ children }) {
+    return (
+        <div className="page-wrapper">
+            <div className="page-container">
+                {children}
+            </div>
+        </div>
+    );
+}

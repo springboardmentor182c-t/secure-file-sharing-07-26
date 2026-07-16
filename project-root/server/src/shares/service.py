@@ -40,7 +40,15 @@ def _build_link(token: str) -> str:
 
 def create_share(db: Session, data: ShareCreate, user_id: int) -> ShareOut:
     # Verify file ownership
-    file = db.query(File).filter(File.id == data.file_id, File.is_deleted == False).first()
+    file = (
+        db.query(File)
+        .filter(
+            File.id == data.file_id,
+            File.owner_id == user_id,
+            File.is_deleted == False,
+        )
+        .first()
+    )
     if not file:
         raise HTTPException(status_code=404, detail="File not found")
 
@@ -56,8 +64,14 @@ def create_share(db: Session, data: ShareCreate, user_id: int) -> ShareOut:
     )
     db.add(share)
 
-    log = AuditLog(user_id=user_id, action="SHARE", resource_type="file",
-                   resource_id=data.file_id, resource_name=file.original_name, level="info")
+    log = AuditLog(
+        user_id=user_id,
+        action="SHARE",
+        resource_type="file",
+        resource_id=data.file_id,
+        resource_name=file.original_name,
+        level="info",
+    )
     db.add(log)
     db.commit()
     db.refresh(share)
@@ -76,24 +90,40 @@ def list_shares(db: Session, user_id: int) -> list[ShareOut]:
 
 
 def revoke_share(db: Session, share_id: int, user_id: int) -> None:
-    share = db.query(ShareLink).filter(ShareLink.id == share_id, ShareLink.created_by == user_id).first()
+    share = (
+        db.query(ShareLink)
+        .filter(ShareLink.id == share_id, ShareLink.created_by == user_id)
+        .first()
+    )
     if not share:
         raise HTTPException(status_code=404, detail="Share not found")
     share.is_active = False
-    log = AuditLog(user_id=user_id, action="REVOKE_SHARE", resource_type="share_link",
-                   resource_id=share_id, level="warn")
+    log = AuditLog(
+        user_id=user_id,
+        action="REVOKE_SHARE",
+        resource_type="share_link",
+        resource_id=share_id,
+        level="warn",
+    )
     db.add(log)
     db.commit()
 
 
 def access_share(db: Session, token: str, password: str | None = None) -> ShareOut:
-    share = db.query(ShareLink).filter(ShareLink.token == token, ShareLink.is_active == True).first()
+    share = (
+        db.query(ShareLink)
+        .filter(ShareLink.token == token, ShareLink.is_active == True)
+        .first()
+    )
     if not share:
         raise HTTPException(status_code=404, detail="Share link not found or revoked")
     if share.expires_at and share.expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=410, detail="Share link has expired")
-    if share.max_views and share.access_count >= share.max_views:
-        raise HTTPException(status_code=410, detail="Share link view limit reached")
+    if share.max_views is not None and share.access_count >= share.max_views:
+        raise HTTPException(
+            status_code=410,
+            detail="Share link view limit reached",
+        )
     if share.password_hash:
         if not password or not verify_password(password, share.password_hash):
             raise HTTPException(status_code=401, detail="Invalid share password")
