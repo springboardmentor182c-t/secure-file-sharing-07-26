@@ -5,6 +5,7 @@ import ProtectedRoute from './layout/ProtectedRoute';
 import NotFound from "./pages/NotFound";
 import Navbar from './layout/Navbar';
 import Sidebar from './layout/Sidebar';
+import ThemeToggle from './components/ThemeToggle';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import VerifyOtp from './pages/VerifyOtp';
@@ -56,6 +57,7 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
+        <ThemeToggle />
         <Routes>
           {/* Public routes */}
           <Route path="/login"  element={<Login />} />
