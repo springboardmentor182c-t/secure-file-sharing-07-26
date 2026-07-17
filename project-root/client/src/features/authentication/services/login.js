@@ -1,4 +1,5 @@
-import { API_BASE_URL, LOCAL_STORAGE_KEYS } from '../../../data/constants';
+import { LOCAL_STORAGE_KEYS } from '../../../data/constants';
+import api from '../../../utils/api';
 
 /**
  * login — authenticates a user and stores the token
@@ -7,18 +8,7 @@ import { API_BASE_URL, LOCAL_STORAGE_KEYS } from '../../../data/constants';
  * @returns {Promise<{access_token: string, user: object}>}
  */
 export const login = async (email, password) => {
-  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.detail || 'Invalid credentials');
-  }
-
-  const data = await response.json();
+  const { data } = await api.post('/api/auth/login', { email, password });
 
   // Persist token and user to localStorage
   localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, data.access_token);

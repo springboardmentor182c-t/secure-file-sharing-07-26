@@ -8,6 +8,8 @@ export function useDashboardData() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    isMounted.current = true;
+
     return () => {
       isMounted.current = false;
     };

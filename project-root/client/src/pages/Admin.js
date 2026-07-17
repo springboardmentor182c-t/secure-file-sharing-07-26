@@ -12,18 +12,37 @@ const timeAgo = (d) => {
   return new Date(d).toLocaleDateString();
 };
 
+const configLabel = (key) => key.toLowerCase().split('_').map(word => (
+  word.charAt(0).toUpperCase() + word.slice(1)
+)).join(' ');
+
+const configValue = ({ key, value }) => {
+  if (key === 'MAX_FILE_SIZE' && !Number.isNaN(Number(value))) {
+    return `${Math.round(Number(value) / (1024 * 1024))} MB`;
+  }
+  if (key === 'KEY_ROTATION_DAYS') return `${value} days`;
+  return value;
+};
+
 export default function Admin() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [systemConfig, setSystemConfig] = useState([]);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('users');
 
   useEffect(() => {
     if (user?.role !== 'admin') { navigate('/dashboard'); return; }
-    Promise.all([adminAPI.listUsers(), auditAPI.list(50)])
-      .then(([u, l]) => { setUsers(u.data); setLogs(l.data); })
+    Promise.all([adminAPI.listUsers(), auditAPI.list(50), adminAPI.systemConfig()])
+      .then(([u, l, config]) => {
+        setUsers(u.data);
+        setLogs(l.data);
+        setSystemConfig(config.data);
+      })
+      .catch(() => setError('Unable to load admin data. Please try again.'))
       .finally(() => setLoading(false));
   }, [user, navigate]);
 
@@ -77,6 +96,8 @@ export default function Admin() {
         ))}
       </div>
 
+      {error && <div className="form-error mb-3">⚠️ {error}</div>}
+
       {loading ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}><div className="spinner" /></div>
       ) : tab === 'users' ? (
@@ -128,42 +149,24 @@ export default function Admin() {
           </div>
         </div>
       ) : (
-        <div className="grid-2">
-          <div className="card card-pad">
-            <div style={{ fontWeight: 700, marginBottom: 16 }}>🛡️ Security Monitor</div>
-            {[
-              { label: 'API Gateway', value: '🟢 Healthy' },
-              { label: 'SSL Certificate', value: '✅ Valid' },
-              { label: 'Rate Limiting', value: '✅ Active' },
-              { label: 'Intrusion Detection', value: '🟢 No threats' },
-              { label: 'Key Rotation', value: '✅ Current' },
-              { label: 'Encryption', value: 'AES-256 Active' },
-            ].map(s => (
-              <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: '.875rem' }}>
-                <span className="text-secondary">{s.label}</span>
-                <span style={{ fontWeight: 600, color: 'var(--emerald-400)' }}>{s.value}</span>
+        <div className="card card-pad">
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>⚙️ Database Configuration</div>
+          <div className="text-xs text-muted mb-4">Values loaded from the application configuration table.</div>
+          {systemConfig.length === 0 ? (
+            <div className="text-center" style={{ padding: '24px', color: 'var(--text-muted)' }}>
+              No system configuration is stored in the database.
+            </div>
+          ) : systemConfig.map(config => (
+            <div key={config.key} style={{ display: 'flex', justifyContent: 'space-between', gap: 24, padding: '10px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: '.875rem' }}>
+              <div>
+                <div className="text-secondary" style={{ fontWeight: 600 }}>{configLabel(config.key)}</div>
+                {config.description && <div className="text-xs text-muted mt-1">{config.description}</div>}
               </div>
-            ))}
-          </div>
-          <div className="card card-pad">
-            <div style={{ fontWeight: 700, marginBottom: 16 }}>⚙️ Infrastructure</div>
-            {[
-              { name: 'Auth Service', latency: '12ms' },
-              { name: 'File Service', latency: '8ms' },
-              { name: 'Encryption Service', latency: '45ms' },
-              { name: 'Sharing Service', latency: '15ms' },
-              { name: 'Analytics Service', latency: '38ms' },
-              { name: 'SQLite DB', latency: '2ms' },
-            ].map(s => (
-              <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: '.875rem' }}>
-                <div className="flex items-center gap-2">
-                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--emerald-500)' }} />
-                  {s.name}
-                </div>
-                <span style={{ fontFamily: 'monospace', fontSize: '.75rem', color: 'var(--text-muted)' }}>{s.latency}</span>
-              </div>
-            ))}
-          </div>
+              <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--emerald-400)', flexShrink: 0 }}>
+                {configValue(config)}
+              </span>
+            </div>
+          ))}
         </div>
       )}
     </div>

@@ -235,11 +235,11 @@ export default function Sidebar({
       <div className="sidebar-user-info">
 
         <span className="sidebar-user-name">
-          {user?.name || "Badal"}
+          {user?.name || "Account"}
         </span>
 
         <span className="sidebar-user-email">
-          {user?.email || "guest@user.com"}
+          {user?.email || ""}
         </span>
 
       </div>

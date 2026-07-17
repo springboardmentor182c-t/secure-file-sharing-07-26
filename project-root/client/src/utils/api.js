@@ -1,11 +1,22 @@
 import axios from 'axios';
 
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const apiUrl = process.env.REACT_APP_API_URL;
+
+if (!apiUrl) {
+  throw new Error('REACT_APP_API_URL must be configured in the frontend environment file');
+}
 
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: apiUrl,
   headers: { 'Content-Type': 'application/json' },
 });
+
+const refreshClient = axios.create({
+  baseURL: apiUrl,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+export const getApiUrl = (path) => `${apiUrl.replace(/\/$/, '')}${path}`;
 
 // ── Request interceptor: attach JWT ────────────────────────────────────────
 api.interceptors.request.use((config) => {
@@ -24,7 +35,7 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token');
       if (refreshToken) {
         try {
-          const { data } = await axios.post(`${BASE_URL}/api/auth/refresh`, {
+          const { data } = await refreshClient.post('/api/auth/refresh', {
             refresh_token: refreshToken,
           });
           const storage = localStorage.getItem('refresh_token') ? localStorage : sessionStorage;
@@ -111,6 +122,7 @@ export const dashboardAPI = {
 export const adminAPI = {
   listUsers: () => api.get('/api/admin/users'),
   updateUser: (id, data) => api.patch(`/api/admin/users/${id}`, data),
+  systemConfig: () => api.get('/api/admin/system-config'),
 };
 
 // ── Audit ─────────────────────────────────────────────────────────────────

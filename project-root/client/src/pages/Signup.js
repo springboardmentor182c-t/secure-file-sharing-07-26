@@ -85,16 +85,8 @@ export default function Signup() {
           <div style={{ fontSize: '5rem', marginBottom: 24, animation: 'float 3s ease-in-out infinite' }}>🚀</div>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: 12 }}>Start Secure Sharing</h2>
           <p style={{ color: 'var(--text-secondary)', maxWidth: 300, lineHeight: 1.7 }}>
-            Join 50,000+ teams using TrustShare for encrypted, compliant file sharing.
+            Create an account to upload encrypted files, manage access, and review activity from the database-backed dashboard.
           </p>
-          <div className="grid-2" style={{ marginTop: 32, gap: 12 }}>
-            {[['10M+', 'Files Secured'], ['99.99%', 'Uptime SLA'], ['AES-256', 'Encryption'], ['SOC 2', 'Compliant']].map(([v, l]) => (
-              <div key={l} className="card card-pad" style={{ textAlign: 'center', padding: '14px' }}>
-                <div style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--blue-400)' }}>{v}</div>
-                <div style={{ fontSize: '.75rem', color: 'var(--text-muted)' }}>{l}</div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 
