@@ -1,12 +1,41 @@
 version: "3.9"
 
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=trustshare
+      - POSTGRES_PASSWORD=trustshare
+      - POSTGRES_DB=trustshare
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trustshare"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build: .
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./app.db
+      - DATABASE_URL=postgresql+psycopg2://trustshare:trustshare@db:5432/trustshare
+      - SECRET_KEY=trustshare-super-secret-key-change-in-prod-2026
+      - BACKEND_URL=http://localhost:8000
+      - FRONTEND_URL=http://localhost:3000
+      # OAuth credentials — set these in a .env file next to docker-compose.yml
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID:-}
+      - MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET:-}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
       - .:/app
     command: uvicorn src.api:app --host 0.0.0.0 --port 8000 --reload
@@ -19,3 +48,6 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+
+volumes:
+  pgdata:

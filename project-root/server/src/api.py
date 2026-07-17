@@ -9,6 +9,7 @@ from src.notifications.controller import router as notifications_router
 from src.audit.controller import router as audit_router
 from src.analytics.controller import router as analytics_router
 from src.admin.controller import router as admin_router
+from src.todos.controller import router as todos_router
 from src.exceptions import AppException, app_exception_handler
 from src.database.init_db import init_db
 
@@ -18,7 +19,7 @@ def create_app() -> FastAPI:
     init_db()
 
     app = FastAPI(
-        title="TrustShare API",
+        title="SecureShare API",
         version="2.0.0",
         description="Secure File-Sharing System — FastAPI Backend",
         docs_url="/docs",
@@ -28,7 +29,10 @@ def create_app() -> FastAPI:
     # ── CORS ──────────────────────────────────────────────────────────────────
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+        allow_origins=[
+            "http://localhost:3000", "http://127.0.0.1:3000",
+            "http://localhost:3001", "http://127.0.0.1:3001",
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -47,11 +51,12 @@ def create_app() -> FastAPI:
     app.include_router(audit_router,         prefix="/api/audit",         tags=["Audit"])
     app.include_router(analytics_router,     prefix="/api/analytics",     tags=["Analytics"])
     app.include_router(admin_router,         prefix="/api/admin",         tags=["Admin"])
+    app.include_router(todos_router,         prefix="/api/todos",         tags=["Todos"])
 
     # ── Health check ──────────────────────────────────────────────────────────
     @app.get("/health", tags=["System"])
     def health():
-        return {"status": "ok", "service": "TrustShare API", "version": "2.0.0"}
+        return {"status": "ok", "service": "SecureShare API", "version": "2.0.0"}
 
     return app
 

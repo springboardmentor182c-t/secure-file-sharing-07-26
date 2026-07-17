@@ -1,4 +1,6 @@
 ﻿def test_auth_service_hash():
-    from src.auth.service import hash_password
-    assert hash_password('secret') == hash_password('secret')
-    assert hash_password('a') != hash_password('b')
+    from src.auth.dependencies import hash_password, verify_password
+    h = hash_password('secret')
+    assert h != 'secret'
+    assert verify_password('secret', h)
+    assert not verify_password('wrong', h)

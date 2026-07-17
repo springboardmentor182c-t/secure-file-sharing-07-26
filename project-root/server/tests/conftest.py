@@ -1,11 +1,17 @@
-﻿import pytest
+﻿import os
+
+# Force tests onto an isolated SQLite DB — must run before importing app modules,
+# since src.database.core reads DATABASE_URL at import time (defaults to Postgres).
+TEST_DB_URL = 'sqlite:///./test.db'
+os.environ["DATABASE_URL"] = TEST_DB_URL
+
+import pytest
 from src.api import app
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from src.database.core import Base, get_db
 
-TEST_DB_URL = 'sqlite:///./test.db'
 engine = create_engine(TEST_DB_URL, connect_args={'check_same_thread': False})
 TestingSession = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
