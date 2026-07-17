@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import api from '../utils/api';
+import { API_BASE_URL, LOCAL_STORAGE_KEYS } from '../data/constants';
 
 /**
  * useFetch — generic data fetching hook
@@ -18,17 +18,29 @@ const useFetch = (endpoint, options = {}) => {
     setError(null);
 
     try {
-      const response = await api.request({
-        url: endpoint,
+      const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...options.headers,
+        },
       });
-      setData(response.data);
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      setData(result);
     } catch (err) {
-      setError(err.response?.data?.detail || err.message);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [endpoint, options]);
+  }, [endpoint]);
 
   useEffect(() => {
     fetchData();

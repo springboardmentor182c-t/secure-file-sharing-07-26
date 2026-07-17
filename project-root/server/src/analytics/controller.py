@@ -7,7 +7,6 @@ from src.entities.user import User
 from src.entities.file import File
 from src.entities.share_link import ShareLink
 from src.entities.audit_log import AuditLog
-from src.security.constants import AES_KEY_SIZE
 from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
 
@@ -35,7 +34,6 @@ class AnalyticsSummary(BaseModel):
     storage: StorageStats
     upload_trend: list[UploadTrend]
     top_file_types: dict
-    encryption_standard: str
 
 
 @router.get("/summary", response_model=AnalyticsSummary)
@@ -89,5 +87,4 @@ def analytics_summary(db: Session = Depends(get_db), current_user: User = Depend
         storage=storage,
         upload_trend=trend,
         top_file_types=type_counts,
-        encryption_standard=f"AES-{AES_KEY_SIZE * 8}-GCM",
     )

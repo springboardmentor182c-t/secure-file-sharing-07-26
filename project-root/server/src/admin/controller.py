@@ -5,7 +5,6 @@ from typing import Optional
 from src.database.core import get_db
 from src.auth.dependencies import require_admin
 from src.entities.user import User
-from src.security.models.app_config import AppConfig
 
 router = APIRouter()
 
@@ -32,13 +31,6 @@ class UpdateUserRole(BaseModel):
     is_active: Optional[bool] = None
 
 
-class SystemConfigOut(BaseModel):
-    key: str
-    value: str
-    description: Optional[str]
-    updated_at: Optional[str]
-
-
 @router.get("/users", response_model=list[UserAdminOut])
 def list_all_users(db: Session = Depends(get_db), _admin: User = Depends(require_admin)):
     users = db.query(User).order_by(User.created_at.desc()).all()
@@ -50,23 +42,6 @@ def list_all_users(db: Session = Depends(get_db), _admin: User = Depends(require
             created_at=str(u.created_at) if u.created_at else None,
         )
         for u in users
-    ]
-
-
-@router.get("/system-config", response_model=list[SystemConfigOut])
-def list_system_config(
-    db: Session = Depends(get_db),
-    _admin: User = Depends(require_admin),
-):
-    configs = db.query(AppConfig).order_by(AppConfig.config_key.asc()).all()
-    return [
-        SystemConfigOut(
-            key=config.config_key,
-            value=config.config_value,
-            description=config.description,
-            updated_at=str(config.updated_at) if config.updated_at else None,
-        )
-        for config in configs
     ]
 
 

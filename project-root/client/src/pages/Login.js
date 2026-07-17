@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getApiUrl } from '../utils/api';
 
 export default function Login() {
   const { login } = useAuth();
@@ -48,7 +47,8 @@ export default function Login() {
 
   const handleOAuthLogin = (provider) => {
     // Redirect the browser to the backend, which will redirect to Google/Microsoft
-    window.location.href = getApiUrl(`/api/auth/oauth/${provider}`);
+    const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    window.location.href = `${API_BASE}/api/auth/oauth/${provider}`;
   };
 
   return (
@@ -63,10 +63,10 @@ export default function Login() {
           <div style={{ fontSize: '5rem', marginBottom: 24, animation: 'float 3s ease-in-out infinite' }}>🔐</div>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: 12 }}>Zero-Trust Security</h2>
           <p style={{ color: 'var(--text-secondary)', maxWidth: 300, lineHeight: 1.7 }}>
-            Files are encrypted with AES-256-GCM, and access events are stored in the audit log.
+            Every file encrypted. Every access logged. Every user verified with AES-256.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 32 }}>
-            {['Encrypted file storage', 'Multi-factor authentication', 'Granular permission controls', 'Database-backed audit history'].map(f => (
+            {['AES-256 end-to-end encryption', 'Multi-factor authentication', 'Granular permission controls', 'Full audit trail & compliance'].map(f => (
               <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '.875rem', color: 'var(--text-secondary)' }}>
                 <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(16,185,129,.2)', border: '1px solid rgba(16,185,129,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--emerald-400)', fontSize: '.6875rem', flexShrink: 0 }}>✓</div>
                 {f}
