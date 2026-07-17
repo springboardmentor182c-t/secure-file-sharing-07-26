@@ -307,7 +307,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                 font-bold
               "
             >
-              SK
+              V
             </div>
 
             <div>
@@ -318,7 +318,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                   text-white
                 "
               >
-                Shashank Kumar
+                Vamshi
               </h3>
 
               <p
