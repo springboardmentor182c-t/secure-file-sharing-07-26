@@ -12,6 +12,7 @@ from src.shares.controller import router as shares_router
 from src.notifications.controller import router as notifications_router
 from src.audit.controller import router as audit_router
 from src.analytics.controller import router as analytics_router
+from src.dashboard.controller import router as dashboard_router
 from src.admin.controller import router as admin_router
 from src.todos.controller import router as todos_router
 from src.exceptions import AppException, app_exception_handler
@@ -56,6 +57,7 @@ def create_app() -> FastAPI:
     app.include_router(notifications_router, prefix="/api/notifications", tags=["Notifications"])
     app.include_router(audit_router,         prefix="/api/audit",         tags=["Audit"])
     app.include_router(analytics_router,     prefix="/api/analytics",     tags=["Analytics"])
+    app.include_router(dashboard_router,     prefix="/api/dashboard",     tags=["Dashboard"])
     app.include_router(admin_router,         prefix="/api/admin",         tags=["Admin"])
     app.include_router(todos_router,         prefix="/api/todos",         tags=["Todos"])
 

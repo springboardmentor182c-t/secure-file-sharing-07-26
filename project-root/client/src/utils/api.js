@@ -103,6 +103,10 @@ export const analyticsAPI = {
   summary: () => api.get('/api/analytics/summary'),
 };
 
+export const dashboardAPI = {
+  get: () => api.get('/api/dashboard/'),
+};
+
 // ── Admin ─────────────────────────────────────────────────────────────────
 export const adminAPI = {
   listUsers: () => api.get('/api/admin/users'),
