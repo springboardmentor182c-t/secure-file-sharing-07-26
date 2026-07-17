@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import "./ActivityMonitor.css";
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 const TABS = [
   { key: "audit", label: "Audit Log" },
   { key: "login", label: "Login History" },
@@ -23,7 +25,9 @@ export default function ActivityMonitor() {
   async function loadActivities() {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:8000/activity/");
+
+      const res = await fetch(`${API_BASE_URL}/activity/`);
+
       const data = await res.json();
       setActivities(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -41,14 +45,17 @@ export default function ActivityMonitor() {
 
   function getStatusClass(status) {
     const s = String(status || "").toLowerCase();
+
     if (s === "success") return "status success";
     if (s === "warning") return "status warning";
     if (s === "danger") return "status danger";
+
     return "status";
   }
 
   function getInitials(name) {
     if (!name) return "?";
+
     return name
       .split(" ")
       .map((part) => part[0])
@@ -59,7 +66,9 @@ export default function ActivityMonitor() {
 
   function classifyTab(action = "") {
     const lower = action.toLowerCase();
+
     if (lower.includes("login")) return "login";
+
     if (
       lower.includes("share") ||
       lower.includes("permission") ||
@@ -68,17 +77,27 @@ export default function ActivityMonitor() {
     ) {
       return "security";
     }
+
     return "audit";
   }
 
   const filteredActivities = useMemo(() => {
     return activities.filter((item) => {
       const tabMatch = classifyTab(item.action) === activeTab;
-      const searchText = `${item.username || ""} ${item.action || ""} ${item.file_name || ""} ${item.resource || ""} ${item.ip_address || ""} ${item.details || ""}`.toLowerCase();
+
+      const searchText = `${item.username || ""} ${item.action || ""} ${
+        item.file_name || ""
+      } ${item.resource || ""} ${item.ip_address || ""} ${
+        item.details || ""
+      }`.toLowerCase();
+
       const searchMatch = searchText.includes(search.toLowerCase());
+
       const statusMatch =
         statusFilter === "All" ||
-        String(item.status || "").toLowerCase() === statusFilter.toLowerCase();
+        String(item.status || "").toLowerCase() ===
+          statusFilter.toLowerCase();
+
       return tabMatch && searchMatch && statusMatch;
     });
   }, [activities, activeTab, search, statusFilter]);
@@ -144,25 +163,36 @@ export default function ActivityMonitor() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="empty-cell">Loading...</td>
+                  <td colSpan="6" className="empty-cell">
+                    Loading...
+                  </td>
                 </tr>
               ) : filteredActivities.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="empty-cell">No activity found</td>
+                  <td colSpan="6" className="empty-cell">
+                    No activity found
+                  </td>
                 </tr>
               ) : (
                 filteredActivities.map((item) => (
                   <tr key={item.id}>
                     <td>{formatTime(item.created_at)}</td>
+
                     <td>
                       <div className="user-cell">
-                        <span className="avatar">{getInitials(item.username)}</span>
+                        <span className="avatar">
+                          {getInitials(item.username)}
+                        </span>
                         <span>{item.username}</span>
                       </div>
                     </td>
+
                     <td>{item.action}</td>
+
                     <td>{item.resource || item.file_name || "-"}</td>
+
                     <td>{item.ip_address || "-"}</td>
+
                     <td>
                       <span className={getStatusClass(item.status)}>
                         {String(item.status || "").toLowerCase()}
