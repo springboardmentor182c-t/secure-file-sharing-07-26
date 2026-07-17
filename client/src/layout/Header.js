@@ -212,7 +212,7 @@ function Header({ setSidebarOpen }) {
                 text-white
               "
             >
-              Shashank Kumar
+              XXX
             </p>
 
             <p
