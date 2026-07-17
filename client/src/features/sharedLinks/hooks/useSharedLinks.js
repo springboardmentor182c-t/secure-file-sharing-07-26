@@ -1,129 +1,171 @@
-import { useMemo, useState, useCallback, useEffect } from "react";
-import { createInitialLinks } from "../data/mockLinks";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import {
-  computeStats, filterLinks, sortLinks, buildChartData,
-  generateShareUrl, getEffectiveStatus,
-} from "../utils/linkUtils";
+  listSharedLinks,
+  createSharedLink,
+  updateSharedLink,
+  toggleSharedLink,
+  revokeSharedLink,
+  deleteSharedLink,
+  getStats,
+  getMonthlyActivity,
+} from "../services/sharedLinksApi";
 
 const PAGE_SIZE = 10;
+const SEARCH_DEBOUNCE_MS = 350;
 
 /**
- * Owns all Shared Links data + UI state: the mock "backend" for this module.
- * Swap the initial state / mutators for real API calls once the endpoints
- * exist — the shape returned here is designed to stay the same either way.
+ * Owns all Shared Links data + UI state, backed by the real FastAPI +
+ * PostgreSQL backend (server/src/shared_links). No mock data, no
+ * client-side fabrication - every list, stat, and chart value here comes
+ * straight from the API.
  */
 export default function useSharedLinks() {
   const [links, setLinks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Simulate an initial fetch so the LoadingSkeleton has a moment to show.
+  const [stats, setStats] = useState({ activeLinks: 0, totalViews: 0, totalDownloads: 0, expiringSoon: 0 });
+  const [chartData, setChartData] = useState([]);
+
+  const requestId = useRef(0);
+
+  // Debounce free-typed search input before it drives a real request.
   useEffect(() => {
     const t = setTimeout(() => {
-      setLinks(createInitialLinks());
-      setIsLoading(false);
-    }, 500);
+      setSearchQuery(searchInput);
+      setPage(1);
+    }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(t);
+  }, [searchInput]);
+
+  const fetchLinks = useCallback(async () => {
+    const thisRequest = ++requestId.current;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const { links: fetched, pagination } = await listSharedLinks({
+        search: searchQuery,
+        status: statusFilter,
+        sortBy,
+        page,
+        pageSize: PAGE_SIZE,
+      });
+      if (thisRequest !== requestId.current) return; // a newer request already landed
+      setLinks(fetched);
+      setTotalCount(pagination.total_items);
+      setTotalPages(pagination.total_pages);
+    } catch (err) {
+      if (thisRequest !== requestId.current) return;
+      setError(err.message || "Couldn't load shared links.");
+      setLinks([]);
+    } finally {
+      if (thisRequest === requestId.current) setIsLoading(false);
+    }
+  }, [searchQuery, statusFilter, sortBy, page]);
+
+  const fetchSummary = useCallback(async () => {
+    try {
+      const [statsResult, chartResult] = await Promise.all([getStats(), getMonthlyActivity()]);
+      setStats(statsResult);
+      setChartData(chartResult);
+    } catch {
+      // Non-fatal: the table is still usable without the stat cards/chart.
+    }
   }, []);
 
-  const filteredSorted = useMemo(() => {
-    let result = filterLinks(links, searchQuery);
-    if (statusFilter !== "all") {
-      result = result.filter((l) => getEffectiveStatus(l) === statusFilter);
-    }
-    return sortLinks(result, sortBy);
-  }, [links, searchQuery, sortBy, statusFilter]);
+  useEffect(() => {
+    fetchLinks();
+  }, [fetchLinks]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredSorted.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
+  useEffect(() => {
+    fetchSummary();
+  }, [fetchSummary]);
 
-  const pageLinks = useMemo(() => {
-    const start = (safePage - 1) * PAGE_SIZE;
-    return filteredSorted.slice(start, start + PAGE_SIZE);
-  }, [filteredSorted, safePage]);
+  // Clamp page if filters shrink the result set below the current page.
+  useEffect(() => {
+    if (page > totalPages) setPage(Math.max(1, totalPages));
+  }, [totalPages, page]);
 
-  const stats = useMemo(() => computeStats(links), [links]);
-  const chartData = useMemo(() => buildChartData(links), [links]);
+  const refreshAll = useCallback(() => {
+    fetchLinks();
+    fetchSummary();
+  }, [fetchLinks, fetchSummary]);
 
-  const resetToFirstPage = useCallback(() => setPage(1), []);
-
-  const updateSearch = useCallback((q) => {
-    setSearchQuery(q);
-    resetToFirstPage();
-  }, [resetToFirstPage]);
+  const updateSearch = useCallback((q) => setSearchInput(q), []);
 
   const updateSort = useCallback((s) => {
     setSortBy(s);
-    resetToFirstPage();
-  }, [resetToFirstPage]);
+    setPage(1);
+  }, []);
 
   const updateStatusFilter = useCallback((s) => {
     setStatusFilter(s);
-    resetToFirstPage();
-  }, [resetToFirstPage]);
+    setPage(1);
+  }, []);
 
-  const createLink = useCallback((formValues) => {
-    const newLink = {
-      id: `lnk_${Date.now()}`,
-      fileName: formValues.fileName,
-      fileType: formValues.fileType || "pdf",
-      shareUrl: generateShareUrl(),
-      createdAt: new Date(),
-      expiresAt: formValues.expiresAt ? new Date(formValues.expiresAt) : null,
-      views: 0,
-      downloads: 0,
-      access: formValues.access,
-      status: "active",
-      passwordProtected: !!formValues.password,
-      allowDownload: !!formValues.allowDownload,
-      recipientEmail: formValues.recipientEmail,
-    };
-    setLinks((prev) => [newLink, ...prev]);
-    resetToFirstPage();
+  const createLink = useCallback(async (formValues) => {
+    const newLink = await createSharedLink(formValues);
+    await refreshAll();
     return newLink;
-  }, [resetToFirstPage]);
+  }, [refreshAll]);
 
-  const updateLink = useCallback((id, patch) => {
-    setLinks((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+  const updateLink = useCallback(async (id, patch) => {
+    const updated = await updateSharedLink(id, patch);
+    await refreshAll();
+    return updated;
+  }, [refreshAll]);
+
+  const toggleLinkEnabled = useCallback(async (id) => {
+    const updated = await toggleSharedLink(id);
+    await refreshAll();
+    return updated;
+  }, [refreshAll]);
+
+  const revokeLink = useCallback(async (id) => {
+    const updated = await revokeSharedLink(id);
+    await refreshAll();
+    return updated;
+  }, [refreshAll]);
+
+  const deleteLink = useCallback(async (id) => {
+    await deleteSharedLink(id);
+    await refreshAll();
+  }, [refreshAll]);
+
+  const hasActiveFilters = !!searchInput || statusFilter !== "all";
+
+  const clearFilters = useCallback(() => {
+    setSearchInput("");
+    setSearchQuery("");
+    setStatusFilter("all");
+    setPage(1);
   }, []);
 
-  const toggleLinkEnabled = useCallback((id) => {
-    setLinks((prev) => prev.map((l) => {
-      if (l.id !== id) return l;
-      const nextStatus = l.status === "disabled" ? "active" : "disabled";
-      return { ...l, status: nextStatus };
-    }));
-  }, []);
-
-  const revokeLink = useCallback((id) => {
-    setLinks((prev) => prev.map((l) => (l.id === id ? { ...l, status: "revoked" } : l)));
-  }, []);
-
-  const deleteLink = useCallback((id) => {
-    setLinks((prev) => prev.filter((l) => l.id !== id));
-  }, []);
-
-  const registerView = useCallback((id) => {
-    setLinks((prev) => prev.map((l) => (l.id === id ? { ...l, views: l.views + 1 } : l)));
-  }, []);
-
-  return {
+  return useMemo(() => ({
     isLoading,
+    error,
     links,
-    pageLinks,
-    totalCount: filteredSorted.length,
+    pageLinks: links,
+    totalCount,
     stats,
     chartData,
-    searchQuery,
+    searchQuery: searchInput,
     updateSearch,
     sortBy,
     updateSort,
     statusFilter,
     updateStatusFilter,
-    page: safePage,
+    hasActiveFilters,
+    clearFilters,
+    page,
     totalPages,
     setPage,
     createLink,
@@ -131,6 +173,10 @@ export default function useSharedLinks() {
     toggleLinkEnabled,
     revokeLink,
     deleteLink,
-    registerView,
-  };
+    refreshAll,
+  }), [
+    isLoading, error, links, totalCount, stats, chartData, searchInput, updateSearch,
+    sortBy, updateSort, statusFilter, updateStatusFilter, hasActiveFilters, clearFilters,
+    page, totalPages, createLink, updateLink, toggleLinkEnabled, revokeLink, deleteLink, refreshAll,
+  ]);
 }

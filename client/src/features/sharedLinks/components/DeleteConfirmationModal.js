@@ -1,14 +1,14 @@
 import React from "react";
 import ModalShell from "./ModalShell";
 
-export default function DeleteConfirmationModal({ link, onClose, onConfirm }) {
+export default function DeleteConfirmationModal({ link, onClose, onConfirm, isSaving }) {
   return (
     <ModalShell title="Delete shared link" onClose={onClose} labelledBy="delete-link-title"
       footer={(
         <>
-          <button type="button" className="btn btn--ghost" onClick={onClose}>Cancel</button>
-          <button type="button" className="btn btn--danger" onClick={() => onConfirm(link.id)}>
-            Delete link
+          <button type="button" className="btn btn--ghost" onClick={onClose} disabled={isSaving}>Cancel</button>
+          <button type="button" className="btn btn--danger" onClick={() => onConfirm(link.id)} disabled={isSaving}>
+            {isSaving ? "Deleting…" : "Delete link"}
           </button>
         </>
       )}

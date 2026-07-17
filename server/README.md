@@ -62,14 +62,14 @@ Every owner-facing endpoint reads the caller's identity from:
 ```
 X-User-Id: <uuid>
 ```
-If `AUTH_DEV_FALLBACK=true` (default) and the header is missing, requests
-fall back to a fixed dev user id (`00000000-0000-0000-0000-000000000001`)
-so you can explore `/docs` without a real token. **Set
-`AUTH_DEV_FALLBACK=false` before production.** When the Auth teammate's
-module is ready (they already have `python-jose` in `requirements.txt` for
-JWT), open `src/shared_links/dependencies.py` and replace
-`get_current_user_id()`'s body with real JWT verification - nothing else
-changes.
+This header is **always required** - there is no dummy fallback user
+anymore. If it's missing or not a valid UUID, the API returns `401
+Unauthorized`. Use `python -m src.database.seed` (below) to create a real
+user row and get a real id to send in this header. When the Auth
+teammate's module is ready (they already have `python-jose` in
+`requirements.txt` for JWT), open `src/shared_links/dependencies.py` and
+replace `get_current_user_id()`'s body with real JWT verification -
+nothing else changes.
 
 Public link-access endpoints (`/share/{id}/access`, `/share/{id}/download`)
 need **no auth** - that's the recipient's flow.
@@ -140,12 +140,15 @@ This creates `users`, `files`, `shared_links`, `access_logs`,
 psql -h localhost -U sharedlinks_user -d sharedlinks_db -c "\dt"
 ```
 
-### 7. Seed demo data
+### 7. Create a real dev user
+There's no fabricated seed data anymore - this creates exactly **one real
+row** in your `users` table so you have a real id to authenticate with:
 ```bash
-python -m src.database.seed
+python -m src.database.seed --email you@example.com --name "Your Name"
 ```
-Creates 1 user, 4 files, 4 shared links (including one expired, one
-revoked) so there's something to see immediately.
+Copy the printed `user id` (a UUID) - you'll use it as the `X-User-Id`
+header on every request below. (The React app does this same step for you
+automatically the first time it runs - see the client README section.)
 
 ### 8. Run the API
 ```bash
@@ -156,15 +159,15 @@ uvicorn src.main:app --reload
 - Health check: http://127.0.0.1:8000/health
 
 In Swagger UI, use "Try it out" on any owner-facing endpoint and add header
-`X-User-Id: 00000000-0000-0000-0000-000000000001` (the seeded user), or
-just omit it - the dev fallback covers you automatically.
+`X-User-Id: <the uuid you got in step 7>`. There is no fallback anymore -
+every request needs this header.
 
 ### 9. Quick manual test with curl
 ```bash
 BASE=http://127.0.0.1:8000
-UID=00000000-0000-0000-0000-000000000001
+UID=<the uuid you got in step 7>
 
-# list the seeded links
+# should be an empty list the first time - no dummy data is pre-loaded
 curl -s "$BASE/shared-links" -H "X-User-Id: $UID" | python3 -m json.tool
 
 # analytics overview
@@ -180,22 +183,23 @@ pytest -v
 You should see `10 passed`.
 
 ### 11. Manually trigger the expiration job (optional)
-Normally runs automatically every hour. To trigger it once by hand right
-after seeding (the seed data includes an already-expired link):
+Normally runs automatically every hour. To trigger it once by hand (create
+a link with a near-future `expires_at` first so there's something to flip):
 ```bash
 python3 -c "from src.shared_links.scheduler import run_expiration_check; run_expiration_check()"
 ```
-Then re-fetch `/shared-links` - the expired link's status will have
+Then re-fetch `/shared-links` - any link past its `expires_at` will have
 flipped from `active` to `expired`.
 
 ### 12. Connect your React frontend
-Point it at `http://127.0.0.1:8000` and send `X-User-Id` on every request
-(an axios default header is the easiest place). Response field names
-(`file`, `share_url`, `created_at`, `expires_at`, `views`, `downloads`,
-`access`, `status`) map directly onto your existing `SharedLinksTable`
-component - swap the mock-data hook for real `fetch`/`axios` calls to these
-endpoints; no UI changes needed. `CORS_ORIGINS` in `.env` already includes
-`http://localhost:3000` (the CRA dev server default).
+The client already talks to this API for real (see
+`client/src/features/sharedLinks/services/sharedLinksApi.js`) - no mock
+data, no UI changes needed. Just make sure:
+- `client/.env` has `VITE_API_URL=http://127.0.0.1:8000`
+- `CORS_ORIGINS` in the server `.env` includes your Vite dev server's
+  origin - by default that's `http://localhost:5173`, so set
+  `CORS_ORIGINS=http://localhost:5173` (comma-separate if you need more
+  than one origin).
 
 ---
 

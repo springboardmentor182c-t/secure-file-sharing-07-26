@@ -1,13 +1,4 @@
-"""
-Minimal user + file CRUD used ONLY for local testing/seeding this module in
-isolation (creating a dummy owner + dummy file to attach shared links to).
 
-Real user management is the Auth teammate's module; real file upload/
-storage is the Files teammate's module. Neither of those exists yet in this
-repo, so these functions exist purely so Shared Links can be exercised
-end-to-end today, and can be deleted the moment those modules land — nothing
-in `service.py` depends on this file.
-"""
 import os
 import uuid
 from typing import Sequence

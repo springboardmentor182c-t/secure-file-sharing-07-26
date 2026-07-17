@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import "./SharedLinks.css";
 
 import Header from "./components/Header";
@@ -16,9 +16,10 @@ import { LinkIcon, EyeIcon, DownloadIcon, ClockIcon } from "../../layout/icons";
 
 export default function SharedLinksPage() {
   const {
-    isLoading, pageLinks, totalCount, stats, chartData,
+    isLoading, error, pageLinks, totalCount, stats, chartData,
     searchQuery, updateSearch, sortBy, updateSort,
-    statusFilter, updateStatusFilter, page, totalPages, setPage,
+    statusFilter, updateStatusFilter, hasActiveFilters, clearFilters,
+    page, totalPages, setPage,
     createLink, updateLink, toggleLinkEnabled, deleteLink,
   } = useSharedLinks();
 
@@ -27,16 +28,15 @@ export default function SharedLinksPage() {
   const [isCreateOpen, setCreateOpen] = useState(false);
   const [editingLink, setEditingLink] = useState(null);
   const [deletingLink, setDeletingLink] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const hasActiveFilters = !!searchQuery || statusFilter !== "all";
-
-  const handleClearFilters = useCallback(() => {
-    updateSearch("");
-    updateStatusFilter("all");
-  }, [updateSearch, updateStatusFilter]);
+  useEffect(() => {
+    if (error) showToast(error, "error");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]);
 
   const handleCopy = useCallback(async (link) => {
-    const url = `https://${link.shareUrl}`;
+    const url = link.shareUrl.startsWith("http") ? link.shareUrl : `https://${link.shareUrl}`;
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url);
@@ -57,31 +57,56 @@ export default function SharedLinksPage() {
     }
   }, [showToast]);
 
-  const handleCreate = useCallback((formValues) => {
-    createLink(formValues);
-    setCreateOpen(false);
-    showToast(`Link created for ${formValues.fileName}`, "success");
+  const handleCreate = useCallback(async (formValues) => {
+    setIsSaving(true);
+    try {
+      await createLink(formValues);
+      setCreateOpen(false);
+      showToast(`Link created for ${formValues.file.name}`, "success");
+    } catch (err) {
+      showToast(err.message || "Couldn't create the link — try again", "error");
+    } finally {
+      setIsSaving(false);
+    }
   }, [createLink, showToast]);
 
-  const handleSaveEdit = useCallback((id, patch) => {
-    updateLink(id, patch);
-    setEditingLink(null);
-    showToast("Link updated", "success");
+  const handleSaveEdit = useCallback(async (id, patch) => {
+    setIsSaving(true);
+    try {
+      await updateLink(id, patch);
+      setEditingLink(null);
+      showToast("Link updated", "success");
+    } catch (err) {
+      showToast(err.message || "Couldn't update the link — try again", "error");
+    } finally {
+      setIsSaving(false);
+    }
   }, [updateLink, showToast]);
 
-  const handleToggleEnabled = useCallback((link) => {
-    toggleLinkEnabled(link.id);
-    showToast(
-      link.status === "disabled" ? `${link.fileName} link re-enabled` : `${link.fileName} link disabled`,
-      "success"
-    );
+  const handleToggleEnabled = useCallback(async (link) => {
+    try {
+      await toggleLinkEnabled(link.id);
+      showToast(
+        link.status === "disabled" ? `${link.fileName} link re-enabled` : `${link.fileName} link disabled`,
+        "success"
+      );
+    } catch (err) {
+      showToast(err.message || "Couldn't update the link — try again", "error");
+    }
   }, [toggleLinkEnabled, showToast]);
 
-  const handleConfirmDelete = useCallback((id) => {
+  const handleConfirmDelete = useCallback(async (id) => {
     const link = deletingLink;
-    deleteLink(id);
-    setDeletingLink(null);
-    showToast(`Deleted link for ${link?.fileName ?? "file"}`, "success");
+    setIsSaving(true);
+    try {
+      await deleteLink(id);
+      setDeletingLink(null);
+      showToast(`Deleted link for ${link?.fileName ?? "file"}`, "success");
+    } catch (err) {
+      showToast(err.message || "Couldn't delete the link — try again", "error");
+    } finally {
+      setIsSaving(false);
+    }
   }, [deleteLink, deletingLink, showToast]);
 
   return (
@@ -106,7 +131,7 @@ export default function SharedLinksPage() {
             <span className="legend-item"><i className="legend-dot legend-dot--access" />Access events</span>
           </div>
         </div>
-        <ActivityChart data={chartData} />
+        <ActivityChart data={chartData.length ? chartData : [{ label: "", created: 0, access: 0 }]} />
       </section>
 
       <SharedLinksTable
@@ -121,7 +146,7 @@ export default function SharedLinksPage() {
         statusFilter={statusFilter}
         onStatusFilterChange={updateStatusFilter}
         hasActiveFilters={hasActiveFilters}
-        onClearFilters={handleClearFilters}
+        onClearFilters={clearFilters}
         onCreate={() => setCreateOpen(true)}
         onCopy={handleCopy}
         onEdit={setEditingLink}
@@ -130,16 +155,17 @@ export default function SharedLinksPage() {
       />
 
       {isCreateOpen && (
-        <CreateLinkModal onClose={() => setCreateOpen(false)} onCreate={handleCreate} />
+        <CreateLinkModal onClose={() => setCreateOpen(false)} onCreate={handleCreate} isSaving={isSaving} />
       )}
       {editingLink && (
-        <EditLinkModal link={editingLink} onClose={() => setEditingLink(null)} onSave={handleSaveEdit} />
+        <EditLinkModal link={editingLink} onClose={() => setEditingLink(null)} onSave={handleSaveEdit} isSaving={isSaving} />
       )}
       {deletingLink && (
         <DeleteConfirmationModal
           link={deletingLink}
           onClose={() => setDeletingLink(null)}
           onConfirm={handleConfirmDelete}
+          isSaving={isSaving}
         />
       )}
 

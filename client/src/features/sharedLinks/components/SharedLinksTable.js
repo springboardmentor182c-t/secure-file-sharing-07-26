@@ -11,7 +11,6 @@ const SORT_OPTIONS = [
   { value: "most-viewed", label: "Most Viewed" },
   { value: "most-downloaded", label: "Most Downloaded" },
   { value: "alphabetical", label: "Alphabetical" },
-  { value: "status", label: "Status" },
 ];
 
 const STATUS_OPTIONS = [

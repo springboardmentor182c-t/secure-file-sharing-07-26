@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import ModalShell from "./ModalShell";
 
 const initialForm = {
-  fileName: "",
-  fileType: "pdf",
+  file: null,
   recipientEmail: "",
   access: "view",
   expiresAt: "",
@@ -11,7 +10,7 @@ const initialForm = {
   allowDownload: false,
 };
 
-export default function CreateLinkModal({ onClose, onCreate }) {
+export default function CreateLinkModal({ onClose, onCreate, isSaving }) {
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState({});
 
@@ -19,7 +18,7 @@ export default function CreateLinkModal({ onClose, onCreate }) {
 
   function validate() {
     const errs = {};
-    if (!form.fileName.trim()) errs.fileName = "File name is required.";
+    if (!form.file) errs.file = "Choose a file to share.";
     if (!form.recipientEmail.trim()) {
       errs.recipientEmail = "Recipient email is required.";
     } else if (!/^\S+@\S+\.\S+$/.test(form.recipientEmail)) {
@@ -27,6 +26,9 @@ export default function CreateLinkModal({ onClose, onCreate }) {
     }
     if (form.expiresAt && new Date(form.expiresAt) < new Date().setHours(0, 0, 0, 0)) {
       errs.expiresAt = "Expiration must be in the future.";
+    }
+    if (form.password && form.password.length < 4) {
+      errs.password = "Password must be at least 4 characters.";
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -42,33 +44,24 @@ export default function CreateLinkModal({ onClose, onCreate }) {
     <ModalShell title="Create shared link" onClose={onClose} labelledBy="create-link-title"
       footer={(
         <>
-          <button type="button" className="btn btn--ghost" onClick={onClose}>Cancel</button>
-          <button type="submit" form="create-link-form" className="btn btn--primary">Generate Link</button>
+          <button type="button" className="btn btn--ghost" onClick={onClose} disabled={isSaving}>Cancel</button>
+          <button type="submit" form="create-link-form" className="btn btn--primary" disabled={isSaving}>
+            {isSaving ? "Generating…" : "Generate Link"}
+          </button>
         </>
       )}
     >
       <form id="create-link-form" onSubmit={handleSubmit} noValidate>
         <div className="form-field">
-          <label htmlFor="fileName">File</label>
+          <label htmlFor="file">File</label>
           <input
-            id="fileName"
-            type="text"
-            placeholder="e.g. Q1-Budget.pdf"
-            value={form.fileName}
-            onChange={(e) => setField("fileName", e.target.value)}
-            aria-invalid={!!errors.fileName}
+            id="file"
+            type="file"
+            onChange={(e) => setField("file", e.target.files?.[0] || null)}
+            aria-invalid={!!errors.file}
           />
-          {errors.fileName && <span className="form-field__error">{errors.fileName}</span>}
-        </div>
-
-        <div className="form-field">
-          <label htmlFor="fileType">File type</label>
-          <select id="fileType" value={form.fileType} onChange={(e) => setField("fileType", e.target.value)}>
-            <option value="pdf">PDF</option>
-            <option value="doc">Document</option>
-            <option value="zip">Archive (zip)</option>
-            <option value="img">Image</option>
-          </select>
+          {form.file && <span className="form-field__hint">{form.file.name}</span>}
+          {errors.file && <span className="form-field__error">{errors.file}</span>}
         </div>
 
         <div className="form-field">
@@ -114,7 +107,9 @@ export default function CreateLinkModal({ onClose, onCreate }) {
             placeholder="Leave blank for no password"
             value={form.password}
             onChange={(e) => setField("password", e.target.value)}
+            aria-invalid={!!errors.password}
           />
+          {errors.password && <span className="form-field__error">{errors.password}</span>}
         </div>
 
         <label className="checkbox-field">

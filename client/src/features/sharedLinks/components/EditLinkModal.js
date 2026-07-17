@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import ModalShell from "./ModalShell";
 
+const PASSWORD_PLACEHOLDER = "••••••••";
+
 function toDateInputValue(date) {
   if (!date) return "";
   const d = date instanceof Date ? date : new Date(date);
@@ -8,11 +10,11 @@ function toDateInputValue(date) {
   return d.toISOString().slice(0, 10);
 }
 
-export default function EditLinkModal({ link, onClose, onSave }) {
+export default function EditLinkModal({ link, onClose, onSave, isSaving }) {
   const [form, setForm] = useState({
     access: link.access,
     expiresAt: toDateInputValue(link.expiresAt),
-    password: link.passwordProtected ? "••••••••" : "",
+    password: link.passwordProtected ? PASSWORD_PLACEHOLDER : "",
     allowDownload: link.allowDownload,
   });
   const [errors, setErrors] = useState({});
@@ -24,6 +26,9 @@ export default function EditLinkModal({ link, onClose, onSave }) {
     if (form.expiresAt && new Date(form.expiresAt) < new Date().setHours(0, 0, 0, 0)) {
       errs.expiresAt = "Expiration must be in the future.";
     }
+    if (form.password && form.password !== PASSWORD_PLACEHOLDER && form.password.length < 4) {
+      errs.password = "Password must be at least 4 characters.";
+    }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -31,10 +36,18 @@ export default function EditLinkModal({ link, onClose, onSave }) {
   function handleSubmit(e) {
     e.preventDefault();
     if (!validate()) return;
+
+    const passwordUnchanged = form.password === PASSWORD_PLACEHOLDER;
+    const passwordCleared = link.passwordProtected && form.password.trim() === "";
+
     onSave(link.id, {
       access: form.access,
-      expiresAt: form.expiresAt ? new Date(form.expiresAt) : null,
-      passwordProtected: form.password.trim().length > 0,
+      expiresAt: form.expiresAt || null,
+      // Only send a new password when the user actually typed one; only
+      // ask the backend to remove it when it existed and was cleared out;
+      // otherwise send neither field so the existing password is untouched.
+      password: passwordUnchanged || passwordCleared ? undefined : form.password,
+      removePassword: passwordCleared,
       allowDownload: form.allowDownload,
     });
   }
@@ -43,8 +56,10 @@ export default function EditLinkModal({ link, onClose, onSave }) {
     <ModalShell title={`Edit link — ${link.fileName}`} onClose={onClose} labelledBy="edit-link-title"
       footer={(
         <>
-          <button type="button" className="btn btn--ghost" onClick={onClose}>Cancel</button>
-          <button type="submit" form="edit-link-form" className="btn btn--primary">Save changes</button>
+          <button type="button" className="btn btn--ghost" onClick={onClose} disabled={isSaving}>Cancel</button>
+          <button type="submit" form="edit-link-form" className="btn btn--primary" disabled={isSaving}>
+            {isSaving ? "Saving…" : "Save changes"}
+          </button>
         </>
       )}
     >
@@ -84,7 +99,9 @@ export default function EditLinkModal({ link, onClose, onSave }) {
             placeholder="Leave blank for no password"
             value={form.password}
             onChange={(e) => setField("password", e.target.value)}
+            aria-invalid={!!errors.password}
           />
+          {errors.password && <span className="form-field__error">{errors.password}</span>}
         </div>
 
         <label className="checkbox-field">
