@@ -80,10 +80,10 @@ input,textarea,select{font-family:inherit;outline:none;border:none}
   border-bottom:1px solid var(--border-subtle);
 }
 .logo-mark{
-  width:32px;height:32px;border-radius:8px;
+  width:34px;height:34px;border-radius:9px;
   background:var(--grad-primary);
   display:flex;align-items:center;justify-content:center;
-  font-size:1rem;flex-shrink:0;
+  font-size:1.05rem;color:#fff;flex-shrink:0;
 }
 .logo-name{font-size:1.0625rem;font-weight:800;background:var(--grad-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .sidebar-nav{flex:1;overflow-y:auto;padding:10px 10px 0}
@@ -105,7 +105,7 @@ input,textarea,select{font-family:inherit;outline:none;border:none}
   content:'';position:absolute;left:0;top:6px;bottom:6px;
   width:3px;background:var(--grad-primary);border-radius:0 2px 2px 0;
 }
-.nav-icon{font-size:1rem;width:18px;text-align:center;flex-shrink:0}
+.nav-icon{font-size:1.05rem;width:20px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center}
 .nav-badge{
   margin-left:auto;background:var(--grad-primary);color:#fff;
   font-size:.6875rem;font-weight:700;padding:2px 7px;
@@ -425,3 +425,44 @@ input,textarea,select{font-family:inherit;outline:none;border:none}
   .stats-grid{grid-template-columns:1fr 1fr}
 }
 @media(max-width:480px){.stats-grid{grid-template-columns:1fr}.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+
+/* ── Sidebar bottom actions ──────────────────────────────── */
+.sidebar-nav{padding-top:14px}
+.sidebar-bottom{
+  padding:10px;border-top:1px solid var(--border-subtle);
+  display:flex;flex-direction:column;gap:2px;
+}
+.sidebar-bottom .nav-link{width:100%;text-align:left}
+.nav-link-danger{color:var(--rose-400)}
+.nav-link-danger:hover{background:rgba(244,63,94,.1);color:var(--rose-400)}
+
+/* ── Navbar user block ───────────────────────────────────── */
+.navbar-user{
+  display:flex;align-items:center;gap:10px;
+  padding:5px 10px 5px 6px;border-radius:12px;cursor:pointer;
+  transition:background var(--transition);
+}
+.navbar-user:hover{background:var(--bg-card)}
+.navbar-user-meta{line-height:1.2}
+.navbar-user-name{font-size:.85rem;font-weight:700;color:var(--text-primary)}
+.navbar-user-role{font-size:.72rem;color:var(--text-muted);text-transform:capitalize}
+
+/* ── Light theme ─────────────────────────────────────────── */
+:root.light{
+  --bg-primary:#f4f6fb;
+  --bg-secondary:#ffffff;
+  --bg-card:rgba(15,23,42,.03);
+  --bg-hover:rgba(15,23,42,.06);
+  --bg-input:rgba(15,23,42,.04);
+  --text-primary:#0f172a;
+  --text-secondary:#475569;
+  --text-muted:#94a3b8;
+  --border-subtle:rgba(15,23,42,.09);
+  --border-medium:rgba(15,23,42,.14);
+  --grad-bg:radial-gradient(ellipse at top left,rgba(59,130,246,.08) 0%,transparent 50%),
+            radial-gradient(ellipse at bottom right,rgba(139,92,246,.06) 0%,transparent 50%),
+            linear-gradient(180deg,#f4f6fb 0%,#eef2f9 100%);
+}
+:root.light .sidebar{background:rgba(255,255,255,.92);border-right-color:var(--border-subtle)}
+:root.light .navbar{background:rgba(255,255,255,.85);border-bottom-color:var(--border-subtle)}
+:root.light .notif-dot{border-color:#fff}
