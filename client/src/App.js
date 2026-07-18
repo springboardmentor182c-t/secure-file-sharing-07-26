@@ -1,9 +1,9 @@
-import React from 'react';
-
+import React from "react";
+import FileManagementPage from "./filemanagement/FileManagementPage";
 function App() {
   return (
     <div className="App">
-      <h1>Secure File Sharing - Client</h1>
+      <FileManagementPage />
     </div>
   );
 }
