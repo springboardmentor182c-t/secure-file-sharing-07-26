@@ -1,111 +1,135 @@
 import React from "react";
-import "./Sidebar.css";
+import { NavLink } from "react-router-dom";
 
-import {
-  LayoutDashboard,
-  FolderOpen,
-  Upload,
-  Share2,
-  Shield,
-  Activity,
-  Bell,
-  BarChart3,
-  UserCog,
-  User,
-  LogOut,
-} from "lucide-react";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
+import UploadOutlinedIcon from "@mui/icons-material/UploadOutlined";
+import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
+import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
+import MonitorHeartOutlinedIcon from "@mui/icons-material/MonitorHeartOutlined";
+import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
+import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
+import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
+import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
+import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
+
+
+const menuItems = [
+    {
+        name: "Dashboard",
+        path: "/",
+        icon: <DashboardIcon />
+    },
+    {
+        name: "File Management",
+        path: "/files",
+        icon: <FolderOutlinedIcon />
+    },
+    {
+        name: "Upload",
+        path: "/upload",
+        icon: <UploadOutlinedIcon />
+    },
+    {
+        name: "Secure Sharing",
+        path: "/sharing",
+        icon: <ShareOutlinedIcon />
+    },
+    {
+        name: "Encryption & Security",
+        path: "/security",
+        icon: <SecurityOutlinedIcon />
+    },
+    {
+        name: "Activity Monitor",
+        path: "/activity",
+        icon: <MonitorHeartOutlinedIcon />
+    },
+    {
+        name: "Notifications",
+        path: "/notifications",
+        icon: <NotificationsNoneOutlinedIcon />
+    },
+    {
+        name: "Analytics",
+        path: "/analytics",
+        icon: <BarChartOutlinedIcon />
+    },
+    {
+        name: "Admin",
+        path: "/admin",
+        icon: <AdminPanelSettingsOutlinedIcon />
+    }
+];
+
 
 const Sidebar = () => {
-  return (
-    <aside className="sidebar">
 
-      {/* Logo */}
+    return (
+        <aside className="sidebar">
 
-      <div className="sidebar-top">
+            <div>
 
-        <div className="logo">
+                <div className="logo-section">
 
-          <div className="logo-icon">
-            🛡️
-          </div>
+                    <div className="logo-circle">
+                        T
+                    </div>
 
-          <div>
+                    <div>
+                        <h2>TrustShare</h2>
+                        <p>Enterprise</p>
+                    </div>
 
-            <h2>VaultShare</h2>
+                </div>
 
-            <span>Enterprise</span>
 
-          </div>
+                <div className="sidebar-menu">
 
-        </div>
+                    {
+                        menuItems.map((item) => (
 
-        <div className="menu">
+                            <NavLink
+                                key={item.name}
+                                to={item.path}
+                                className={({ isActive }) =>
+                                    isActive ? "menu active" : "menu"
+                                }
+                            >
 
-          <div className="menu-item">
-            <LayoutDashboard size={20}/>
-            <span>Dashboard</span>
-          </div>
+                                {item.icon}
 
-          <div className="menu-item">
-            <FolderOpen size={20}/>
-            <span>File Management</span>
-          </div>
+                                <span>{item.name}</span>
 
-          <div className="menu-item">
-            <Upload size={20}/>
-            <span>Upload</span>
-          </div>
+                            </NavLink>
 
-          <div className="menu-item">
-            <Share2 size={20}/>
-            <span>Secure Sharing</span>
-          </div>
+                        ))
+                    }
 
-          <div className="menu-item">
-            <Shield size={20}/>
-            <span>Encryption & Security</span>
-          </div>
+                </div>
 
-          <div className="menu-item">
-            <Activity size={20}/>
-            <span>Activity Monitor</span>
-          </div>
+            </div>
 
-          <div className="menu-item">
-            <Bell size={20}/>
-            <span>Notifications</span>
-          </div>
 
-          <div className="menu-item">
-            <BarChart3 size={20}/>
-            <span>Analytics</span>
-          </div>
+            <div className="bottom-menu">
 
-          <div className="menu-item active">
-            <UserCog size={20}/>
-            <span>Admin</span>
-          </div>
+                <NavLink to="/profile" className="menu">
+                    <AccountCircleOutlinedIcon />
+                    <span>Profile</span>
+                </NavLink>
 
-        </div>
 
-      </div>
+                <NavLink to="/logout" className="menu">
+                    <LogoutOutlinedIcon />
+                    <span>Sign out</span>
+                </NavLink>
 
-      <div className="sidebar-bottom">
+            </div>
 
-        <div className="menu-item">
-          <User size={20}/>
-          <span>Profile</span>
-        </div>
 
-        <div className="menu-item">
-          <LogOut size={20}/>
-          <span>Sign Out</span>
-        </div>
-
-      </div>
-
-    </aside>
-  );
+        </aside>
+    );
 };
+
 
 export default Sidebar;

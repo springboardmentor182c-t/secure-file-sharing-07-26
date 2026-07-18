@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "./SystemHealth.css";
+import { BASE_URL } from "../constants/api";
 
 import {
   Zap,
@@ -31,8 +32,8 @@ const SystemHealthTab = () => {
   const loadHealth = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:8000/admin/system-health"
-      );
+  `${BASE_URL}/admin/system-health`
+);
 
       setHealth(res.data);
     } catch (err) {

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "./AuditReports.css";
 import { Download } from "lucide-react";
+import { BASE_URL } from "../constants/api";
 
 const AuditTab = () => {
   const [reports, setReports] = useState([]);
@@ -13,8 +14,8 @@ const AuditTab = () => {
   const loadReports = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:8000/admin/audit-reports"
-      );
+  `${BASE_URL}/admin/audit-reports`
+);
       setReports(res.data);
     } catch (err) {
       console.error(err);
@@ -23,9 +24,9 @@ const AuditTab = () => {
 
   const downloadReport = () => {
     window.open(
-      "http://localhost:8000/admin/audit-reports/download",
-      "_blank"
-    );
+  `${BASE_URL}/admin/audit-reports/download`,
+  "_blank"
+);
   };
 
   return (

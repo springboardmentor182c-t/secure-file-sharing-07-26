@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-
+from src.entities.issue import Issue
 from src.database.core import SessionLocal
 from src.entities.user import User
 from src.schemas.user import UserCreate
@@ -141,16 +141,47 @@ def storage(db: Session = Depends(get_db)):
         "users": user_storage
     }
 @router.get("/storage/file-types")
-def storage_file_types():
-    return [
-        {"type": "Documents", "percentage": 38},
-        {"type": "Videos", "percentage": 22},
-        {"type": "Images", "percentage": 18},
-        {"type": "Archives", "percentage": 14},
-        {"type": "Other", "percentage": 8}
-    ]
+def storage_file_types(db: Session = Depends(get_db)):
+    files = db.query(File).all()
+
+    total_files = len(files)
+
+    if total_files == 0:
+        return []
+
+    file_type_count = {}
+
+    for file in files:
+        file_type = file.file_type
+
+        if file_type in file_type_count:
+            file_type_count[file_type] += 1
+        else:
+            file_type_count[file_type] = 1
+
+    result = []
+
+    for file_type, count in file_type_count.items():
+        percentage = round((count / total_files) * 100, 1)
+
+        result.append({
+            "type": file_type,
+            "percentage": percentage
+        })
+
+    return result
 @router.get("/system-health")
-def system_health():
+def system_health(db: Session = Depends(get_db)):
+    issues = db.query(Issue).all()
+
+    recent_events = []
+
+    for issue in issues:
+        recent_events.append({
+            "event": issue.title,
+            "time": issue.status
+        })
+
     return {
         "api_response_time": "48 ms",
         "database_load": "23%",
@@ -158,26 +189,8 @@ def system_health():
         "active_connections": 231,
         "cpu_usage": "34%",
         "error_rate": "0.02%",
-        "recent_events": [
-            {
-                "event": "Scheduled backup completed — 445 GB archived",
-                "time": "Today 10:00 AM"
-            },
-            {
-                "event": "SSL certificate renewed successfully",
-                "time": "Jul 1, 2025"
-            },
-            {
-                "event": "Database maintenance window completed",
-                "time": "Jun 29, 2:00 AM"
-            },
-            {
-                "event": "Storage quota at 85% — recommend plan upgrade",
-                "time": "Jun 25, 9:00 AM"
-            }
-        ]
+        "recent_events": recent_events
     }
-
 
 @router.get("/audit-reports")
 def audit_reports(db: Session = Depends(get_db)):

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "./StorageTab.css";
+import { BASE_URL } from "../constants/api";
 
 const StorageTab = () => {
   const [storage, setStorage] = useState({
@@ -19,7 +20,7 @@ const StorageTab = () => {
 
   const loadStorage = async () => {
     try {
-      const res = await axios.get("http://localhost:8000/admin/storage");
+      const res = await axios.get(`${BASE_URL}/admin/storage`);
       setStorage(res.data);
     } catch (err) {
       console.log(err);
@@ -29,8 +30,8 @@ const StorageTab = () => {
   const loadFileTypes = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:8000/admin/storage/file-types"
-      );
+  `${BASE_URL}/admin/storage/file-types`
+);
       setFileTypes(res.data);
     } catch (err) {
       console.log(err);
