@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { API_BASE_URL } from '../data/constants';
 
 export default function Login() {
   const { login } = useAuth();
@@ -48,7 +47,8 @@ export default function Login() {
 
   const handleOAuthLogin = (provider) => {
     // Redirect the browser to the backend, which will redirect to Google/Microsoft
-    window.location.href = `${API_BASE_URL}/api/auth/oauth/${provider}`;
+    const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    window.location.href = `${API_BASE}/api/auth/oauth/${provider}`;
   };
 
   return (
