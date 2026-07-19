@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Download, Eye, Files, Grid2X2, List, Search, ShieldCheck, Users } from 'lucide-react';
+import { Bell, Download, Eye, Files, FileText, FolderOpen, Grid2X2, List, Search, Share2, ShieldCheck, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { formatDate } from '../../../utils/formatDate';
 import SharedFileIcon from './SharedFileIcon';
 
@@ -13,6 +14,7 @@ const formatSize = (bytes) => {
 };
 
 export default function SharedFilesView({ data, onDownload }) {
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [permission, setPermission] = useState('all');
   const [view, setView] = useState('list');
@@ -31,22 +33,46 @@ export default function SharedFilesView({ data, onDownload }) {
 
   return (
     <section className="shared-view fade-in">
-      <header className="shared-heading">
-        <div>
-          <span className="shared-eyebrow"><Users size={14} /> Collaboration</span>
-          <h1>Shared with me</h1>
-          <p>Files that teammates and collaborators have securely shared with you.</p>
-        </div>
-        <div className="shared-heading-art" aria-hidden="true"><ShieldCheck size={30} /></div>
+      <header className="shared-page-heading">
+        <h1>Shared with Me</h1>
+        <p>Files and folders teammates have shared with you.</p>
       </header>
 
-      <div className="shared-stats">
-        <div><span className="shared-stat-icon blue"><Files size={19} /></span><p><strong>{data.total}</strong><small>Total shared files</small></p></div>
-        <div><span className="shared-stat-icon purple"><Eye size={19} /></span><p><strong>{data.view_only}</strong><small>View only</small></p></div>
-        <div><span className="shared-stat-icon green"><Download size={19} /></span><p><strong>{data.downloadable}</strong><small>Available to download</small></p></div>
-      </div>
+      {files.length === 0 ? (
+        <div className="shared-reference-empty">
+          <div className="shared-empty-illustration" aria-hidden="true">
+            <span className="shared-illustration-sheet back" />
+            <span className="shared-illustration-sheet middle" />
+            <span className="shared-illustration-sheet front">
+              <span><Share2 size={20} /></span>
+              <i /><i />
+            </span>
+          </div>
 
-      <div className="shared-panel">
+          <h2>Nothing shared with you yet</h2>
+          <p className="shared-empty-description">When teammates share files or folders with you,<br />they'll appear here so you can access them quickly.</p>
+
+          <div className="shared-empty-action-row">
+            <button type="button" onClick={() => navigate('/files')}><FileText size={17} /> Browse your files</button>
+            <span>or ask a teammate to share something with you</span>
+          </div>
+
+          <div className="shared-empty-divider" />
+          <div className="shared-empty-steps">
+            <div><span><Share2 size={17} /></span><strong>Files are shared</strong><p>Via email or a direct<br />TrustShare invite</p></div>
+            <div><span><Bell size={17} /></span><strong>You get notified</strong><p>Instantly, when alerts<br />are enabled</p></div>
+            <div><span><FolderOpen size={17} /></span><strong>Files appear here</strong><p>With permissions the<br />sender set</p></div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="shared-stats">
+            <div><span className="shared-stat-icon blue"><Files size={19} /></span><p><strong>{data.total}</strong><small>Total shared files</small></p></div>
+            <div><span className="shared-stat-icon purple"><Eye size={19} /></span><p><strong>{data.view_only}</strong><small>View only</small></p></div>
+            <div><span className="shared-stat-icon green"><Download size={19} /></span><p><strong>{data.downloadable}</strong><small>Available to download</small></p></div>
+          </div>
+
+          <div className="shared-panel">
         <div className="shared-toolbar">
           <label className="shared-search"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shared files or people" /></label>
           <div className="shared-toolbar-actions">
@@ -78,7 +104,9 @@ export default function SharedFilesView({ data, onDownload }) {
             ))}
           </div>
         )}
-      </div>
+          </div>
+        </>
+      )}
       <p className="shared-security-note"><ShieldCheck size={14} /> Every file is encrypted and access-controlled by its owner.</p>
     </section>
   );
