@@ -4,6 +4,8 @@ Application entrypoint.
 Run with:
     uvicorn src.main:app --reload
 """
+from dotenv import load_dotenv
+load_dotenv()
 import logging
 import os
 from contextlib import asynccontextmanager
