@@ -7,7 +7,13 @@ export function useSharedFiles() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => () => { mounted.current = false; }, []);
+  useEffect(() => {
+    mounted.current = true;
+
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const refetch = useCallback(async () => {
     if (mounted.current) { setIsLoading(true); setError(null); }
