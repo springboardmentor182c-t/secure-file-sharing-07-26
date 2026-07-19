@@ -1,6 +1,32 @@
-fastapi
-uvicorn
-sqlalchemy
-pydantic
-pg8000
-python-dotenv
+# --- Existing project dependencies (re-saved as UTF-8; the original file
+#     was UTF-16, which `pip install -r` cannot reliably parse) ---
+annotated-doc==0.0.4
+annotated-types==0.7.0
+bcrypt==4.2.1
+click==8.4.2
+colorama==0.4.6
+dnspython==2.8.0
+email-validator==2.3.0
+fastapi==0.116.1
+greenlet==3.5.3
+h11==0.16.0
+idna==3.18
+passlib[bcrypt]==1.7.4
+pyasn1==0.6.3
+PyMySQL==1.2.0
+python-dotenv==1.2.2
+python-jose==3.5.0
+python-multipart==0.0.32
+rsa==4.9.1
+six==1.17.0
+SQLAlchemy==2.0.51
+starlette==0.47.3
+typing-inspection==0.4.2
+typing_extensions==4.16.0
+uvicorn==0.50.0
+
+# --- Added for the Shared Links module ---
+psycopg2-binary==2.9.10
+alembic==1.14.0
+APScheduler==3.10.4
+fastapi-mail==1.4.2

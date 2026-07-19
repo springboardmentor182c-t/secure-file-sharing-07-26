@@ -10,6 +10,7 @@ import MainLayout from "../layout/MainLayout";
 import Dashboard from "../pages/Dashboard/Dashboard";
 import Files from "../pages/Files/Files";
 import SharedFiles from "../pages/SharedFiles/SharedFiles";
+import SharedLinksPage from "../features/sharedLinks/SharedLinksPage";
 import Monitoring from "../pages/Monitoring/Monitoring";
 import Settings from "../pages/Settings/Settings";
 import Profile from "../pages/Profile/Profile";
@@ -23,6 +24,7 @@ function AppRoutes() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/files" element={<Files />} />
           <Route path="/shared-files" element={<SharedFiles />} />
+          <Route path="/shared-links" element={<SharedLinksPage />} />
           <Route path="/monitoring" element={<Monitoring />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/profile" element={<Profile />} />

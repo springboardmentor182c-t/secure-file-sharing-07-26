@@ -2,6 +2,7 @@ const pageTitles = {
   "/": "Dashboard",
   "/files": "My Files",
   "/shared-files": "Shared Files",
+  "/shared-links": "Shared Links",
   "/trash": "Trash",
   "/monitoring": "Access Monitoring",
   "/audit": "Audit Logs",

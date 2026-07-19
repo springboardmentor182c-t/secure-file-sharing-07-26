@@ -193,7 +193,7 @@ function Header({ setSidebarOpen }) {
               font-semibold
             "
           >
-            SK
+            V
           </div>
 
           {/* User Info */}
@@ -212,7 +212,7 @@ function Header({ setSidebarOpen }) {
                 text-white
               "
             >
-              Shashank Kumar
+              Vamshi
             </p>
 
             <p

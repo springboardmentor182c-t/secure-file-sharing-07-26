@@ -2,3 +2,5 @@ node_modules/
 Db_schema.sql
 schema.sql
 .env
+__pycache__/
+*.pyc
