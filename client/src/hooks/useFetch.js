@@ -1,17 +1,23 @@
 import { useState, useEffect, useCallback } from "react";
 
-export function useFetch(fetchFn) {
+export function useFetch(fetchFn, deps = []) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     setLoading(true);
-    fetchFn()
-      .then((result) => setData(result))
-      .catch((err) => setError(err))
-      .finally(() => setLoading(false));
-  }, [fetchFn]);
+    setError(null);
+    try {
+      const result = await fetchFn();
+      setData(result);
+    } catch (err) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
 
   useEffect(() => {
     load();

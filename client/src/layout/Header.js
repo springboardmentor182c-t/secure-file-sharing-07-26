@@ -1,11 +1,9 @@
 import { Menu, Search, Bell, ChevronDown } from "lucide-react";
-
 import { useLocation } from "react-router-dom";
 import pageTitles from "../data/pageTitles";
 
-function Header({ setSidebarOpen }) {
+function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
   const location = useLocation();
-
   const title = pageTitles[location.pathname] || "TrustShare";
 
   return (
@@ -24,51 +22,26 @@ function Header({ setSidebarOpen }) {
       "
     >
       {/* Left Section */}
-
       <div className="flex items-center gap-4">
-        {/* Mobile Menu */}
-
         <button
           onClick={() => setSidebarOpen(true)}
-          className="
-            lg:hidden
-            text-gray-300
-            hover:text-white
-          "
+          className="lg:hidden text-gray-300 hover:text-white"
           aria-label="Open sidebar"
         >
           <Menu size={24} />
         </button>
 
-        {/* Page Title */}
-
         <div>
-          <h1
-            className="
-              text-xl
-              lg:text-2xl
-              font-semibold
-              text-white
-              capitalize
-            "
-          >
+          <h1 className="text-xl lg:text-2xl font-semibold text-white capitalize">
             {title}
           </h1>
-
-          <p
-            className="
-              text-sm
-              text-gray-400
-              mt-1
-            "
-          >
+          <p className="text-sm text-gray-400 mt-1">
             Home / {title}
           </p>
         </div>
       </div>
 
       {/* Search */}
-
       <div
         className="
           hidden
@@ -88,6 +61,8 @@ function Header({ setSidebarOpen }) {
 
         <input
           type="text"
+          value={searchTerm}
+          onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search files..."
           className="
             ml-3
@@ -118,17 +93,7 @@ function Header({ setSidebarOpen }) {
       </div>
 
       {/* Right Section */}
-
-      <div
-        className="
-          flex
-          items-center
-          gap-3
-          lg:gap-5
-        "
-      >
-        {/* Notification */}
-
+      <div className="flex items-center gap-3 lg:gap-5">
         <button
           className="
             relative
@@ -147,21 +112,8 @@ function Header({ setSidebarOpen }) {
           aria-label="Notifications"
         >
           <Bell size={20} className="text-gray-300" />
-
-          <span
-            className="
-              absolute
-              top-2
-              right-2
-              h-2
-              w-2
-              rounded-full
-              bg-[#7C5CFC]
-            "
-          />
+          <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-[#7C5CFC]" />
         </button>
-
-        {/* User Profile */}
 
         <button
           className="
@@ -178,8 +130,6 @@ function Header({ setSidebarOpen }) {
             transition
           "
         >
-          {/* Avatar */}
-
           <div
             className="
               h-10
@@ -193,44 +143,17 @@ function Header({ setSidebarOpen }) {
               font-semibold
             "
           >
-            SK
+            {currentUser?.name
+              ? currentUser.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+              : "??"}
           </div>
 
-          {/* User Info */}
-
-          <div
-            className="
-              hidden
-              lg:block
-              text-left
-            "
-          >
-            <p
-              className="
-                text-sm
-                font-medium
-                text-white
-              "
-            >
-              Shashank Kumar
-            </p>
-
-            <p
-              className="
-                text-xs
-                text-gray-400
-              "
-            >
-              Student
-            </p>
+          <div className="hidden lg:block text-left">
+            <p className="text-sm font-medium text-white">{currentUser?.name || "Guest"}</p>
+            <p className="text-xs text-gray-400">{currentUser?.role || "Viewer"}</p>
           </div>
 
-          <ChevronDown
-            size={18}
-            className="
-              text-gray-400
-            "
-          />
+          <ChevronDown size={18} className="text-gray-400" />
         </button>
       </div>
     </header>
