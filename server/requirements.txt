@@ -1,11 +1,7 @@
 fastapi
-<<<<<<< HEAD
 uvicorn[standard]
 SQLAlchemy
 psycopg[binary]
 pydantic-settings
 python-dotenv
-=======
-uvicorn
 pytest
->>>>>>> cf5fd7452bd3e213309bf16fd105019ae2fcf010
