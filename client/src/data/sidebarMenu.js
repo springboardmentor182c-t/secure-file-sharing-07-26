@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   FolderOpen,
   Link2,
+  Share2,
   Trash2,
   Shield,
   ClipboardList,
@@ -34,6 +35,17 @@ export const sidebarMenu = [
         name: "Trash",
         path: "/trash",
         icon: Trash2,
+      },
+    ],
+  },
+
+  {
+    title: "SHARING",
+    items: [
+      {
+        name: "Shared Links",
+        path: "/shared-links",
+        icon: Share2,
       },
     ],
   },

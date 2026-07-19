@@ -1,3 +1,13 @@
+"""
+Application entrypoint.
+
+Run with:
+    uvicorn src.main:app --reload
+"""
+import logging
+import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

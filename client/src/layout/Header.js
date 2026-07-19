@@ -143,6 +143,7 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
               font-semibold
             "
           >
+
             {currentUser?.name
               ? currentUser.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
               : "??"}
@@ -151,6 +152,7 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
           <div className="hidden lg:block text-left">
             <p className="text-sm font-medium text-white">{currentUser?.name || "Guest"}</p>
             <p className="text-xs text-gray-400">{currentUser?.role || "Viewer"}</p>
+
           </div>
 
           <ChevronDown size={18} className="text-gray-400" />
