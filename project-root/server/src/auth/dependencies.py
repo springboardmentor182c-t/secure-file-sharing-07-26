@@ -12,6 +12,8 @@ SECRET_KEY = os.getenv("SECRET_KEY", "secureshare-super-secret-key-change-in-pro
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REFRESH_TOKEN_EXPIRE_DAYS = 30
+MFA_CHALLENGE_EXPIRE_MINUTES = 5
+RESET_TOKEN_EXPIRE_MINUTES = 15
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -29,6 +31,16 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire, "type": "access"})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def create_mfa_challenge_token(user_id: int) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(minutes=MFA_CHALLENGE_EXPIRE_MINUTES)
+    return jwt.encode({"sub": str(user_id), "type": "mfa", "exp": expire}, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def create_reset_token(user_id: int) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(minutes=RESET_TOKEN_EXPIRE_MINUTES)
+    return jwt.encode({"sub": str(user_id), "type": "reset", "exp": expire}, SECRET_KEY, algorithm=ALGORITHM)
 
 
 def create_refresh_token(data: dict) -> str:
