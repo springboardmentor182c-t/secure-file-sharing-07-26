@@ -182,7 +182,7 @@ function Header({ setSidebarOpen }) {
                 text-white
               "
             >
-              XXX
+              XYZ
             </p>
 
             <p

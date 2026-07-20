@@ -265,7 +265,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
               text-gray-400
             "
           >
-            XXX GB / XXX GB Used
+            XYZ GB / PQR GB Used
           </p>
         </div>
       </div>
@@ -318,7 +318,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                   text-white
                 "
               >
-                XXX
+                XYZ
               </h3>
 
               <p
