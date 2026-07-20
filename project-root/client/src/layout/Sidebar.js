@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   FolderOpen,
   Share2,
+  UsersRound,
   Activity,
   Bell,
   BarChart3,
@@ -34,6 +35,11 @@ const NAV_ITEMS = [
     to: "/sharing",
     label: "Sharing",
     icon: <Share2 size={16} />,
+  },
+  {
+    to: "/shared-with-me",
+    label: "Shared with me",
+    icon: <UsersRound size={16} />,
   },
   {
     to: "/activity",
