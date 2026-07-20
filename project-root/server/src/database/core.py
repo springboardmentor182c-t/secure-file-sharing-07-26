@@ -6,10 +6,10 @@ import os
 # Load variables from a .env file (if present) so DATABASE_URL etc. are available
 load_dotenv()
 
-# Default to a local PostgreSQL instance; override via the DATABASE_URL env var.
+# PostgreSQL by default; override via the DATABASE_URL env var (e.g. SQLite for local dev).
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+psycopg2://trustshare:trustshare@localhost:5432/trustshare",
+    "postgresql+psycopg2://SecureShare:SecureShare@localhost:5432/SecureShareDB",
 )
 
 is_sqlite = DATABASE_URL.startswith("sqlite")

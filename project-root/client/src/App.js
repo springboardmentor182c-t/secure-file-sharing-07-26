@@ -10,10 +10,13 @@ import ForgotPassword from './pages/ForgotPassword';
 import OAuthCallback from './pages/OAuthCallback';
 import Dashboard from './pages/Dashboard';
 import Files from './pages/Files';
+import Encryption from './pages/Encryption';
 import Sharing from './pages/Sharing';
 import Analytics from './pages/Analytics';
 import Notifications from './pages/Notifications';
 import Admin from './pages/Admin';
+import ActivityLogs from './pages/ActivityLogs';
+import Settings from './pages/Settings';
 import { notificationsAPI } from './utils/api';
 import './assets/global.css';
 
@@ -38,10 +41,13 @@ function AppShell() {
           <Routes>
             <Route path="/dashboard"     element={<Dashboard />} />
             <Route path="/files"         element={<Files />} />
+            <Route path="/encryption"    element={<Encryption />} />
             <Route path="/sharing"       element={<Sharing />} />
             <Route path="/analytics"     element={<Analytics />} />
+            <Route path="/activity"      element={<ActivityLogs />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/admin"         element={<Admin />} />
+            <Route path="/settings"      element={<Settings />} />
             <Route path="*"              element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>

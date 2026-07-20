@@ -1,8 +1,12 @@
 ﻿import os
 
-# Force tests onto an isolated SQLite DB — must run before importing app modules,
-# since src.database.core reads DATABASE_URL at import time (defaults to Postgres).
-TEST_DB_URL = 'sqlite:///./test.db'
+# Run tests against an isolated PostgreSQL database — must be set before importing
+# app modules, since src.database.core reads DATABASE_URL at import time.
+# Override via TEST_DATABASE_URL to point at your own test database if needed.
+TEST_DB_URL = os.getenv(
+    "TEST_DATABASE_URL",
+    "postgresql+psycopg2://SecureShare:SecureShare@localhost:5432/SecureShareDB_test",
+)
 os.environ["DATABASE_URL"] = TEST_DB_URL
 
 import pytest
@@ -12,7 +16,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from src.database.core import Base, get_db
 
-engine = create_engine(TEST_DB_URL, connect_args={'check_same_thread': False})
+engine = create_engine(TEST_DB_URL, pool_pre_ping=True)
 TestingSession = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 @pytest.fixture(scope='session', autouse=True)
