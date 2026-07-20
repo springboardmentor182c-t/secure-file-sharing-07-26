@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: trustshare-group-d
+    runtime: docker
+    branch: main-group-D
+    region: singapore
+    plan: free
+    dockerfilePath: ./project-root/Dockerfile
+    dockerContext: ./project-root
+    healthCheckPath: /health
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: trustshare-group-d-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MASTER_KEY
+        generateValue: true
+
+databases:
+  - name: trustshare-group-d-db
+    databaseName: trustshare
+    user: trustshare
+    region: singapore
+    plan: free
