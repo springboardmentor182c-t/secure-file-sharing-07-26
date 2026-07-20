@@ -1,3 +1,5 @@
+# server/src/files/service.py
+
 import os
 import re
 import uuid
@@ -5,6 +7,7 @@ import hashlib
 import mimetypes
 
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
@@ -15,56 +18,44 @@ from src.entities.user import User
 from src.entities.audit_log import AuditLog
 from src.security.exceptions import KeyManagementError
 
-# Security Module
-
-from src.security.validation.validators import (
-    validate_upload,
-)
-
+from src.security.validation.validators import validate_upload
 from src.security.key_manager import (
     generate_key,
     save_key,
     load_key,
     delete_key,
 )
-
-from src.security.encryption import (
-    encrypt_bytes,
-    decrypt_bytes,
-)
-
+from src.security.encryption import encrypt_bytes, decrypt_bytes
 from src.security.secure_storage import (
     save_encrypted_file,
     load_encrypted_file,
     delete_encrypted_file,
 )
+from src.security.hashing import calculate_sha256
 
-from src.security.hashing import (
-    calculate_sha256,
+# ── Analytics event logger ────────────────────────────────────────────────
+from src.analytics.services import log_event
+from src.analytics.constants import (
+    AnalyticsEventType,
+    AnalyticsEventStatus,
 )
+
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# HELPERS
+# ═══════════════════════════════════════════════════════════════════════════
+
 def sanitize_filename(filename: str) -> str:
-    """
-    Remove unsafe characters from uploaded filenames.
-    """
-
+    """Remove unsafe characters from uploaded filenames."""
     filename = Path(filename).name
-
-    filename = re.sub(
-        r'[<>:"/\\|?*\x00-\x1F]',
-        "_",
-        filename,
-    )
-
+    filename = re.sub(r'[<>:"/\\|?*\x00-\x1F]', "_", filename)
     filename = filename.strip()
-
     if not filename:
         filename = "uploaded_file"
-
     return filename
 
 
@@ -90,27 +81,25 @@ def _audit(
 def _detect_suspicious_activity(
     db: Session,
     user_id: int,
+    ip_address: str | None = None,
 ):
     """
     Detect repeated unauthorized access attempts.
+    Logs SECURITY analytics event if threshold crossed.
     """
-
     failed_attempts = (
         db.query(AuditLog)
         .filter(
             AuditLog.user_id == user_id,
-            AuditLog.action.in_(
-                [
-                    "UNAUTHORIZED_ACCESS",
-                    "UNAUTHORIZED_DOWNLOAD",
-                ]
-            ),
+            AuditLog.action.in_([
+                "UNAUTHORIZED_ACCESS",
+                "UNAUTHORIZED_DOWNLOAD",
+            ]),
         )
         .count()
     )
 
     if failed_attempts >= 5:
-
         _audit(
             db,
             user_id,
@@ -119,11 +108,36 @@ def _detect_suspicious_activity(
             level="critical",
         )
 
+        # ── Log SECURITY event with brute_force severity ─────────────────
+        log_event(
+            db,
+            event_type=AnalyticsEventType.SECURITY,
+            user_id=user_id,
+            status=AnalyticsEventStatus.FAILED,
+            ip_address=ip_address,
+            event_metadata={
+                "severity_key": "brute_force",
+                "label": "Suspicious file access detected",
+                "detail": f"{failed_attempts} unauthorized file access attempts",
+                "target": f"user_{user_id}",
+                "attempts": failed_attempts,
+            },
+        )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LIST FILES
+# ═══════════════════════════════════════════════════════════════════════════
 
 def get_user_files(
-    db: Session, owner_id: int, folder_id: int | None = None
+    db: Session,
+    owner_id: int,
+    folder_id: int | None = None,
 ) -> list[File]:
-    q = db.query(File).filter(File.owner_id == owner_id, File.is_deleted == False)
+    q = db.query(File).filter(
+        File.owner_id == owner_id,
+        File.is_deleted == False,
+    )
     if folder_id is not None:
         q = q.filter(File.folder_id == folder_id)
     else:
@@ -131,18 +145,19 @@ def get_user_files(
     return q.order_by(File.created_at.desc()).all()
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# GET FILE (with ownership check)
+# ═══════════════════════════════════════════════════════════════════════════
+
 def get_file(
     db: Session,
     file_id: int,
     owner_id: int,
+    ip_address: str | None = None,
 ) -> File:
-
     file = (
         db.query(File)
-        .filter(
-            File.id == file_id,
-            File.is_deleted == False,
-        )
+        .filter(File.id == file_id, File.is_deleted == False)
         .first()
     )
 
@@ -152,10 +167,8 @@ def get_file(
             detail="File not found",
         )
 
-    # Owner Authorization
-
+    # Owner authorization
     if file.owner_id != owner_id:
-
         _audit(
             db,
             owner_id,
@@ -164,9 +177,23 @@ def get_file(
             resource_id=file.id,
             level="warning",
         )
-        _detect_suspicious_activity(
+        _detect_suspicious_activity(db, owner_id, ip_address=ip_address)
+
+        # ── Log SECURITY event ─────────────────────────────────────────
+        log_event(
             db,
-            owner_id,
+            event_type=AnalyticsEventType.SECURITY,
+            user_id=owner_id,
+            file_id=file.id,
+            status=AnalyticsEventStatus.FAILED,
+            ip_address=ip_address,
+            event_metadata={
+                "severity_key": "unusual_access",
+                "label": "Unauthorized file access",
+                "detail": f"User attempted to access file {file.original_name}",
+                "target": file.original_name,
+                "attempts": 1,
+            },
         )
 
         db.commit()
@@ -179,63 +206,66 @@ def get_file(
     return file
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# UPLOAD
+# ═══════════════════════════════════════════════════════════════════════════
+
 def upload_file(
     db: Session,
     upload: UploadFile,
     owner_id: int,
     folder_id: int | None,
     encrypted: bool,
+    ip_address: str | None = None,
 ) -> File:
-
     # Read uploaded file
-
     upload.file.seek(0)
     file_bytes = upload.file.read()
     file_size = len(file_bytes)
     upload.file.seek(0)
 
-    # Validate upload
-
-    validate_upload(db, upload, file_size,)
+    # ── Validate upload (log FAILED analytics event if invalid) ───────────
+    try:
+        validate_upload(db, upload, file_size)
+    except HTTPException as e:
+        log_event(
+            db,
+            event_type=AnalyticsEventType.UPLOAD,
+            user_id=owner_id,
+            status=AnalyticsEventStatus.FAILED,
+            ip_address=ip_address,
+            event_metadata={
+                "severity_key": "unusual_access",
+                "label": "File upload rejected",
+                "detail": e.detail if hasattr(e, "detail") else "Validation failed",
+                "target": upload.filename,
+                "attempts": 1,
+            },
+        )
+        db.commit()
+        raise
 
     # Sanitize filename
-
     safe_filename = sanitize_filename(upload.filename)
 
-    # Generate unique storage filename
-
-    stored_name = f"{uuid.uuid4().hex}" f"{Path(safe_filename).suffix.lower()}"
+    # Unique storage filename
+    stored_name = f"{uuid.uuid4().hex}{Path(safe_filename).suffix.lower()}"
 
     # Encrypt file
-
     if encrypted:
-
         aes_key = generate_key()
-
         save_key(stored_name, aes_key)
-
-        stored_bytes = encrypt_bytes(
-            file_bytes,
-            aes_key,
-        )
-
+        stored_bytes = encrypt_bytes(file_bytes, aes_key)
     else:
-
         stored_bytes = file_bytes
 
     # Store encrypted file
+    save_encrypted_file(stored_name, stored_bytes)
 
-    save_encrypted_file(
-        stored_name,
-        stored_bytes,
-    )
-
-    # SHA-256 Integrity Hash (Original File)
-
+    # SHA-256 integrity hash
     hash_sha256 = hashlib.sha256(file_bytes).hexdigest()
 
-    # Detect MIME Type
-
+    # Detect MIME type
     mimetype = (
         upload.content_type
         or mimetypes.guess_type(safe_filename)[0]
@@ -243,7 +273,6 @@ def upload_file(
     )
 
     # Save metadata
-
     file = File(
         original_name=safe_filename,
         stored_name=stored_name,
@@ -256,19 +285,14 @@ def upload_file(
     )
 
     db.add(file)
-
-    # Generate primary key before audit logging
-    db.flush()
+    db.flush()  # Generate PK before audit log
 
     # Update user storage
-
     user = db.query(User).filter(User.id == owner_id).first()
-
     if user:
         user.storage_used += file_size
 
     # Audit log
-
     _audit(
         db,
         owner_id,
@@ -278,7 +302,21 @@ def upload_file(
         level="info",
     )
 
-    # Commit transaction
+    # ── Log UPLOAD analytics event ─────────────────────────────────────────
+    log_event(
+        db,
+        event_type=AnalyticsEventType.UPLOAD,
+        user_id=owner_id,
+        file_id=file.id,
+        status=AnalyticsEventStatus.SUCCESS,
+        ip_address=ip_address,
+        event_metadata={
+            "target": safe_filename,
+            "size_bytes": file_size,
+            "mimetype": mimetype,
+            "encrypted": encrypted,
+        },
+    )
 
     db.commit()
     db.refresh(file)
@@ -286,64 +324,47 @@ def upload_file(
     return file
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# DELETE
+# ═══════════════════════════════════════════════════════════════════════════
+
 def delete_file(
     db: Session,
     file_id: int,
     owner_id: int,
+    ip_address: str | None = None,
 ) -> None:
-
-    # Fetch File
-
-    file = get_file(
-        db,
-        file_id,
-        owner_id,
-    )
+    # Fetch file (uses ownership check)
+    file = get_file(db, file_id, owner_id, ip_address=ip_address)
 
     if file.owner_id != owner_id:
-
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized",
         )
 
-    # Delete Encrypted File
-
+    # Delete encrypted file
     try:
-
         delete_encrypted_file(file.stored_name)
-
     except Exception:
         pass
 
-    # Delete AES Key
-
+    # Delete AES key
     if file.encrypted:
-
         try:
-
             delete_key(file.stored_name)
-
         except Exception:
             pass
 
-    # Soft Delete Metadata
-
+    # Soft delete metadata
     file.is_deleted = True
 
-    # Update Storage Usage
-
+    # Update storage usage
     user = db.query(User).filter(User.id == owner_id).first()
-
     if user:
+        user.storage_used = max(0, user.storage_used - file.size)
 
-        user.storage_used = max(
-            0,
-            user.storage_used - file.size,
-        )
-
-    # Audit Log
-
+    # Audit log
     _audit(
         db,
         owner_id,
@@ -353,43 +374,47 @@ def delete_file(
         level="warn",
     )
 
+    # ── Log DELETE analytics event ─────────────────────────────────────────
+    log_event(
+        db,
+        event_type=AnalyticsEventType.DELETE,
+        user_id=owner_id,
+        file_id=file.id,
+        status=AnalyticsEventStatus.SUCCESS,
+        ip_address=ip_address,
+        event_metadata={
+            "target": file.original_name,
+            "size_bytes": file.size,
+        },
+    )
+
     db.commit()
 
 
-from tempfile import NamedTemporaryFile
-
+# ═══════════════════════════════════════════════════════════════════════════
+# DOWNLOAD (decrypts + integrity check)
+# ═══════════════════════════════════════════════════════════════════════════
 
 def get_file_path(
     db: Session,
     file_id: int,
     owner_id: int,
+    ip_address: str | None = None,
 ) -> tuple[Path, str]:
-
-    # Fetch File Metadata
-
+    # Fetch file metadata
     file = (
         db.query(File)
-        .filter(
-            File.id == file_id,
-            File.is_deleted == False,
-        )
+        .filter(File.id == file_id, File.is_deleted == False)
         .first()
     )
 
     if not file:
-        raise HTTPException(
-            status_code=404,
-            detail="File not found",
-        )
+        raise HTTPException(status_code=404, detail="File not found")
 
-    # Load Stored File
-
+    # Load stored (encrypted) file
     try:
-
         encrypted_bytes = load_encrypted_file(file.stored_name)
-
     except Exception:
-
         _audit(
             db,
             owner_id,
@@ -398,26 +423,32 @@ def get_file_path(
             resource_id=file.id,
             level="critical",
         )
-
+        log_event(
+            db,
+            event_type=AnalyticsEventType.SECURITY,
+            user_id=owner_id,
+            file_id=file.id,
+            status=AnalyticsEventStatus.FAILED,
+            ip_address=ip_address,
+            event_metadata={
+                "severity_key": "unusual_access",
+                "label": "Encrypted file missing",
+                "detail": f"Storage file not found for {file.original_name}",
+                "target": file.original_name,
+                "attempts": 1,
+            },
+        )
         db.commit()
-
         raise HTTPException(
             status_code=500,
             detail="Encrypted file not found.",
         )
 
     # Decrypt only if encrypted
-
     if file.encrypted:
-
         try:
-
-            aes_key = load_key(
-                file.stored_name,
-            )
-
+            aes_key = load_key(file.stored_name)
         except Exception:
-
             _audit(
                 db,
                 owner_id,
@@ -426,23 +457,30 @@ def get_file_path(
                 resource_id=file.id,
                 level="critical",
             )
-
+            log_event(
+                db,
+                event_type=AnalyticsEventType.SECURITY,
+                user_id=owner_id,
+                file_id=file.id,
+                status=AnalyticsEventStatus.FAILED,
+                ip_address=ip_address,
+                event_metadata={
+                    "severity_key": "unusual_access",
+                    "label": "Encryption key not found",
+                    "detail": f"AES key missing for {file.original_name}",
+                    "target": file.original_name,
+                    "attempts": 1,
+                },
+            )
             db.commit()
-
             raise HTTPException(
                 status_code=500,
                 detail="Encryption key not found.",
             )
 
         try:
-
-            decrypted_bytes = decrypt_bytes(
-                encrypted_bytes,
-                aes_key,
-            )
-
+            decrypted_bytes = decrypt_bytes(encrypted_bytes, aes_key)
         except Exception:
-
             _audit(
                 db,
                 owner_id,
@@ -451,38 +489,43 @@ def get_file_path(
                 resource_id=file.id,
                 level="critical",
             )
-
+            log_event(
+                db,
+                event_type=AnalyticsEventType.SECURITY,
+                user_id=owner_id,
+                file_id=file.id,
+                status=AnalyticsEventStatus.FAILED,
+                ip_address=ip_address,
+                event_metadata={
+                    "severity_key": "brute_force",
+                    "label": "Decryption failed",
+                    "detail": f"Failed to decrypt {file.original_name}",
+                    "target": file.original_name,
+                    "attempts": 1,
+                },
+            )
             db.commit()
-
             raise HTTPException(
                 status_code=500,
                 detail="Unable to decrypt file.",
             )
-
     else:
-
         decrypted_bytes = encrypted_bytes
 
-    # Integrity Verification
-
+    # Write to temp file
     temp_file = NamedTemporaryFile(
         delete=False,
         suffix=Path(file.original_name).suffix,
     )
-
     temp_file.write(decrypted_bytes)
-
     temp_file.close()
 
-    # Verify Original Integrity
-
+    # Verify integrity
     sha256 = hashlib.sha256()
     sha256.update(decrypted_bytes)
-
     calculated_hash = sha256.hexdigest()
 
     if calculated_hash != file.hash_sha256:
-
         _audit(
             db,
             owner_id,
@@ -491,23 +534,33 @@ def get_file_path(
             resource_id=file.id,
             level="critical",
         )
-
+        log_event(
+            db,
+            event_type=AnalyticsEventType.SECURITY,
+            user_id=owner_id,
+            file_id=file.id,
+            status=AnalyticsEventStatus.FAILED,
+            ip_address=ip_address,
+            event_metadata={
+                "severity_key": "brute_force",
+                "label": "File integrity failure",
+                "detail": f"SHA-256 mismatch on {file.original_name}",
+                "target": file.original_name,
+                "attempts": 1,
+            },
+        )
         db.commit()
-
         os.remove(temp_file.name)
-
         raise HTTPException(
             status_code=500,
             detail="File integrity verification failed.",
         )
 
-    # Download Tracking
-
+    # Download tracking
     file.download_count += 1
     file.last_downloaded_at = datetime.now(timezone.utc)
 
-    # Audit Successful Download
-
+    # Audit log
     _audit(
         db,
         owner_id,
@@ -517,118 +570,56 @@ def get_file_path(
         level="info",
     )
 
-    db.commit()
-
-    # Return Temporary Decrypted File
-
-    return (
-        Path(temp_file.name),
-        file.original_name,
+    # ── Log DOWNLOAD analytics event ───────────────────────────────────────
+    log_event(
+        db,
+        event_type=AnalyticsEventType.DOWNLOAD,
+        user_id=owner_id,
+        file_id=file.id,
+        status=AnalyticsEventStatus.SUCCESS,
+        ip_address=ip_address,
+        event_metadata={
+            "target": file.original_name,
+            "size_bytes": file.size,
+        },
     )
 
+    db.commit()
+
+    return Path(temp_file.name), file.original_name
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ROTATE ENCRYPTION KEY
+# ═══════════════════════════════════════════════════════════════════════════
 
 def rotate_file_key(
     db: Session,
     file_id: int,
     owner_id: int,
+    ip_address: str | None = None,
 ) -> None:
     """
     Rotate the AES-256 encryption key for a file.
-
-    Workflow:
-    1. Verify ownership.
-    2. Load encrypted file.
-    3. Load current AES key.
-    4. Decrypt file.
-    5. Generate a new AES key.
-    6. Re-encrypt file.
-    7. Atomically replace encrypted file.
-    8. Atomically replace encryption key
-       (rolls back the encrypted file if this step fails,
-       since a mismatched file/key pair is unrecoverable).
-    9. Record audit log.
     """
+    file = get_file(db, file_id, owner_id, ip_address=ip_address)
 
-    # Verify ownership
-
-    file = get_file(
-        db,
-        file_id,
-        owner_id,
-    )
-
-    # Load encrypted file
-
-    encrypted_bytes = load_encrypted_file(
-        file.stored_name,
-    )
-
-    # Load current AES key
-
-    current_key = load_key(
-        file.stored_name,
-    )
-
-    # Decrypt file
-
-    decrypted_bytes = decrypt_bytes(
-        encrypted_bytes,
-        current_key,
-    )
-
-    # Generate new AES key
+    encrypted_bytes = load_encrypted_file(file.stored_name)
+    current_key = load_key(file.stored_name)
+    decrypted_bytes = decrypt_bytes(encrypted_bytes, current_key)
 
     new_key = generate_key()
+    new_encrypted_bytes = encrypt_bytes(decrypted_bytes, new_key)
 
-    # Encrypt with new key
+    save_encrypted_file(file.stored_name, new_encrypted_bytes)
 
-    new_encrypted_bytes = encrypt_bytes(
-        decrypted_bytes,
-        new_key,
-    )
-
-    # Atomically replace encrypted file
-
-    save_encrypted_file(
-        file.stored_name,
-        new_encrypted_bytes,
-    )
-
-    # -------------------------------------------------------
-    # Atomically replace encryption key.
-    #
-    # save_key() being atomic only guarantees the key file itself
-    # is never left partially written. It does NOT guarantee the
-    # (encrypted file, key) pair stays in sync. If this write fails
-    # after the encrypted file has already been replaced above, the
-    # file on disk would be encrypted with new_key while the old_key
-    # remains stored — an unrecoverable mismatch. So we roll back the
-    # encrypted file to its previous state if this step fails.
-    # -------------------------------------------------------
-
+    # Atomic key replacement with rollback safety
     try:
-
-        save_key(
-            file.stored_name,
-            new_key,
-        )
-
+        save_key(file.stored_name, new_key)
     except Exception as e:
-
         try:
-
-            # Restore the previous ciphertext so the file still
-            # matches the key that remains on disk.
-            save_encrypted_file(
-                file.stored_name,
-                encrypted_bytes,
-            )
-
+            save_encrypted_file(file.stored_name, encrypted_bytes)
         except Exception:
-
-            # Rollback itself failed — the file may now be
-            # undecryptable with any key on disk. This must be
-            # flagged as critical for manual investigation.
             _audit(
                 db,
                 owner_id,
@@ -637,8 +628,22 @@ def rotate_file_key(
                 resource_id=file.id,
                 level="critical",
             )
+            log_event(
+                db,
+                event_type=AnalyticsEventType.SECURITY,
+                user_id=owner_id,
+                file_id=file.id,
+                status=AnalyticsEventStatus.FAILED,
+                ip_address=ip_address,
+                event_metadata={
+                    "severity_key": "brute_force",
+                    "label": "Key rotation failed (unrecoverable)",
+                    "detail": f"File {file.original_name} may be corrupted",
+                    "target": file.original_name,
+                    "attempts": 1,
+                },
+            )
             db.commit()
-
             raise KeyManagementError(
                 f"Key rotation failed and rollback failed. "
                 f"File {file.id} may be corrupted: {e}"
@@ -652,14 +657,27 @@ def rotate_file_key(
             resource_id=file.id,
             level="error",
         )
+        log_event(
+            db,
+            event_type=AnalyticsEventType.SECURITY,
+            user_id=owner_id,
+            file_id=file.id,
+            status=AnalyticsEventStatus.FAILED,
+            ip_address=ip_address,
+            event_metadata={
+                "severity_key": "unusual_access",
+                "label": "Key rotation failed",
+                "detail": f"Rolled back key rotation for {file.original_name}",
+                "target": file.original_name,
+                "attempts": 1,
+            },
+        )
         db.commit()
-
         raise KeyManagementError(
             f"Key rotation failed, rolled back to previous key: {e}"
         )
 
-    # Audit Log
-
+    # Audit + analytics for success
     _audit(
         db,
         owner_id,
@@ -667,6 +685,21 @@ def rotate_file_key(
         file.original_name,
         resource_id=file.id,
         level="info",
+    )
+    log_event(
+        db,
+        event_type=AnalyticsEventType.SECURITY,
+        user_id=owner_id,
+        file_id=file.id,
+        status=AnalyticsEventStatus.SUCCESS,
+        ip_address=ip_address,
+        event_metadata={
+            "severity_key": "admin_role",
+            "label": "Encryption key rotated",
+            "detail": f"AES-256 key rotated for {file.original_name}",
+            "target": file.original_name,
+            "attempts": 1,
+        },
     )
 
     db.commit()

@@ -99,7 +99,25 @@ export const notificationsAPI = {
 
 // ── Analytics ─────────────────────────────────────────────────────────────
 export const analyticsAPI = {
-  summary: () => api.get('/api/analytics/summary'),
+  summary: (days = 30, userId = null) => {
+    const params = { days };
+    if (userId) params.user_id = userId;
+    return api.get('/api/analytics/summary', { params });
+  },
+  users: () => api.get('/api/analytics/users'),
+  systemStats: () => api.get('/api/analytics/system-stats'),
+  exportFileAnalytics: (days = 30) =>
+    api.get('/api/analytics/export/file-analytics', {
+      params: { days },
+      responseType: 'blob',
+    }),
+  exportSecurity: (days = 30) =>
+    api.get('/api/analytics/export/security', {
+      params: { days },
+      responseType: 'blob',
+    }),
+  // Expose raw axios for custom calls
+  get: (url, config) => api.get(url, config),
 };
 
 export const dashboardAPI = {

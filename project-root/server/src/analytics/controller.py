@@ -1,90 +1,177 @@
-from fastapi import APIRouter, Depends
+# server/src/analytics/controller.py
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, extract
+
 from src.database.core import get_db
 from src.auth.dependencies import get_current_user
 from src.entities.user import User
-from src.entities.file import File
-from src.entities.share_link import ShareLink
-from src.entities.audit_log import AuditLog
-from pydantic import BaseModel
-from datetime import datetime, timedelta, timezone
+
+from src.analytics.service import AnalyticsService
+from src.analytics.schemas import (
+    StorageResponse,
+    UploadAnalyticsResponse,
+    DownloadAnalyticsResponse,
+    SharingAnalyticsResponse,
+    SecurityAnalyticsResponse,
+    RecentActivityResponse,
+    AnalyticsSummaryResponse,
+    UserListResponse,
+    SystemStatsResponse,
+)
+
+from fastapi.responses import StreamingResponse
+from io import BytesIO
+from src.analytics.services.pdf_exporter import (
+    generate_file_analytics_pdf,
+    generate_security_pdf,
+)
+from datetime import datetime
+
 
 router = APIRouter()
+service = AnalyticsService()
 
 
-class StorageStats(BaseModel):
-    used_bytes: int
-    quota_bytes: int
-    used_gb: float
-    quota_gb: float
-    percent: float
+@router.get("/summary", response_model=AnalyticsSummaryResponse)
+def summary(
+    days: int = Query(30, ge=1, le=365),
+    user_id: int | None = Query(None, description="Filter activity by user"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Full analytics + security summary."""
+    return service.get_summary(db, days=days, user_id=user_id)
 
 
-class UploadTrend(BaseModel):
-    date: str
-    count: int
+@router.get("/storage", response_model=StorageResponse)
+def storage(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return service.get_storage(db)
 
 
-class AnalyticsSummary(BaseModel):
-    total_files: int
-    total_folders_shared: int
-    active_share_links: int
-    total_share_views: int
-    storage: StorageStats
-    upload_trend: list[UploadTrend]
-    top_file_types: dict
+@router.get("/uploads", response_model=UploadAnalyticsResponse)
+def uploads(
+    days: int = Query(30, ge=1, le=365),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return service.get_upload_analytics(db, days=days)
 
 
-@router.get("/summary", response_model=AnalyticsSummary)
-def analytics_summary(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    # File count
-    total_files = db.query(File).filter(File.owner_id == current_user.id, File.is_deleted == False).count()
+@router.get("/downloads", response_model=DownloadAnalyticsResponse)
+def downloads(
+    days: int = Query(30, ge=1, le=365),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return service.get_download_analytics(db, days=days)
 
-    # Share stats
-    shares = db.query(ShareLink).filter(ShareLink.created_by == current_user.id).all()
-    active_shares = sum(1 for s in shares if s.is_active)
-    total_views = sum(s.access_count for s in shares)
 
-    # Storage
-    used = current_user.storage_used or 0
-    quota = current_user.storage_quota or 5368709120
-    storage = StorageStats(
-        used_bytes=used,
-        quota_bytes=quota,
-        used_gb=round(used / 1e9, 2),
-        quota_gb=round(quota / 1e9, 2),
-        percent=round(used / quota * 100, 1) if quota else 0,
+@router.get("/sharing", response_model=SharingAnalyticsResponse)
+def sharing(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return service.get_sharing_analytics(db)
+
+
+@router.get("/security", response_model=SecurityAnalyticsResponse)
+def security(
+    days: int = Query(30, ge=1, le=365),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return service.get_security_analytics(db, days=days)
+
+
+@router.get("/recent-activity", response_model=RecentActivityResponse)
+def recent_activity(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return {"activities": service.get_recent_activity(db)}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PDF EXPORT
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _date_range_label(days: int) -> str:
+    """Format date range for PDF header."""
+    if days == 7:
+        return "Last 7 days"
+    if days == 30:
+        return "Last 30 days"
+    if days == 90:
+        return "Last 90 days"
+    return f"Last {days} days"
+
+
+@router.get("/export/file-analytics")
+def export_file_analytics_pdf(
+    days: int = Query(30, ge=1, le=365),
+    db:   Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Download File Analytics tab as PDF."""
+    data = service.get_summary(db, days=days)
+    pdf_bytes = generate_file_analytics_pdf(
+        data,
+        date_range_label=_date_range_label(days),
     )
 
-    # Upload trend — last 7 days
-    trend = []
-    for i in range(6, -1, -1):
-        day = datetime.now(timezone.utc) - timedelta(days=i)
-        count = (
-            db.query(File)
-            .filter(
-                File.owner_id == current_user.id,
-                File.is_deleted == False,
-                func.date(File.created_at) == day.date(),
-            )
-            .count()
-        )
-        trend.append(UploadTrend(date=day.strftime("%a"), count=count))
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M")
+    filename  = f"trustshare-file-analytics-{timestamp}.pdf"
 
-    # File type breakdown
-    files = db.query(File).filter(File.owner_id == current_user.id, File.is_deleted == False).all()
-    type_counts: dict[str, int] = {}
-    for f in files:
-        ext = f.original_name.rsplit(".", 1)[-1].lower() if "." in f.original_name else "other"
-        type_counts[ext] = type_counts.get(ext, 0) + 1
-
-    return AnalyticsSummary(
-        total_files=total_files,
-        total_folders_shared=active_shares,
-        active_share_links=active_shares,
-        total_share_views=total_views,
-        storage=storage,
-        upload_trend=trend,
-        top_file_types=type_counts,
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
     )
+
+
+@router.get("/export/security")
+def export_security_pdf(
+    days: int = Query(30, ge=1, le=365),
+    db:   Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Download Security tab as PDF."""
+    data = service.get_summary(db, days=days)
+    pdf_bytes = generate_security_pdf(
+        data,
+        date_range_label=_date_range_label(days),
+    )
+
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M")
+    filename  = f"trustshare-security-{timestamp}.pdf"
+
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )
+
+
+@router.get("/users", response_model=UserListResponse)
+def users_list(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List of users for activity filter dropdown."""
+    return {"users": service.get_users_list(db)}
+
+
+@router.get("/system-stats", response_model=SystemStatsResponse)
+def system_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """System health + DB stats for admin monitoring."""
+    return service.get_system_stats(db)
