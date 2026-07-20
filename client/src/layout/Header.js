@@ -193,7 +193,7 @@ function Header({ setSidebarOpen }) {
               font-semibold
             "
           >
-            SK
+            X
           </div>
 
           {/* User Info */}

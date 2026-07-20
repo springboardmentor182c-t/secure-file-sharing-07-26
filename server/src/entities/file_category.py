@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
-from src.database.core import Base
+from src.entities.base import Base
 
 
 class FileCategory(Base):

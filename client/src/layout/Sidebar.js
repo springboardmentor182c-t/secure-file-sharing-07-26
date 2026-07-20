@@ -307,7 +307,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                 font-bold
               "
             >
-              SK
+              X
             </div>
 
             <div>

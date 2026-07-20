@@ -1,67 +1,116 @@
+import uuid
+from datetime import datetime
+
 from sqlalchemy import (
-    Column,
-    String,
-    Boolean,
     BigInteger,
+    Boolean,
     DateTime,
     ForeignKey,
+    String,
+    func,
 )
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.database.core import Base
+from src.entities.base import Base
+from src.entities.guid import GUID
 
 
 class File(Base):
     __tablename__ = "files"
 
-    id = Column(UUID(as_uuid=True), primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
 
-    owner_id = Column(
-        UUID(as_uuid=True),
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
         ForeignKey("users.id"),
         nullable=False,
     )
 
-    folder_id = Column(
-        UUID(as_uuid=True),
+    folder_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(),
         ForeignKey("folders.id"),
         nullable=True,
     )
 
-    category_id = Column(
-        UUID(as_uuid=True),
+    category_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(),
         ForeignKey("file_categories.id"),
         nullable=True,
     )
 
-    file_name = Column(String(255), nullable=False)
+    file_name: Mapped[str] = mapped_column(
+        String(500),
+        nullable=False,
+    )
 
-    original_name = Column(String(255), nullable=False)
+    original_name: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
 
-    file_extension = Column(String(20))
+    file_extension: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
 
-    mime_type = Column(String(100))
+    mime_type: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
 
-    file_size = Column(BigInteger, nullable=False)
+    file_size: Mapped[int] = mapped_column(
+        BigInteger,
+        default=0,
+        nullable=False,
+    )
 
-    storage_path = Column(String, nullable=False)
+    storage_path: Mapped[str] = mapped_column(
+        String(1000),
+        nullable=False,
+    )
 
-    encrypted_path = Column(String)
+    encrypted_path: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+    )
 
-    checksum = Column(String(255))
+    checksum: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
 
-    description = Column(String)
+    description: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+    )
 
-    is_deleted = Column(Boolean, default=False)
+    is_deleted: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+    )
 
-    uploaded_at = Column(
-        DateTime,
+    uploaded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         server_default=func.now(),
     )
 
-    updated_at = Column(
-        DateTime,
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),
     )
+
+    owner = relationship(
+        "User",
+        back_populates="files",
+    )
+
+    # shared_links = relationship(
+    #     "SharedLink",
+    #     back_populates="file",
+    #     cascade="all, delete-orphan",
+    # )
