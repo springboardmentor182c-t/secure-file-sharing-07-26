@@ -5,6 +5,8 @@ import Settings from "./pages/Settings";
 import SecureSharing from "./pages/Securesharing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import Dashboard from "./features/dashboard/Dashboard";
+
 
 function App() {
   return (
@@ -38,6 +40,14 @@ function App() {
         />
 
         <Route path="/login" element={<Login />} />
+        <Route
+  path="/dashboard"
+  element={
+    <PageContainer>
+      <Dashboard />
+    </PageContainer>
+  }
+/>
         <Route path="/signup" element={<Signup />} />
       </Routes>
     </BrowserRouter>
