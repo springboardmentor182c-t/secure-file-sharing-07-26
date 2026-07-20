@@ -48,4 +48,3 @@ class SharedLink(Base):
     owner = relationship("User")
     file = relationship("File")
     access_logs = relationship("AccessLog", back_populates="shared_link", cascade="all, delete-orphan")
-    notifications = relationship("Notification", back_populates="shared_link", cascade="all, delete-orphan")
