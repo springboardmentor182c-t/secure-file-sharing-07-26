@@ -22,6 +22,7 @@ from src.entities.file import File  # noqa: F401
 from src.entities.shared_link import SharedLink  # noqa: F401
 from src.entities.access_log import AccessLog  # noqa: F401
 from src.entities.notification import Notification  # noqa: F401
+from src.entities.file_share import FileShare  # noqa: F401
 
 __all__ = [
     "Base",
@@ -30,5 +31,5 @@ __all__ = [
     "SharedLink",
     "AccessLog",
     "Notification",
+    "FileShare",
 ]
-
