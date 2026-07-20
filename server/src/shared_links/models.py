@@ -160,8 +160,9 @@ class AnalyticsOverview(BaseModel):
 
 class NotificationRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
-    type: str
+    notification_type: str
     title: str
     message: str
     is_read: bool

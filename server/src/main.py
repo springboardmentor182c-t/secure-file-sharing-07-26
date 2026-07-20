@@ -4,6 +4,7 @@ Application entrypoint.
 Run with:
     uvicorn src.main:app --reload
 """
+
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -17,7 +18,6 @@ from src.exceptions import register_exception_handlers
 from src.logging import configure_logging
 from src.shared_links.scheduler import start_scheduler, stop_scheduler
 
-# Ensures every entity is registered on Base.metadata before create_all/Alembic runs.
 import src.entities  # noqa: F401
 
 configure_logging()
@@ -26,28 +26,31 @@ logger = logging.getLogger("app.main")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Convenience for local SQLite dev only — production (Postgres) should
-    # use `alembic upgrade head` instead (see README).
     if DATABASE_URL.startswith("sqlite"):
         create_all_tables()
         logger.info("SQLite dev database ready")
 
     start_scheduler()
     logger.info("Secure File Sharing System backend starting up")
+
     yield
+
     stop_scheduler()
     logger.info("Secure File Sharing System backend shutting down")
 
 
 app = FastAPI(
     title="Secure File Sharing System API",
-    description="Backend API. Shared Links module implemented; other modules "
-    "(auth, todos placeholder, users) are owned by teammates.",
+    description="Backend API",
     version="1.0.0",
     lifespan=lifespan,
 )
 
-_cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+_cors_origins = os.getenv(
+    "CORS_ORIGINS",
+    "http://localhost:3000,http://localhost:5173"
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in _cors_origins if o.strip()],
@@ -67,5 +70,7 @@ def root():
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "service": "Secure File Sharing System API"}
-
+    return {
+        "status": "ok",
+        "service": "Secure File Sharing System API",
+    }
