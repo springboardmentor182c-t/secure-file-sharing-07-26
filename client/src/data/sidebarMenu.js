@@ -3,6 +3,7 @@ import {
   FolderOpen,
   Link2,
   Clock,
+  Share2,
   Trash2,
   Shield,
   ClipboardList,
@@ -10,7 +11,6 @@ import {
   Settings,
   User,
 } from "lucide-react";
-
 
 export const sidebarMenu = [
   {
@@ -40,6 +40,17 @@ export const sidebarMenu = [
         name: "Trash",
         path: "/trash",
         icon: Trash2,
+      },
+    ],
+  },
+
+  {
+    title: "SHARING",
+    items: [
+      {
+        name: "Shared Links",
+        path: "/shared-links",
+        icon: Share2,
       },
     ],
   },

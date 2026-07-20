@@ -1,3 +1,4 @@
+
 .page {
   padding: 24px 32px;
 }
@@ -143,3 +144,107 @@
   background: #6366f1;
   flex-shrink: 0;
 }
+
+/* ============================================
+   Global theme — dark, purple-accented (TrustShare)
+   ============================================ */
+:root {
+  --bg-app: #0b0d17;
+  --bg-sidebar: #12131f;
+  --bg-card: #171826;
+  --bg-card-hover: #1c1e30;
+  --bg-input: #1a1b2a;
+  --bg-elevated: #1e2033;
+
+  --border-subtle: #262838;
+  --border-strong: #33364d;
+
+  --text-primary: #eef0f7;
+  --text-secondary: #9498ac;
+  --text-muted: #6b6f85;
+
+  --accent: #8b7cf6;
+  --accent-hover: #7a69f2;
+  --accent-soft: rgba(139, 124, 246, 0.14);
+
+  --success: #22c55e;
+  --success-soft: rgba(34, 197, 94, 0.14);
+  --danger: #f15b6c;
+  --danger-soft: rgba(241, 91, 108, 0.14);
+  --warning: #f5a623;
+  --warning-soft: rgba(245, 166, 35, 0.14);
+  --info: #4fa3f7;
+  --info-soft: rgba(79, 163, 247, 0.14);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.45);
+
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-app);
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+

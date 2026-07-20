@@ -1,22 +1,40 @@
 import os
+
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import Session, sessionmaker
+
+from src.entities.base import Base
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql+psycopg2://sharedlinks_user:sharedlinks_pass@localhost:5432/sharedlinks_db",
+)
 
-engine = create_engine(DATABASE_URL)
+_connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = create_engine(
+    DATABASE_URL,
+    connect_args=_connect_args,
+    echo=os.getenv("SQL_ECHO", "false").lower() == "true",
+)
 
-Base = declarative_base()
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+)
 
 
 def get_db():
-    db = SessionLocal()
+    db: Session = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+
+def create_all_tables() -> None:
+    Base.metadata.create_all(bind=engine)
