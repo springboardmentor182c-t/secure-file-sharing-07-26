@@ -193,7 +193,7 @@ function Header({ setSidebarOpen }) {
               font-semibold
             "
           >
-            SK
+            AC
           </div>
 
           {/* User Info */}
@@ -212,7 +212,7 @@ function Header({ setSidebarOpen }) {
                 text-white
               "
             >
-              Shashank Kumar
+              Alex Chen
             </p>
 
             <p
@@ -221,7 +221,7 @@ function Header({ setSidebarOpen }) {
                 text-gray-400
               "
             >
-              Student
+              Engineering Lead
             </p>
           </div>
 

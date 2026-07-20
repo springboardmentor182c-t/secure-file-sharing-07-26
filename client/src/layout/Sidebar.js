@@ -235,7 +235,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                 text-gray-400
               "
             >
-              82%
+              41%
             </span>
           </div>
 
@@ -251,7 +251,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
             <div
               className="
                 h-full
-                w-4/5
+                w-2/5
                 rounded-full
                 bg-[#7C5CFC]
               "
@@ -265,7 +265,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
               text-gray-400
             "
           >
-            412 GB / 500 GB Used
+            412 GB / 1000 GB Used
           </p>
         </div>
       </div>
@@ -307,7 +307,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                 font-bold
               "
             >
-              SK
+              AC
             </div>
 
             <div>
@@ -318,7 +318,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                   text-white
                 "
               >
-                Shashank Kumar
+                Alex Chen
               </h3>
 
               <p
@@ -327,7 +327,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                   text-gray-400
                 "
               >
-                Student
+                Engineering Lead
               </p>
             </div>
           </div>

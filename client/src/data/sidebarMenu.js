@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   FolderOpen,
   Link2,
+  Clock,
   Trash2,
   Shield,
   ClipboardList,
@@ -29,6 +30,11 @@ export const sidebarMenu = [
         name: "Shared Files",
         path: "/shared-files",
         icon: Link2,
+      },
+      {
+        name: "Recent",
+        path: "/recent",
+        icon: Clock,
       },
       {
         name: "Trash",
