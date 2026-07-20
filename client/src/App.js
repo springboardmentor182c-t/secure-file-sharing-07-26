@@ -1,3 +1,4 @@
+import ActivityMonitorPage from "./pages/ActivityMonitorPage";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PageContainer from "./layout/PageContainer";
 import Home from "./pages/Home";
@@ -49,6 +50,14 @@ function App() {
   }
 />
         <Route path="/signup" element={<Signup />} />
+        <Route
+          path="/activity"
+          element={
+            <PageContainer>
+              <ActivityMonitorPage />
+            </PageContainer>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
