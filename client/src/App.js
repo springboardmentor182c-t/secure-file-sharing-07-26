@@ -1,13 +1,16 @@
+import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PageContainer from "./layout/PageContainer";
+
+// Pages & Features
 import Home from "./pages/Home";
 import Settings from "./pages/Settings";
-import SecureSharing from "./pages/Securesharing";
+import Securesharing from "./pages/Securesharing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./features/dashboard/Dashboard";
 import NotificationFeature from "./features/notifications/NotificationFeature";
-
+import ActivityMonitorPage from "./pages/ActivityMonitorPage";
 
 function App() {
   return (
@@ -27,7 +30,7 @@ function App() {
           path="/sharing"
           element={
             <PageContainer>
-              <SecureSharing />
+              <Securesharing />
             </PageContainer>
           }
         />
@@ -40,8 +43,6 @@ function App() {
             </PageContainer>
           }
         />
-
-        <Route path="/login" element={<Login />} />
 
         <Route
           path="/dashboard"
@@ -61,6 +62,16 @@ function App() {
           }
         />
 
+        <Route
+          path="/activity"
+          element={
+            <PageContainer>
+              <ActivityMonitorPage />
+            </PageContainer>
+          }
+        />
+
+        <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
       </Routes>
