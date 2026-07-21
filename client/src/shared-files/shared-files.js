@@ -429,7 +429,7 @@ export function SharedFilesView() {
 
               {/* Security Verification */}
               <div className="space-y-3">
-                <h4 className="text-white text-xs font-semibold uppercase tracking-wider text-gray-500">Security Verification</h4>
+                <h4 className=" text-xs font-semibold uppercase tracking-wider text-gray-500">Security Verification</h4>
                 <div className="bg-[#272938] border border-[#34364A] p-4 rounded-xl space-y-4">
                   <div className="flex items-start gap-2.5">
                     <ShieldCheck size={16} className="text-green-400 shrink-0 mt-0.5" />
@@ -458,7 +458,7 @@ export function SharedFilesView() {
 
               {/* Access Details */}
               <div className="space-y-2">
-                <h4 className="text-white text-xs font-semibold uppercase tracking-wider text-gray-500">Collaborator Details</h4>
+                <h4 className=" text-xs font-semibold uppercase tracking-wider text-gray-500">Collaborator Details</h4>
                 <div className="flex items-center gap-3 bg-[#272938] p-3 border border-[#34364A] rounded-xl">
                   <div className="w-8 h-8 rounded-full bg-[#7C5CFC] flex items-center justify-center text-white text-xs font-bold shrink-0">
                     {selectedShare.file.owner.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
