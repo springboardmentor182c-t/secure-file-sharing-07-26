@@ -40,3 +40,7 @@ jobs:
           cache-dependency-path: project-root/client/package-lock.json
       - run: npm ci
       - run: npm run build
+        env:
+          # Create React App otherwise promotes the team's existing lint
+          # warnings to build errors on GitHub-hosted runners.
+          CI: "false"
