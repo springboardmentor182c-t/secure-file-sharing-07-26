@@ -1,0 +1,153 @@
+.activity-page {
+  padding: 24px;
+}
+
+.activity-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+
+.activity-tabs {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid #e8e1dc;
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  padding: 12px 6px 14px;
+  font-size: 16px;
+  color: #7b6b64;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.tab.active {
+  color: #6f544d;
+  border-bottom-color: #6f544d;
+  font-weight: 600;
+}
+
+.activity-card {
+  background: #fff;
+  border: 1px solid #eadfd8;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+}
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.search-input {
+  min-width: 280px;
+  padding: 11px 14px;
+  border: 1px solid #eadfd8;
+  border-radius: 14px;
+  outline: none;
+}
+
+.status-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pill,
+.export-btn {
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid #eadfd8;
+  background: #fff;
+  cursor: pointer;
+}
+
+.pill.active {
+  background: #6f544d;
+  color: #fff;
+  border-color: #6f544d;
+}
+
+.export-btn {
+  margin-left: auto;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.activity-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.activity-table th,
+.activity-table td {
+  padding: 16px 12px;
+  border-bottom: 1px solid #eee4de;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.activity-table th {
+  color: #866d64;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: #6f544d;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  text-transform: lowercase;
+  background: #f4f4f4;
+}
+
+.status.success {
+  background: #dff7ea;
+  color: #1f7a4d;
+}
+
+.status.warning {
+  background: #fff2d8;
+  color: #b97900;
+}
+
+.status.danger {
+  background: #fde0e0;
+  color: #c43d3d;
+}
+
+.empty-cell {
+  text-align: center;
+  padding: 28px;
+  color: #888;
+}
