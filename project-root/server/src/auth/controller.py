@@ -16,7 +16,7 @@ router = APIRouter()
 
 
 @router.post("/login", response_model=models.TokenResponse)
-def login(credentials: models.LoginRequest, db: Session = Depends(get_db)):
+def login(credentials: models.LoginRequest, db: Session = Depends(get_db), request: Request = None):
     user = service.authenticate_user(db, credentials.email, credentials.password)
     if not user:
         raise HTTPException(
@@ -34,13 +34,15 @@ def login(credentials: models.LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Account suspended"
         )
-    return service._build_token_response(user)
+    # Store session when building token response
+    return service._build_token_response(user, db=db, request=request)
 
 
 @router.post("/login/swagger", response_model=models.TokenResponse)
 def swagger_login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
+    request: Request = None,
 ):
     user = service.authenticate_user(
         db,
@@ -60,7 +62,7 @@ def swagger_login(
             detail="Account suspended",
         )
 
-    return service._build_token_response(user)
+    return service._build_token_response(user, db=db, request=request)
 
 
 @router.post(

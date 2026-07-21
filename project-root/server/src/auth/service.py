@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Request
 from src.entities.user import User
 from src.auth.models import SignupRequest, TokenResponse, UserOut
 from src.auth.dependencies import hash_password, verify_password, create_access_token, create_refresh_token
@@ -22,7 +22,7 @@ def authenticate_user(db: Session, email: str, password: str) -> User | None:
     return user
 
 
-def register_user(db: Session, data: SignupRequest) -> TokenResponse:
+def register_user(db: Session, data: SignupRequest, request=None) -> TokenResponse:
     existing = db.query(User).filter(User.email == data.email).first()
     if existing:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
@@ -40,13 +40,79 @@ def register_user(db: Session, data: SignupRequest) -> TokenResponse:
     db.add(user)
     db.commit()
     db.refresh(user)
-    return _build_token_response(user)
+    # build token response and optionally store session
+    return _build_token_response(user, db=db, request=request)
 
 
-def _build_token_response(user: User) -> TokenResponse:
+def _build_token_response(user: User, db: Session = None, request=None) -> TokenResponse:
+    """
+    Build token response and optionally store a LoginSession row when db and request are provided.
+    """
     token_data = {"sub": str(user.id)}
     access_token = create_access_token(token_data)
     refresh_token = create_refresh_token(token_data)
+
+    # Store login session if possible
+    if db is not None and request is not None:
+        try:
+            # Lazy import to avoid circular issues
+            from src.entities.login_session import LoginSession
+            # Parse user agent
+            ua_string = request.headers.get("user-agent", "")
+            try:
+                from user_agents import parse as parse_ua
+                ua = parse_ua(ua_string) if ua_string else None
+            except Exception:
+                ua = None
+
+            browser_name = ua.browser.family if ua else (ua_string.split("/")[0] if ua_string else "Unknown")
+            os_name = ua.os.family if ua else None
+            device_name = None
+            if ua:
+                if ua.is_pc:
+                    device_type = "desktop"
+                elif ua.is_tablet:
+                    device_type = "tablet"
+                elif ua.is_mobile:
+                    device_type = "mobile"
+                else:
+                    device_type = "unknown"
+                device_name = f"{os_name} {ua.device.family}" if os_name else ua.device.family
+            else:
+                device_type = "unknown"
+
+            ip_address = None
+            try:
+                ip_address = request.client.host if request.client else None
+            except Exception:
+                ip_address = None
+
+            # Location unknown by default
+            location = "Unknown"
+
+            # Mark previous sessions' is_current=False for this user's sessions
+            try:
+                db.query(LoginSession).filter(LoginSession.user_id == user.id, LoginSession.is_current == True).update({"is_current": False})
+            except Exception:
+                pass
+
+            session_row = LoginSession(
+                user_id=user.id,
+                device_name=device_name,
+                browser_name=browser_name,
+                device_type=device_type,
+                ip_address=ip_address,
+                location=location,
+                last_active=None,
+                refresh_token=refresh_token,
+                is_current=True,
+            )
+            db.add(session_row)
+            db.commit()
+        except Exception:
+            # Don't fail login if session saving fails; just continue
+            db.rollback()
+
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
