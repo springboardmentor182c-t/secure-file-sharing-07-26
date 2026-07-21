@@ -1,0 +1,33 @@
+version: "3.9"
+
+# Optional convenience: spins up a local PostgreSQL instance matching the
+# credentials in .env.example, so you don't have to install Postgres
+# natively. Not required - server/README.md's "Database Setup" section
+# covers installing Postgres directly instead.
+#
+# Usage:
+#   docker compose up -d
+#   docker compose down          # stop
+#   docker compose down -v       # stop AND wipe the data volume
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: sharedlinks_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sharedlinks_user
+      POSTGRES_PASSWORD: sharedlinks_pass
+      POSTGRES_DB: sharedlinks_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - sharedlinks_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sharedlinks_user -d sharedlinks_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  sharedlinks_pgdata:

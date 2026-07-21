@@ -1,4 +1,5 @@
 node_modules/
+<<<<<<< HEAD
 .npm-cache/
 __pycache__/
 *.py[cod]
@@ -15,3 +16,10 @@ logs/
 *.log
 .DS_Store
 Thumbs.db
+=======
+Db_schema.sql
+schema.sql
+.env
+__pycache__/
+*.pyc
+>>>>>>> origin/main-group-B
