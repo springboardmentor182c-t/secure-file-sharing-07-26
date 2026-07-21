@@ -2,9 +2,12 @@
 // to the FastAPI backend in `server/src/shared_links/` - there is no mock
 // data or in-memory fallback anywhere in this file.
 
-import { getOrCreateCurrentUserId } from "./currentUser";
+import { ApiError, createApiRequest } from "../../../services/apiClient";
+import { uploadFile as uploadFileToFilesModule } from "../../myFiles/services/filesApi";
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+const { request } = createApiRequest(API_BASE_URL);
 
 // Frontend sort keys (used by the existing <select> in SharedLinksTable)
 // mapped onto the backend's SortField enum values.
@@ -15,56 +18,6 @@ const SORT_MAP = {
   "most-downloaded": "downloads",
   alphabetical: "alphabetical",
 };
-
-class ApiError extends Error {
-  constructor(message, status, errorCode) {
-    super(message);
-    this.status = status;
-    this.errorCode = errorCode;
-  }
-}
-
-async function authHeaders(extra = {}) {
-  const userId = await getOrCreateCurrentUserId(API_BASE_URL);
-  return { "X-User-Id": userId, ...extra };
-}
-
-async function parseErrorMessage(res) {
-  try {
-    const body = await res.json();
-    if (body?.message) return body.message;
-  } catch {
-    // response wasn't JSON - fall through to the generic message below
-  }
-  return `Request failed with status ${res.status}`;
-}
-
-async function request(path, { method = "GET", json, formData, headers = {} } = {}) {
-  const finalHeaders = await authHeaders(headers);
-  const init = { method, headers: finalHeaders };
-
-  if (json !== undefined) {
-    init.headers["Content-Type"] = "application/json";
-    init.body = JSON.stringify(json);
-  } else if (formData !== undefined) {
-    init.body = formData; // browser sets multipart Content-Type + boundary
-  }
-
-  let res;
-  try {
-    res = await fetch(`${API_BASE_URL}${path}`, init);
-  } catch {
-    throw new ApiError("Couldn't reach the backend. Is it running on " + API_BASE_URL + "?", 0, "network_error");
-  }
-
-  if (!res.ok) {
-    const message = await parseErrorMessage(res);
-    throw new ApiError(message, res.status, "request_failed");
-  }
-
-  if (res.status === 204) return null;
-  return res.json();
-}
 
 // ---------------------------------------------------------------------------
 // Mapping backend <-> frontend shapes
@@ -92,14 +45,12 @@ function adaptLink(raw) {
 }
 
 // ---------------------------------------------------------------------------
-// Files (dev endpoint - stands in for the not-yet-built Files module)
+// File upload (delegates to the Files module - see services/filesApi.js -
+// so there's exactly one place that knows how to upload a file, not two)
 // ---------------------------------------------------------------------------
 
-export async function uploadFile(file) {
-  const formData = new FormData();
-  formData.append("upload", file);
-  const res = await request("/files", { method: "POST", formData });
-  return res.data; // { id, owner_id, file_name, file_type, size_bytes }
+async function uploadFile(file) {
+  return uploadFileToFilesModule({ file });
 }
 
 // ---------------------------------------------------------------------------
@@ -121,13 +72,13 @@ export async function listSharedLinks({ search, status, sortBy, page, pageSize }
   };
 }
 
-export async function createSharedLink({ file, recipientEmail, access, expiresAt, password, allowDownload }) {
-  const fileRecord = await uploadFile(file);
+export async function createSharedLink({ file, fileId, recipientEmail, access, expiresAt, password, allowDownload }) {
+  const resolvedFileId = fileId || (await uploadFile(file)).id;
 
   const res = await request("/shared-links", {
     method: "POST",
     json: {
-      file_id: fileRecord.id,
+      file_id: resolvedFileId,
       recipient_email: recipientEmail,
       permission: access,
       expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,

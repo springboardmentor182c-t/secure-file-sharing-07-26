@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronLeftIcon, ChevronRightIcon } from "../../../layout/icons";
+import { ChevronLeftIcon, ChevronRightIcon } from "../../layout/icons";
 
 function getPageList(current, total) {
   const pages = [];

@@ -106,3 +106,15 @@ export const FileZipIcon = (p) => (
 export const FileImageIcon = (p) => (
   <svg {...base} {...p}><rect x="4" y="4" width="16" height="16" rx="2" /><circle cx="9.5" cy="9.5" r="1.5" /><path d="m5 17 4.5-4.5L13 16l3-3 3 3" /></svg>
 );
+export const FileIcon = (p) => (
+  <svg {...base} {...p}><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" /><path d="M14 3v5h5" /><path d="M9 13h6M9 16.5h6" /></svg>
+);
+export const UploadIcon = (p) => (
+  <svg {...base} {...p}><path d="M12 21V9m0 0 4 4m-4-4-4 4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
+);
+export const MoveIcon = (p) => (
+  <svg {...base} {...p}><path d="M5 9V5a2 2 0 0 1 2-2h4M19 9V5a2 2 0 0 0-2-2h-4M5 15v4a2 2 0 0 0 2 2h4M19 15v4a2 2 0 0 1-2 2h-4" /></svg>
+);
+export const FolderPlusIcon = (p) => (
+  <svg {...base} {...p}><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /><path d="M12 11v4M10 13h4" /></svg>
+);

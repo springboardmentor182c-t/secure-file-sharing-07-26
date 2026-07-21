@@ -7,40 +7,12 @@ SQLAlchemy ORM models, which live under `src/entities/`.)
 """
 import uuid
 from datetime import datetime
-from typing import Generic, List, Optional, TypeVar
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from src.schemas import ApiResponse, PaginatedResponse, PaginationMeta  # noqa: F401 (re-exported)
 from src.shared_links.constants import LinkPermission, LinkStatus
-
-T = TypeVar("T")
-
-
-# ---------------------------------------------------------------------------
-# Generic response envelope (used across this module's endpoints; other
-# modules are welcome to reuse this same shape for consistency)
-# ---------------------------------------------------------------------------
-
-class ApiResponse(BaseModel, Generic[T]):
-    success: bool = True
-    message: str = "OK"
-    data: Optional[T] = None
-
-
-class PaginationMeta(BaseModel):
-    page: int
-    page_size: int
-    total_items: int
-    total_pages: int
-    has_next: bool
-    has_previous: bool
-
-
-class PaginatedResponse(BaseModel, Generic[T]):
-    success: bool = True
-    message: str = "OK"
-    data: List[T]
-    pagination: PaginationMeta
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +142,7 @@ class NotificationRead(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Minimal schemas for the temporary /users and /files dev-testing endpoints
+# Minimal schema for the temporary /users endpoint (until Auth lands)
 # ---------------------------------------------------------------------------
 
 class UserCreate(BaseModel):
@@ -185,10 +157,4 @@ class UserRead(BaseModel):
     full_name: str
 
 
-class FileRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: uuid.UUID
-    owner_id: uuid.UUID
-    file_name: str
-    file_type: str
-    size_bytes: int
+

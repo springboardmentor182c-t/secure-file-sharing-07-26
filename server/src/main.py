@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.api import register_routes
 from src.database.core import DATABASE_URL, create_all_tables
 from src.exceptions import register_exception_handlers
+from src.files.scheduler import start_scheduler as start_files_scheduler, stop_scheduler as stop_files_scheduler
 from src.logging import configure_logging
 from src.shared_links.scheduler import start_scheduler, stop_scheduler
 
@@ -31,26 +32,37 @@ async def lifespan(app: FastAPI):
         logger.info("SQLite dev database ready")
 
     start_scheduler()
+    start_files_scheduler()
     logger.info("Secure File Sharing System backend starting up")
 
     yield
 
     stop_scheduler()
+    stop_files_scheduler()
     logger.info("Secure File Sharing System backend shutting down")
 
 
 app = FastAPI(
     title="Secure File Sharing System API",
+<<<<<<< Updated upstream
     description="Backend API",
+=======
+    description="Backend API. Files and Shared Links modules implemented; other modules "
+    "(auth, todos placeholder, users) are owned by teammates.",
+>>>>>>> Stashed changes
     version="1.0.0",
     lifespan=lifespan,
 )
 
+<<<<<<< Updated upstream
 _cors_origins = os.getenv(
     "CORS_ORIGINS",
     "http://localhost:3000,http://localhost:5173"
 ).split(",")
 
+=======
+_cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+>>>>>>> Stashed changes
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in _cors_origins if o.strip()],

@@ -21,13 +21,12 @@ GET    /analytics/overview           stats + chart + top files + recent activity
 GET    /notifications                list the caller's notifications
 POST   /notifications/{id}/read      mark one as read
 
-POST   /users, GET /users            dev/testing only (until Auth module lands)
-POST   /files, GET /files            dev/testing only (until Files module lands)
+POST   /users, GET /users            temporary only (until Auth module lands)
 """
 import uuid
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, File as FastAPIFile, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
 from src.database.core import get_db
@@ -38,7 +37,6 @@ from src.shared_links.dependencies import get_current_user_id
 from src.shared_links.models import (
     AccessLinkRequest,
     ApiResponse,
-    FileRead,
     FileSummary,
     NotificationRead,
     PaginatedResponse,
@@ -243,33 +241,17 @@ def mark_notification_read(notification_id: uuid.UUID, db: Annotated[Session, De
 
 
 # ---------------------------------------------------------------------------
-# Dev/testing-only endpoints (delete once real Auth + Files modules exist)
+# Temporary /users endpoints (delete once the real Auth module lands)
 # ---------------------------------------------------------------------------
 
 
-@dev_router.post("/users", response_model=ApiResponse[UserRead], status_code=201, summary="[dev] create a dummy user")
+@dev_router.post("/users", response_model=ApiResponse[UserRead], status_code=201, summary="[temporary] create a user")
 def create_user(payload: UserCreate, db: Annotated[Session, Depends(get_db)]):
     user = dev_data_service.create_user(db, payload)
     return ApiResponse(message="User created", data=UserRead.model_validate(user))
 
 
-@dev_router.get("/users", response_model=ApiResponse[list[UserRead]], summary="[dev] list users")
+@dev_router.get("/users", response_model=ApiResponse[list[UserRead]], summary="[temporary] list users")
 def list_users(db: Annotated[Session, Depends(get_db)]):
     users = dev_data_service.list_users(db)
     return ApiResponse(data=[UserRead.model_validate(u) for u in users])
-
-
-@dev_router.post("/files", response_model=ApiResponse[FileRead], status_code=201, summary="[dev] upload a file")
-def upload_file(
-    owner_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
-    db: Annotated[Session, Depends(get_db)],
-    upload: UploadFile = FastAPIFile(...),
-):
-    file_obj = dev_data_service.upload_file(db, owner_id=owner_id, upload=upload)
-    return ApiResponse(message="File uploaded", data=FileRead.model_validate(file_obj))
-
-
-@dev_router.get("/files", response_model=ApiResponse[list[FileRead]], summary="[dev] list the caller's files")
-def list_files(owner_id: Annotated[uuid.UUID, Depends(get_current_user_id)], db: Annotated[Session, Depends(get_db)]):
-    files = dev_data_service.list_files_for_owner(db, owner_id)
-    return ApiResponse(data=[FileRead.model_validate(f) for f in files])

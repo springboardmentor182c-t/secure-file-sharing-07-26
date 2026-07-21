@@ -1,0 +1,235 @@
+/* My Files screen - page-specific styles. Shared primitives (buttons,
+   modals, forms, pagination, toast, badges, table shell, page header,
+   action menu, empty/loading states) live in styles/common.css. */
+
+.my-files-page { padding-bottom: 40px; }
+
+.my-files-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.my-files-layout__side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 20px;
+}
+
+.my-files-layout__main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* ---------- Folders panel ---------- */
+.folders-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+}
+.folders-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.folders-panel__section-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #9CA3AF !important;
+  font-weight: 700;
+  padding: 4px 8px;
+  margin: 0;
+}
+.folders-panel__new-btn-header {
+  background: transparent;
+  border: none;
+  color: #9CA3AF;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+}
+.folders-panel__new-btn-header:hover {
+  background: var(--bg-card-hover);
+  color: #F3F4F6;
+}
+.folders-panel__list { display: flex; flex-direction: column; gap: 2px; }
+.folders-panel__row { display: flex; align-items: center; }
+.folders-panel__item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  color: #D1D5DB !important;
+  font-size: 13px;
+  text-align: left;
+  min-width: 0;
+}
+.folders-panel__item:hover { background: var(--bg-card-hover); color: #F3F4F6 !important; }
+.folders-panel__item--active { background: var(--accent-soft); color: var(--accent) !important; font-weight: 600; }
+.folders-panel__item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folders-panel__item-count { font-size: 11.5px; color: #9CA3AF !important; }
+.folders-panel__empty { font-size: 12.5px; color: #9CA3AF !important; padding: 4px 8px; margin: 0; }
+.folders-panel__new-btn {
+  margin-top: 12px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border-strong);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.folders-panel__new-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
+
+/* ---------- Storage usage ---------- */
+.storage-usage {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+}
+.storage-usage__row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #D1D5DB !important;
+  margin-bottom: 8px;
+}
+.storage-usage__track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-input);
+  overflow: hidden;
+}
+.storage-usage__fill { height: 100%; background: var(--accent); border-radius: 999px; }
+.storage-usage__meta { margin-top: 8px; font-size: 11.5px; color: #9CA3AF !important; }
+
+/* ---------- Category tabs ---------- */
+.category-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 6px;
+}
+.category-tabs__tab {
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  color: #9CA3AF !important;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.category-tabs__tab:hover { color: #D1D5DB !important; }
+.category-tabs__tab--active { background: var(--accent); color: #fff !important; }
+
+/* ---------- File table cells ---------- */
+.files-table__checkbox-cell { width: 36px; }
+.files-table__checkbox-cell input,
+.files-table__row input[type="checkbox"] { cursor: pointer; accent-color: var(--accent); }
+.files-table__name-cell { display: flex; align-items: center; gap: 10px; min-width: 220px; }
+.files-table__icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.files-table__filename {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  color: #F3F4F6 !important;
+}
+.files-table__star { color: var(--warning); flex-shrink: 0; }
+.files-table__meta { font-size: 11.5px; color: #9CA3AF !important; margin-top: 2px; }
+.files-table__muted { color: #D1D5DB !important; white-space: nowrap; }
+.files-table__row--selected td { background: var(--accent-soft); }
+
+/* ---------- Upload modal ---------- */
+.upload-modal__folder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 350px;
+  overflow-y: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  padding: 4px;
+}
+.upload-modal__folder-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: #D1D5DB;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.upload-modal__folder-item:hover {
+  background: var(--bg-card-hover);
+  color: #F3F4F6;
+}
+.upload-modal__folder-item--active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.upload-modal__folder-count {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: #9CA3AF;
+}
+.upload-modal__folder-item--active .upload-modal__folder-count {
+  color: var(--accent);
+}
+.upload-modal__empty {
+  font-size: 12px;
+  color: #9CA3AF !important;
+  padding: 16px;
+  text-align: center;
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .my-files-layout { grid-template-columns: 1fr; }
+  .my-files-layout__side { position: static; }
+}
