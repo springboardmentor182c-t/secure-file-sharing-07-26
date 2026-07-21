@@ -3,7 +3,7 @@ from sqlalchemy import Column, String, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from src.database.core import Base
+from src.entities.base import Base
 
 
 class FileAccessHistory(Base):

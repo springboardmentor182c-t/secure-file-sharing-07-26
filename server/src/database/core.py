@@ -1,3 +1,14 @@
+
+
+"""
+Database engine + session setup (synchronous SQLAlchemy 2.0, matching this
+project's existing dependency set — no async driver is installed).
+
+Every other module imports `get_db` from here for its route dependencies,
+and imports `Base` (re-exported from `src.entities.base`) for Alembic.
+"""
+
+
 import os
 
 from dotenv import load_dotenv
@@ -13,7 +24,11 @@ DATABASE_URL = os.getenv(
     "postgresql+psycopg2://sharedlinks_user:sharedlinks_pass@localhost:5432/sharedlinks_db",
 )
 
-_connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+_connect_args = (
+    {"check_same_thread": False}
+    if DATABASE_URL.startswith("sqlite")
+    else {}
+)
 
 engine = create_engine(
     DATABASE_URL,
@@ -37,4 +52,7 @@ def get_db():
 
 
 def create_all_tables() -> None:
+
+    """Create all tables (used only for SQLite development)."""
+
     Base.metadata.create_all(bind=engine)

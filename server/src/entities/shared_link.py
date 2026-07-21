@@ -45,7 +45,6 @@ class SharedLink(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    owner = relationship("User", back_populates="shared_links")
-    file = relationship("File", back_populates="shared_links")
+    owner = relationship("User")
+    file = relationship("File")
     access_logs = relationship("AccessLog", back_populates="shared_link", cascade="all, delete-orphan")
-    notifications = relationship("Notification", back_populates="shared_link", cascade="all, delete-orphan")

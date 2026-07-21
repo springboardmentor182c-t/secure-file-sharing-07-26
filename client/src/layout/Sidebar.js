@@ -235,7 +235,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                 text-gray-400
               "
             >
-              41%
+              XX%
             </span>
           </div>
 
@@ -265,7 +265,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
               text-gray-400
             "
           >
-            412 GB / 1000 GB Used
+            XYZ GB / PQR GB Used
           </p>
         </div>
       </div>
@@ -307,7 +307,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                 font-bold
               "
             >
-              AC
+              X
             </div>
 
             <div>
@@ -318,7 +318,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                   text-white
                 "
               >
-                Alex Chen
+                XYZ
               </h3>
 
               <p

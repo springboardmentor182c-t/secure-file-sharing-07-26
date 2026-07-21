@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./styles/index.css";
+import "./assets/global.css";
 
 // NOTE: this used to import App from "./security/security.tsx", an
 // unrelated "Security Control Center" scaffold (see that file's own
