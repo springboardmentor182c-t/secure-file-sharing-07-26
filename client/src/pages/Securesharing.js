@@ -76,7 +76,8 @@ const SecureSharing = () => {
     
     try {
       // Send form data to the FastAPI backend endpoint
-      const response = await fetch("http://localhost:8000/api/sharing/generate", {
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+      const response = await fetch(`${API_BASE_URL}/api/sharing/generate`,  {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
