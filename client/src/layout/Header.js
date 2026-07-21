@@ -191,7 +191,7 @@ function Header({ setSidebarOpen }) {
                 text-gray-400
               "
             >
-              Student
+              Engineering Lead
             </p>
           </div>
 

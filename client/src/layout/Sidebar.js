@@ -251,7 +251,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
             <div
               className="
                 h-full
-                w-4/5
+                w-2/5
                 rounded-full
                 bg-[#7C5CFC]
               "
@@ -327,7 +327,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                   text-gray-400
                 "
               >
-                Student
+                Engineering Lead
               </p>
             </div>
           </div>

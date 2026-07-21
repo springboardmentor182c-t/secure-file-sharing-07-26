@@ -1,3 +1,5 @@
+
+
 """
 Database engine + session setup (synchronous SQLAlchemy 2.0, matching this
 project's existing dependency set — no async driver is installed).
@@ -5,6 +7,7 @@ project's existing dependency set — no async driver is installed).
 Every other module imports `get_db` from here for its route dependencies,
 and imports `Base` (re-exported from `src.entities.base`) for Alembic.
 """
+
 
 import os
 
@@ -41,7 +44,6 @@ SessionLocal = sessionmaker(
 
 
 def get_db():
-    """FastAPI dependency yielding a DB session per request."""
     db: Session = SessionLocal()
     try:
         yield db
@@ -50,5 +52,7 @@ def get_db():
 
 
 def create_all_tables() -> None:
+
     """Create all tables (used only for SQLite development)."""
+
     Base.metadata.create_all(bind=engine)
