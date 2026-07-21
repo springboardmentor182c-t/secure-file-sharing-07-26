@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main-group-D]
   push:
-    branches: [main-group-D, codex/deployment-group-d]
+    branches: [main-group-D, Abhishek/deployment-group-d]
 
 jobs:
   backend:
