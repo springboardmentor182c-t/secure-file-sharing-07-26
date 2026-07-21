@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AnalyticsProvider } from './context/AnalyticsContext';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './layout/ProtectedRoute';
+import Navbar from './layout/Navbar';
+import Sidebar from './layout/Sidebar';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
@@ -23,6 +25,17 @@ import './assets/global.css';
 // Currently Files.js has its own self-contained nav/sidebar,
 // so AppShell just renders the matched child route directly.
 function AppShell() {
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    notificationsAPI.list()
+      .then(res => {
+        const items = res.data || [];
+        setUnreadCount(items.filter(n => !n.read).length);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="app-shell">
       <Sidebar unreadCount={unreadCount} />
