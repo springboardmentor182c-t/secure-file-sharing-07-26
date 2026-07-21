@@ -103,19 +103,70 @@ export default function Sidebar({ users, stats }) {
           </p>
         </div>
 
-        <div className="flex items-center justify-between border-t border-gray-800 pt-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-purple-600 rounded-full flex items-center justify-center font-semibold text-white text-sm">
-              {admin?.name ? admin.name.split(" ").map(n => n[0]).join("").slice(0,2).toUpperCase() : "AD"}
+      {/* User Section */}
+
+      <div
+        className="
+          mt-6
+          border-t
+          border-[#34364A]
+          p-5
+        "
+      >
+        <div
+          className="
+            flex
+            items-center
+            justify-between
+          "
+        >
+          <div
+            className="
+              flex
+              items-center
+              gap-3
+            "
+          >
+            <div
+              className="
+                h-11
+                w-11
+                rounded-full
+                bg-[#7C5CFC]
+                flex
+                items-center
+                justify-center
+                text-white
+                font-bold
+              "
+            >
+              X
             </div>
             <div>
-              <p className="text-white text-sm">{admin?.name || "Admin"}</p>
-              <p className="text-gray-500 text-xs">{admin?.role || "Admin"}</p>
+              <h3
+                className="
+                  text-sm
+                  font-semibold
+                  text-white
+                "
+              >
+                XYZ
+              </h3>
+
+              <p
+                className="
+                  text-xs
+                  text-gray-400
+                "
+              >
+                Student
+              </p>
             </div>
           </div>
           <LogOut size={16} className="text-gray-500 cursor-pointer hover:text-white" />
         </div>
       </div>
+    </div>
     </div>
   );
 }

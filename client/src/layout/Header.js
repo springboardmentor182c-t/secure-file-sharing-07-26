@@ -1,6 +1,8 @@
 import { Menu, Search, Bell, ChevronDown } from "lucide-react";
 import { useLocation } from "react-router-dom";
+
 import pageTitles from "../data/pageTitles";
+import NotificationBell from "../components/NotificationBell";
 
 function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
   const location = useLocation();
@@ -93,29 +95,13 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center gap-3 lg:gap-5">
-        <button
-          className="
-            relative
-            h-11
-            w-11
-            rounded-xl
-            bg-[#272938]
-            border
-            border-[#34364A]
-            flex
-            items-center
-            justify-center
-            hover:bg-[#34364A]
-            transition
-          "
-          aria-label="Notifications"
-        >
-          <Bell size={20} className="text-gray-300" />
-          <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-[#7C5CFC]" />
-        </button>
 
-        <button
+      <div className="flex items-center gap-3 lg:gap-5">
+
+        {/* Notification */}
+        <NotificationBell />
+
+         <button
           className="
             flex
             items-center
@@ -130,7 +116,10 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
             transition
           "
         >
-          <div
+       
+
+
+          <div 
             className="
               h-10
               w-10
@@ -143,16 +132,35 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
               font-semibold
             "
           >
-
-            {currentUser?.name
-              ? currentUser.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
-              : "??"}
+            X
           </div>
 
-          <div className="hidden lg:block text-left">
-            <p className="text-sm font-medium text-white">{currentUser?.name || "Guest"}</p>
-            <p className="text-xs text-gray-400">{currentUser?.role || "Viewer"}</p>
+      
+          <div
+            className="
+              hidden
+              lg:block
+              text-left
+            "
+          >
+            <p
+              className="
+                text-sm
+                font-medium
+                text-white
+              "
+            >
+              XYZ
+            </p>
 
+            <p
+              className="
+                text-xs
+                text-gray-400
+              "
+            >
+              Student
+            </p>
           </div>
 
           <ChevronDown size={18} className="text-gray-400" />

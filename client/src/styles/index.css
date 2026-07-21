@@ -1,6 +1,9 @@
+@import "./fonts.css";
 @import "tailwindcss";
 
+@import "./tailwind.css";
 body {
   background-color: #0f0f14;
   color: #ffffff;
 }
+ 

@@ -1,5 +1,6 @@
-from pydantic import BaseModel, EmailStr
+import uuid
 
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 
 
@@ -9,7 +10,7 @@ class InviteUserRequest(BaseModel):
     role: str = "Viewer"
     
 class UserOut(BaseModel):
-    id: int
+    id: uuid.UUID
     name: str
     email: EmailStr
     role: str

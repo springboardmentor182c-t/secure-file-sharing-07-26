@@ -38,10 +38,20 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+
+  optimizeDeps: {
+    esbuildOptions: {
+      loader: {
+        ".js": "jsx",
+      },
     },
   },
-  assetsInclude: ['**/*.svg', '**/*.csv'],
+
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
+
+  assetsInclude: ["**/*.svg", "**/*.csv"],
 })
