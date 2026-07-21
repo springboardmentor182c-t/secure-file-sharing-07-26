@@ -392,6 +392,35 @@ export const notificationsAPI = {
 
 
 // ─────────────────────────────────────────────
+// Encryption
+// ─────────────────────────────────────────────
+
+export const encryptionAPI = {
+
+  dashboard: () =>
+    api.get("/api/encryption/dashboard"),
+
+  encrypt: (plaintext) =>
+    api.post(
+      "/api/encryption/encrypt",
+      {
+        plaintext,
+      }
+    ),
+
+  decrypt: (ciphertext) =>
+    api.post(
+      "/api/encryption/decrypt",
+      {
+        ciphertext,
+      }
+    ),
+
+};
+
+
+
+// ─────────────────────────────────────────────
 // Analytics
 // ─────────────────────────────────────────────
 
