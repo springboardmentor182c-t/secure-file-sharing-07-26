@@ -17,7 +17,7 @@ import {
 } from "react-icons/ri";
 import { searchAPI, notificationsAPI } from "../utils/api";
 
-export default function Navbar({ unreadCount = 0}) {
+export default function Navbar({ unreadCount = 0, setSidebarOpen, darkMode, setDarkMode }) {
     const [query, setQuery] = useState("");
     const [results, setResults] = useState(null);
     const [loading, setLoading] = useState(false);
