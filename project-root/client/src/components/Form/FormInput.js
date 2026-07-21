@@ -1,60 +1,48 @@
 import React from 'react';
 
 /**
- * FormInput component
- * @param {string} id - Input ID
- * @param {string} label - Label text
- * @param {string} type - Input type (text, email, password, etc.)
- * @param {string} value - Controlled value
- * @param {function} onChange - Change handler
- * @param {string} placeholder - Placeholder text
- * @param {string} error - Error message
- * @param {boolean} required - Required flag
- * @param {boolean} disabled - Disabled state
+ * FormInput – a reusable input field with optional label.
+ *
+ * Props:
+ *   id          – unique identifier for the input.
+ *   label       – optional text displayed above the input.
+ *   type        – input type (text, email, password, number, etc.).
+ *   value       – controlled value.
+ *   onChange    – handler called with the new value.
+ *   placeholder – placeholder text.
+ *   disabled    – disables the input when true.
+ *   className   – additional CSS classes for the wrapper.
  */
-const FormInput = ({
+export default function FormInput({
   id,
   label,
   type = 'text',
   value,
   onChange,
   placeholder = '',
-  error = '',
-  required = false,
   disabled = false,
-}) => {
-  const inputStyle = {
-    width: '100%',
-    padding: '10px 14px',
-    borderRadius: '8px',
-    border: `1px solid ${error ? 'var(--danger)' : 'var(--border)'}`,
-    background: 'var(--surface)',
-    color: 'var(--text)',
-    fontSize: '14px',
-    outline: 'none',
-    transition: 'border-color 0.2s',
+  className = ''
+}) {
+  const handleChange = (e) => {
+    if (onChange) onChange(e.target.value);
   };
 
   return (
-    <div style={{ marginBottom: '16px' }}>
+    <div className={`flex flex-col ${className}`.trim()}>
       {label && (
-        <label htmlFor={id} style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 500 }}>
-          {label} {required && <span style={{ color: 'var(--danger)' }}>*</span>}
+        <label htmlFor={id} className="mb-1 text-sm font-medium text-gray-700">
+          {label}
         </label>
       )}
       <input
         id={id}
         type={type}
         value={value}
-        onChange={onChange}
+        onChange={handleChange}
         placeholder={placeholder}
-        required={required}
         disabled={disabled}
-        style={inputStyle}
+        className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
       />
-      {error && <p style={{ color: 'var(--danger)', fontSize: '12px', marginTop: '4px' }}>{error}</p>}
     </div>
   );
-};
-
-export default FormInput;
+}

@@ -1,2 +1,1 @@
-from fastapi import APIRouter
-router = APIRouter()
+from src.folders import service, controller  # noqa

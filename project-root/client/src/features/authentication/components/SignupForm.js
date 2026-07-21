@@ -151,7 +151,7 @@ const SignupForm = ({ onSuccess }) => {
         {signupError && <div className="form-error mb-3">⚠️ {signupError}</div>}
 
         <button className="btn btn-primary w-full btn-lg" type="submit" disabled={loading}>
-          {loading ? <><span className="spinner spinner-sm animate-spin" /> Creating account…</> : '🚀 Create Account'}
+          {loading ? <><span className="spinner spinner-sm animate-spin" />Creating account…</> : '🚀 Create Account'}
         </button>
       </form>
     </div>

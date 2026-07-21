@@ -1,28 +1,18 @@
-import { API_BASE_URL, LOCAL_STORAGE_KEYS } from '../../../data/constants';
+import api from '../../../utils/api';
 
 /**
- * login — authenticates a user and stores the token
+ * login – Authenticate user and store JWT tokens.
+ *
  * @param {string} email
  * @param {string} password
- * @returns {Promise<{access_token: string, user: object}>}
+ * @returns {Promise} resolves with response data containing access_token and refresh_token
  */
-export const login = async (email, password) => {
-  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.detail || 'Invalid credentials');
-  }
-
-  const data = await response.json();
-
-  // Persist token and user to localStorage
-  localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, data.access_token);
-  localStorage.setItem(LOCAL_STORAGE_KEYS.USER, JSON.stringify(data.user));
-
-  return data;
-};
+export function login(email, password) {
+  return api.post('/api/auth/login', { email, password })
+    .then((response) => {
+      const { access_token, refresh_token } = response.data;
+      if (access_token) localStorage.setItem('access_token', access_token);
+      if (refresh_token) localStorage.setItem('refresh_token', refresh_token);
+      return response.data;
+    });
+}

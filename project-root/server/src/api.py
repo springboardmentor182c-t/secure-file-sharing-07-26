@@ -1,7 +1,5 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.auth.controller import router as auth_router
-from src.users.controller import router as users_router
 from src.files.controller import router as files_router
 from src.folders.controller import router as folders_router
 from src.shares.controller import router as shares_router
@@ -43,8 +41,6 @@ def create_app() -> FastAPI:
     app.add_exception_handler(AppException, app_exception_handler)
 
     # ── Routers ───────────────────────────────────────────────────────────────
-    app.include_router(auth_router,          prefix="/api/auth",          tags=["Auth"])
-    app.include_router(users_router,         prefix="/api/users",         tags=["Users"])
     app.include_router(files_router,         prefix="/api/files",         tags=["Files"])
     app.include_router(folders_router,       prefix="/api/folders",       tags=["Folders"])
     app.include_router(shares_router,        prefix="/api/shares",        tags=["Sharing"])

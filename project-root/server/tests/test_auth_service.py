@@ -1,4 +1,4 @@
-﻿def test_auth_service_hash():
+def test_auth_service_hash():
     from src.auth.dependencies import hash_password, verify_password
     h = hash_password('secret')
     assert h != 'secret'

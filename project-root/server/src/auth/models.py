@@ -1,3 +1,4 @@
+import uuid
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 
@@ -35,7 +36,7 @@ class ResetPasswordRequest(BaseModel):
 
 
 class UserOut(BaseModel):
-    id: int
+    id: uuid.UUID
     name: str
     email: str
     role: str

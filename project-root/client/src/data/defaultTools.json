@@ -1,16 +1,17 @@
 [
   {
-    "id": "tool_1",
-    "name": "Default Tool A",
-    "description": "A default tool for demonstration purposes.",
-    "enabled": true,
-    "category": "general"
+    "id": "upload",
+    "name": "Upload Files",
+    "icon": "upload"
   },
   {
-    "id": "tool_2",
-    "name": "Default Tool B",
-    "description": "Another default tool.",
-    "enabled": false,
-    "category": "advanced"
+    "id": "share",
+    "name": "Share Link",
+    "icon": "share-2"
+  },
+  {
+    "id": "analytics",
+    "name": "Analytics",
+    "icon": "bar-chart-2"
   }
 ]
