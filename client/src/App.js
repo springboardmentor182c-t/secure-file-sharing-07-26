@@ -1,18 +1,21 @@
-import ActivityMonitorPage from "./pages/ActivityMonitorPage";
+import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PageContainer from "./layout/PageContainer";
+
+// Pages & Features
 import Home from "./pages/Home";
 import Settings from "./pages/Settings";
-import SecureSharing from "./pages/Securesharing";
+import Securesharing from "./pages/Securesharing"; 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./features/dashboard/Dashboard";
-
+import ActivityMonitorPage from "./pages/ActivityMonitorPage";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Core Layout Routes */}
         <Route
           path="/"
           element={
@@ -26,7 +29,7 @@ function App() {
           path="/sharing"
           element={
             <PageContainer>
-              <SecureSharing />
+              <Securesharing />
             </PageContainer>
           }
         />
@@ -40,16 +43,15 @@ function App() {
           }
         />
 
-        <Route path="/login" element={<Login />} />
         <Route
-  path="/dashboard"
-  element={
-    <PageContainer>
-      <Dashboard />
-    </PageContainer>
-  }
-/>
-        <Route path="/signup" element={<Signup />} />
+          path="/dashboard"
+          element={
+            <PageContainer>
+              <Dashboard />
+            </PageContainer>
+          }
+        />
+
         <Route
           path="/activity"
           element={
@@ -58,6 +60,10 @@ function App() {
             </PageContainer>
           }
         />
+
+        {/* Auth Routes (Without Sidebar/Navbar) */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
       </Routes>
     </BrowserRouter>
   );
