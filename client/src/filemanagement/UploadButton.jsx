@@ -1,17 +1,32 @@
 import React from "react";
 
-const UploadButton = ({ files, setFiles }) => {
+const UploadButton = ({ files, setFiles, selectedFolder }) => {
 
   const handleUpload = (event) => {
+
     const selectedFiles = Array.from(event.target.files);
 
     const formattedFiles = selectedFiles.map((file) => ({
-      name: file.name,
-      size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-      modified: "Just Now",
-      owner: "You",
-      status: "Uploaded",
-    }));
+  id: Date.now() + Math.random(),
+
+  name: file.name,
+
+  size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+
+  type: file.name.split(".").pop().toUpperCase(),
+
+  modified: new Date().toLocaleDateString(),
+
+  uploadDate: new Date().toLocaleDateString(),
+
+  owner: "You",
+
+  folder: selectedFolder,
+
+  status: "Encrypted",
+
+  version: "1.0",
+}));
 
     setFiles([...files, ...formattedFiles]);
   };
@@ -20,9 +35,9 @@ const UploadButton = ({ files, setFiles }) => {
     <>
       <input
         type="file"
-        multiple
         id="upload-file"
-        style={{ display: "none" }}
+        multiple
+        hidden
         onChange={handleUpload}
       />
 

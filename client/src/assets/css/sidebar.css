@@ -1,0 +1,129 @@
+.sidebar {
+
+    width:260px;
+    background:#252733;
+    color:white;
+
+    display:flex;
+    flex-direction:column;
+
+    justify-content:space-between;
+
+    min-height:100vh;
+
+    padding:25px 20px;
+
+}
+
+.logo-section{
+
+    display:flex;
+    align-items:center;
+
+    gap:15px;
+
+    margin-bottom:40px;
+
+}
+
+.logo-circle{
+
+    width:52px;
+    height:52px;
+
+    background:#6C5CE7;
+
+    display:flex;
+
+    align-items:center;
+    justify-content:center;
+
+    border-radius:14px;
+
+}
+
+.logo-section h2{
+
+    font-size:26px;
+
+    font-weight:700;
+
+}
+
+.logo-section p{
+
+    color:#AEB6C4;
+
+    font-size:14px;
+
+}
+
+.menu{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+}
+
+.menu-item{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:15px;
+
+    padding:14px 16px;
+
+    border-radius:12px;
+
+    cursor:pointer;
+
+    transition:.3s;
+
+    color:#D8DEE9;
+
+}
+
+.menu-item:hover{
+
+    background:#373B4D;
+
+    color:white;
+
+}
+
+.menu-item.active{
+
+    background:#6C5CE7;
+
+    color:white;
+
+    box-shadow:0 10px 20px rgba(108,92,231,.25);
+
+}
+
+.sidebar-footer{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+}
+
+.logout{
+
+    color:#FFB4B4;
+
+}
+
+.logout:hover{
+
+    background:#472E2E;
+
+}

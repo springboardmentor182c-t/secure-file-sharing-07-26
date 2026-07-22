@@ -8,6 +8,9 @@ import {
   FiBarChart2,
   FiSettings,
   FiHome,
+  FiUser,
+  FiLogOut,
+  
 } from "react-icons/fi";
 const Sidebar = () => {
   return (
@@ -20,33 +23,33 @@ const Sidebar = () => {
 
       <ul className="menu">
 
-        <li>🏠 Dashboard</li>
+        <li><FiHome /> Dashboard</li>
 
         <li className="active">
-          📁 File Management
+          <FiFolder /> File Management
         </li>
 
-        <li>⬆ Upload</li>
+        <li><FiUpload /> Upload</li>
 
-        <li>🔗 Secure Sharing</li>
+        <li><FiShield /> Secure Sharing</li>
 
-        <li>🛡 Encryption & Security</li>
+        <li><FiShield /> Encryption & Security</li>
 
-        <li>📈 Activity Monitor</li>
+        <li><FiActivity /> Activity Monitor</li>
 
-        <li>🔔 Notifications</li>
+        <li><FiBell /> Notifications</li>
 
-        <li>📊 Analytics</li>
+        <li><FiBarChart2 /> Analytics</li>
 
-        <li>⚙ Admin</li>
+        <li><FiSettings /> Admin</li>
 
       </ul>
 
       <div className="sidebar-footer">
 
-        <p>👤 Profile</p>
+        <p><FiUser /> Profile</p>
 
-        <p>🚪 Sign Out</p>
+        <p><FiLogOut /> Sign Out</p>
 
       </div>
 
