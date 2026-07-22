@@ -124,117 +124,28 @@ export const searchAPI = {
 
 // ── Settings (API Placeholders) ──────────────────────────────────────────
 export const settingsAPI = {
-  // TODO: Implement backend integration for getProfile
-  getProfile: () => {
-    return Promise.resolve({
-      data: {
-        name: 'Fathima',
-        email: 'fathima@trustshare.com',
-        organization: 'TrustShare Corp',
-        avatar_url: null,
-      }
-    });
-  },
+  getProfile: () => api.get("/settings/profile"),
 
-  // TODO: Implement backend integration for updateProfile
-  updateProfile: (data) => {
-    return Promise.resolve({
-      data: {
-        message: 'Profile updated successfully',
-        user: data
-      }
-    });
-  },
+  updateProfile: (data) =>
+    api.put("/settings/profile", data),
 
-  // TODO: Implement backend integration for changePassword
-  changePassword: (data) => {
-    return Promise.resolve({
-      data: {
-        message: 'Password updated successfully'
-      }
-    });
-  },
+  changePassword: (data) =>
+    api.post("/settings/change-password", data),
 
-  // TODO: Implement backend integration for getSessions
-  getSessions: () => {
-    return Promise.resolve({
-      data: [
-        {
-          id: 'session-1',
-          device_name: 'Windows PC',
-          browser_name: 'Chrome',
-          location: 'Mumbai, India',
-          ip_address: '192.168.1.45',
-          last_active: 'Active now',
-          is_current: true,
-          device_type: 'desktop'
-        },
-        {
-          id: 'session-2',
-          device_name: 'iPhone 15 Pro',
-          browser_name: 'Safari',
-          location: 'Bengaluru, India',
-          ip_address: '103.45.12.89',
-          last_active: '2 hours ago',
-          is_current: false,
-          device_type: 'mobile'
-        },
-        {
-          id: 'session-3',
-          device_name: 'MacBook Air',
-          browser_name: 'Firefox',
-          location: 'New Delhi, India',
-          ip_address: '223.189.4.15',
-          last_active: 'Yesterday, 4:15 PM',
-          is_current: false,
-          device_type: 'desktop'
-        }
-      ]
-    });
-  },
+  getSessions: () =>
+    api.get("/settings/sessions"),
 
-  // TODO: Implement backend integration for logoutSession
-  logoutSession: (id) => {
-    return Promise.resolve({
-      data: {
-        message: `Logged out of session ${id}`
-      }
-    });
-  },
+  logoutSession: (id) =>
+    api.delete(`/settings/sessions/${id}`),
 
-  // TODO: Implement backend integration for logoutAllSessions
-  logoutAllSessions: () => {
-    return Promise.resolve({
-      data: {
-        message: 'Logged out of all other sessions'
-      }
-    });
-  },
+  logoutAllSessions: () =>
+    api.delete("/settings/sessions"),
 
-  // TODO: Implement backend integration for getNotificationPreferences
-  getNotificationPreferences: () => {
-    return Promise.resolve({
-      data: {
-        file_shares: { in_app: true, email: true },
-        downloads: { in_app: true, email: false },
-        security_alerts: { in_app: true, email: true },
-        link_expirations: { in_app: false, email: true },
-        access_changes: { in_app: true, email: false },
-        system_updates: { in_app: false, email: false },
-        digest_frequency: 'daily'
-      }
-    });
-  },
+  getNotificationPreferences: () =>
+    api.get("/settings/notifications"),
 
-  // TODO: Implement backend integration for updateNotificationPreferences
-  updateNotificationPreferences: (data) => {
-    return Promise.resolve({
-      data: {
-        message: 'Notification preferences updated successfully',
-        preferences: data
-      }
-    });
-  }
+  updateNotificationPreferences: (data) =>
+    api.put("/settings/notifications", data),
 };
 
 export default api;

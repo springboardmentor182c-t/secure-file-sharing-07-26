@@ -270,4 +270,12 @@ def disable_mfa(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return service.disable_mfa(db, current_user)
+    return service.disable_mfa(db, current_user) 
+@router.post("/change-password")
+def change_password(
+    body: models.ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    service.change_password(db, current_user, body.current_password, body.new_password)
+    return {"status": "success", "message": "Password changed successfully"}
