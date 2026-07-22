@@ -5,11 +5,13 @@ COPY client/package.json client/package-lock.json ./
 RUN npm ci
 COPY client/ ./
 
-# An empty API URL makes browser requests use the same origin as FastAPI.
-ARG REACT_APP_API_URL=
-ENV REACT_APP_API_URL=${REACT_APP_API_URL} \
-    GENERATE_SOURCEMAP=false
-RUN npm run build
+# React embeds this public API URL into the compiled frontend at build time.
+ARG REACT_APP_API_URL
+ARG RENDER_EXTERNAL_URL
+RUN API_BASE_URL="${REACT_APP_API_URL:-$RENDER_EXTERNAL_URL}"; \
+    test -n "$API_BASE_URL" || \
+    { echo "REACT_APP_API_URL or RENDER_EXTERNAL_URL is required" >&2; exit 1; }; \
+    REACT_APP_API_URL="$API_BASE_URL" GENERATE_SOURCEMAP=false npm run build
 
 
 FROM python:3.12-slim AS runtime

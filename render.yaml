@@ -20,6 +20,26 @@ services:
         generateValue: true
       - key: MASTER_KEY
         generateValue: true
+      - key: REACT_APP_API_URL
+        fromService:
+          type: web
+          name: trustshare-group-d
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: trustshare-group-d
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: trustshare-group-d
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: BACKEND_CORS_ORIGINS
+        fromService:
+          type: web
+          name: trustshare-group-d
+          envVarKey: RENDER_EXTERNAL_URL
 
 databases:
   - name: trustshare-group-d-db

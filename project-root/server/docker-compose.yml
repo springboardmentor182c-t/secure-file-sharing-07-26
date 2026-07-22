@@ -18,10 +18,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://trustshare:trustshare-local-only@database:5432/trustshare
-      SECRET_KEY: local-compose-secret-change-before-production
-      BACKEND_CORS_ORIGINS: http://localhost:3000
-      FRONTEND_URL: http://localhost:3000
+      DATABASE_URL: ${COMPOSE_DATABASE_URL:?Copy .env.example to .env and configure COMPOSE_DATABASE_URL}
+      SECRET_KEY: ${SECRET_KEY:?Copy .env.example to .env and configure SECRET_KEY}
+      MASTER_KEY: ${MASTER_KEY:?Copy .env.example to .env and configure MASTER_KEY}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:?Copy .env.example to .env and configure BACKEND_CORS_ORIGINS}
+      FRONTEND_URL: ${FRONTEND_URL:?Copy .env.example to .env and configure FRONTEND_URL}
+      BACKEND_URL: ${BACKEND_URL:?Copy .env.example to .env and configure BACKEND_URL}
       DATA_DIR: /app/data
     volumes:
       - .:/app
@@ -37,7 +39,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      REACT_APP_API_URL: http://localhost:8000
+      REACT_APP_API_URL: ${REACT_APP_API_URL:?Copy .env.example to .env and configure REACT_APP_API_URL}
     volumes:
       - ../client:/app
     depends_on:

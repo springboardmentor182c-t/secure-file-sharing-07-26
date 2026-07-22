@@ -16,6 +16,9 @@ jobs:
       DATABASE_URL: sqlite:///./test.db
       SECRET_KEY: ci-only-secret
       MASTER_KEY: ci-only-master-key
+      FRONTEND_URL: https://frontend.example.invalid
+      BACKEND_URL: https://backend.example.invalid
+      BACKEND_CORS_ORIGINS: https://frontend.example.invalid
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -44,3 +47,4 @@ jobs:
           # Create React App otherwise promotes the team's existing lint
           # warnings to build errors on GitHub-hosted runners.
           CI: "false"
+          REACT_APP_API_URL: https://example.invalid
