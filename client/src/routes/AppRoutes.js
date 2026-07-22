@@ -12,6 +12,8 @@ import Settings from "../pages/Settings/Settings";
 import Profile from "../pages/Profile/Profile";
 import Trash from "../pages/Trash";
 
+import { AnalyticsView } from "../analytics/analytics";
+
 function AppRoutes() {
   return (
     <BrowserRouter>
@@ -27,8 +29,10 @@ function AppRoutes() {
 
           <Route path="/recent" element={<Recent />} />
           <Route path="/shared-links" element={<SharedLinksPage />} />
+          <Route path="/analytics" element={<AnalyticsView />} />
 
           <Route path="/monitoring" element={<Monitoring />} />
+          <Route path="/security" element={<Monitoring />} />
 
           <Route path="/settings" element={<Settings />} />
 
