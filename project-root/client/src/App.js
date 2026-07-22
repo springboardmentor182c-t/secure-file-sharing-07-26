@@ -43,8 +43,9 @@ function AppShell() {
         <main className="page-body">
           <Routes>
             <Route path="/dashboard"     element={<Dashboard />} />
-
+            <Route path="/files"         element={<Dashboard />} />
             <Route path="/sharing"       element={<Sharing />} />
+            <Route path="/encryption"    element={<Dashboard />} />
             <Route path="/analytics"     element={<Analytics />} />
             <Route path="/activity"      element={<ActivityLogs />} />
             <Route path="/notifications" element={<Notifications />} />
