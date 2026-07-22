@@ -1,0 +1,60 @@
+.analytics-theme {
+  --font-family: 'Inter', sans-serif;
+  --background: #1E1F2B;
+  --card-bg: #272938;
+  --card-elevated: #323548;
+  --border-color: #34364A;
+  --primary-accent: #7C5CFC;
+  --primary-hover: #6B49F7;
+  --text-main: #FFFFFF;
+  --text-sub: #C5C3C4;
+  --text-muted: #8B879A;
+  --success-color: #22C55E;
+  --warning-color: #F59E0B;
+  --danger-color: #EF4444;
+}
+
+.analytics-card {
+  background-color: #272938;
+  border: 1px solid #34364A;
+  border-radius: 1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.analytics-card:hover {
+  border-color: rgba(124, 92, 252, 0.3);
+}
+
+.analytics-stat-card {
+  background-color: #272938;
+  border: 1px solid #34364A;
+  border-radius: 1rem;
+  padding: 1.25rem;
+}
+
+/* Custom Tooltip Styling for Recharts */
+.analytics-chart-tooltip {
+  background-color: #272938 !important;
+  border: 1px solid #34364A !important;
+  border-radius: 12px !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+  padding: 10px 14px !important;
+}
+
+/* Custom scrollbar for tables */
+.analytics-custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.analytics-custom-scrollbar::-webkit-scrollbar-track {
+  background: #1E1F2B;
+}
+.analytics-custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #34364A;
+  border-radius: 3px;
+}
+.analytics-custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #7C5CFC;
+}
