@@ -1,8 +1,7 @@
-import { Menu, Search, ChevronDown } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { Menu, Search, Bell, ChevronDown } from "lucide-react";
 
+import { useLocation } from "react-router-dom";
 import pageTitles from "../data/pageTitles";
-import NotificationBell from "../components/NotificationBell";
 
 function Header({ setSidebarOpen }) {
   const location = useLocation();
@@ -129,7 +128,38 @@ function Header({ setSidebarOpen }) {
         "
       >
         {/* Notification */}
-        <NotificationBell />
+
+        <button
+          className="
+            relative
+            h-11
+            w-11
+            rounded-xl
+            bg-[#272938]
+            border
+            border-[#34364A]
+            flex
+            items-center
+            justify-center
+            hover:bg-[#34364A]
+            transition
+          "
+          aria-label="Notifications"
+        >
+          <Bell size={20} className="text-gray-300" />
+
+          <span
+            className="
+              absolute
+              top-2
+              right-2
+              h-2
+              w-2
+              rounded-full
+              bg-[#7C5CFC]
+            "
+          />
+        </button>
 
         {/* User Profile */}
 
@@ -163,7 +193,7 @@ function Header({ setSidebarOpen }) {
               font-semibold
             "
           >
-            X
+            V
           </div>
 
           {/* User Info */}
@@ -182,7 +212,7 @@ function Header({ setSidebarOpen }) {
                 text-white
               "
             >
-              XYZ
+              Vamshi
             </p>
 
             <p

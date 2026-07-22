@@ -30,7 +30,7 @@ export default function MyFilesPage({ initialView = "files" }) {
     folders, storageStats,
     selectedIds, toggleSelected, toggleSelectAll, clearSelection,
     upload, rename, move, changeFileCategory, toggleStar, trash, restore, permanentlyDelete, download,
-    createFolder, renameFolder, deleteFolder,
+    createFolder, renameFolder, deleteFolder, refreshAll,
   } = useMyFiles(initialView);
 
   const { toasts, showToast, dismiss } = useToast();
@@ -64,7 +64,7 @@ export default function MyFilesPage({ initialView = "files" }) {
   }, [showToast]);
 
   const handleUpload = useCallback((fileList) => {
-    setPendingFiles(fileList);
+    setPendingFiles(Array.from(fileList));
     setUploadModal(true);
   }, []);
 
@@ -76,7 +76,7 @@ export default function MyFilesPage({ initialView = "files" }) {
       const { uploadFile: apiUploadFile } = await import("./services/filesApi");
       const results = [];
       
-      for (const file of Array.from(pendingFiles)) {
+      for (const file of pendingFiles) {
         try {
           await apiUploadFile({ file, folderId: selectedFolderId, category: undefined });
           results.push({ file, ok: true });
@@ -85,20 +85,20 @@ export default function MyFilesPage({ initialView = "files" }) {
         }
       }
       
-      // Refresh after upload by calling the existing refresh mechanism
       const failed = results.filter((r) => !r.ok);
       if (failed.length === 0) {
         const folderName = selectedFolderId 
-          ? (folders.find(f => f.id === selectedFolderId)?.name || "folder")
+          ? (folders.find((f) => f.id === selectedFolderId)?.name || "folder")
           : "My Files";
         showToast(`Uploaded ${results.length} file${results.length > 1 ? "s" : ""} to ${folderName}`, "success");
       } else {
         showToast(`${failed.length} of ${results.length} file(s) failed: ${failed[0].error}`, "error");
       }
       
-      // Trigger a refresh of the file list
-      await new Promise(resolve => setTimeout(resolve, 200));
-      changeFolder(selectedFolderId);
+      await refreshAll();
+      if (selectedFolderId !== folderId) {
+        changeFolder(selectedFolderId);
+      }
       
       setUploadModal(false);
       setPendingFiles(null);
@@ -107,7 +107,7 @@ export default function MyFilesPage({ initialView = "files" }) {
     } finally {
       setIsSaving(false);
     }
-  }, [pendingFiles, showToast, folders, changeFolder]);
+  }, [pendingFiles, showToast, folders, refreshAll, changeFolder, folderId]);
 
   const handleDownload = useCallback((file) => {
     runGuarded(() => download(file.id, file.original_filename));
@@ -158,7 +158,7 @@ export default function MyFilesPage({ initialView = "files" }) {
         searchQuery={searchQuery}
         onSearchChange={updateSearch}
         onNewFolder={() => setFolderModal({ mode: "new" })}
-        onUploadClick={() => setUploadModal(true)}
+        onUploadClick={handleUpload}
         fileInputRef={fileInputRef}
       />
 
@@ -306,6 +306,7 @@ export default function MyFilesPage({ initialView = "files" }) {
         <UploadModal
           folders={folders}
           currentFolderId={folderId}
+          selectedFiles={pendingFiles}
           onClose={() => {
             setUploadModal(false);
             setPendingFiles(null);

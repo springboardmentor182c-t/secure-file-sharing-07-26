@@ -2,19 +2,21 @@ import React, { useState } from "react";
 import ModalShell from "../../../components/common/ModalShell";
 import { FolderIcon } from "../../../layout/icons";
 
-export default function UploadModal({ folders, currentFolderId, onClose, onUpload, isSaving }) {
+export default function UploadModal({ folders, currentFolderId, selectedFiles, onClose, onUpload, isSaving }) {
   const [selectedFolderId, setSelectedFolderId] = useState(currentFolderId || null);
   const [uploading, setUploading] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setUploading(true);
     try {
-      onUpload(selectedFolderId);
+      await onUpload(selectedFolderId);
     } finally {
       setUploading(false);
     }
   }
+
+  const fileCount = selectedFiles?.length || 0;
 
   return (
     <ModalShell
@@ -33,6 +35,14 @@ export default function UploadModal({ folders, currentFolderId, onClose, onUploa
       )}
     >
       <form id="upload-form" onSubmit={handleSubmit} noValidate>
+        <div className="form-field">
+          <label>Uploading</label>
+          <div className="upload-modal__summary">
+            <p>{fileCount} file{fileCount === 1 ? "" : "s"} selected</p>
+            <p className="upload-modal__hint">Choose a destination folder below.</p>
+          </div>
+        </div>
+
         <div className="form-field">
           <label>Select Destination Folder</label>
           <div className="upload-modal__folder-list">

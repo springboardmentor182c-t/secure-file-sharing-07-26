@@ -1,14 +1,8 @@
-from src.entities.base import Base
-from src.entities.user import User
-from src.entities.folder import Folder      # <-- ADD THIS
-from src.entities.file import File
-from src.entities.shared_link import SharedLink
-from src.entities.access_log import AccessLog
-from src.entities.notification import Notification
-from src.entities.file_category import FileCategory
+"""
+Import every entity here so `Base.metadata` (used by Alembic and the dev
+`create_all` fallback) discovers all tables, and so relationship() string
+references resolve regardless of import order.
 
-<<<<<<< Updated upstream
-=======
 NOTE: `src.entities.security_event` and `src.entities.encryption_key` are
 intentionally NOT imported here. They belong to a separate, unregistered
 "security dashboard" module (see `src/core.py`, `src/security/`) that
@@ -29,19 +23,14 @@ from src.entities.file import File  # noqa: F401
 from src.entities.shared_link import SharedLink  # noqa: F401
 from src.entities.access_log import AccessLog  # noqa: F401
 from src.entities.notification import Notification  # noqa: F401
->>>>>>> Stashed changes
 
 __all__ = [
     "Base",
     "User",
-<<<<<<< Updated upstream
-    "Folder",      # <-- ADD THIS
-=======
     "Folder",
->>>>>>> Stashed changes
     "File",
     "SharedLink",
     "AccessLog",
     "Notification",
-    "FileCategory",
 ]
+
