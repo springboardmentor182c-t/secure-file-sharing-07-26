@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import StatCard from "../../components/Dashboard/StatCard";
-import StorageUtilizationChart from "../../components/Dashboard/StorageUtilizationChart";
-import UserManagementTable from "../../components/Dashboard/UserManagementTable";
-import SystemMonitoring from "../../components/Dashboard/SystemMonitoring";
+import StatCard from "../../components/Admin/StatCard";
+import StorageUtilizationChart from "../../components/Admin/StorageUtilizationChart";
+import UserManagementTable from "../../components/Admin/UserManagementTable";
+import SystemMonitoring from "../../components/Admin/SystemMonitoring";
 import InviteUserModal from "../../components/Modals/InviteUserModal";
 import { useFetch } from "../../hooks/useFetch";
 import {
