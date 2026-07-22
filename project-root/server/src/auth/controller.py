@@ -57,7 +57,11 @@ def login(
     if user.mfa_enabled:
         return service.build_mfa_pending_response(user)
 
-    return service._build_token_response(user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Account suspended"
+        )
+    # Store session when building token response
+    return service._build_token_response(user, db=db, request=request)
 
 
 @router.post("/login/swagger", response_model=models.TokenResponse)
@@ -65,6 +69,7 @@ def swagger_login(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
+    request: Request = None,
 ):
     ip = _get_client_ip(request)
 
@@ -87,7 +92,7 @@ def swagger_login(
             detail="Account suspended",
         )
 
-    return service._build_token_response(user)
+    return service._build_token_response(user, db=db, request=request)
 
 
 @router.post(
@@ -376,4 +381,83 @@ def disable_mfa(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    return service.disable_mfa(db, current_user) 
+@router.post("/change-password")
+def change_password(
+    body: models.ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    service.change_password(db, current_user, body.current_password, body.new_password)
+    return {"status": "success", "message": "Password changed successfully"}
     return service.disable_mfa(db, current_user)
+
+
+# ── User Storage Breakdown ────────────────────────────────────────────────
+
+from sqlalchemy import func
+from src.entities.file import File
+
+
+@router.get("/me/storage-breakdown")
+def storage_breakdown(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Returns storage usage broken down by file type category.
+    Used by the user dropdown for storage insights.
+    """
+    # Get all non-deleted files owned by user
+    files = (
+        db.query(File.mimetype, File.size)
+        .filter(
+            File.owner_id == current_user.id,
+            File.is_deleted == False,
+        )
+        .all()
+    )
+
+    # Categorize by mimetype
+    categories = {
+        "documents": {"size": 0, "count": 0, "color": "#3b82f6"},
+        "media":     {"size": 0, "count": 0, "color": "#8b5cf6"},
+        "archives":  {"size": 0, "count": 0, "color": "#f59e0b"},
+        "other":     {"size": 0, "count": 0, "color": "#94a3b8"},
+    }
+
+    for mimetype, size in files:
+        mt = (mimetype or "").lower()
+        size = size or 0
+
+        if any(x in mt for x in ["pdf", "word", "excel", "spreadsheet",
+                                   "presentation", "document", "text"]):
+            cat = "documents"
+        elif any(x in mt for x in ["image", "video", "audio"]):
+            cat = "media"
+        elif any(x in mt for x in ["zip", "rar", "7z", "tar", "gzip",
+                                     "compressed", "archive"]):
+            cat = "archives"
+        else:
+            cat = "other"
+
+        categories[cat]["size"] += size
+        categories[cat]["count"] += 1
+
+    total = sum(c["size"] for c in categories.values())
+
+    return {
+        "total_bytes": total,
+        "total_mb": round(total / (1024 * 1024), 2),
+        "categories": [
+            {
+                "name": name.capitalize(),
+                "size_bytes": cat["size"],
+                "size_mb": round(cat["size"] / (1024 * 1024), 2),
+                "count": cat["count"],
+                "pct": round((cat["size"] / total * 100), 1) if total > 0 else 0,
+                "color": cat["color"],
+            }
+            for name, cat in categories.items()
+        ],
+    }
