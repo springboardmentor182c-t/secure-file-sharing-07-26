@@ -334,7 +334,7 @@ const updateUser = async () => {
 
       <select
       value={role}
-      onChange={(e)=>setRole(e.targrt.value)}>
+      onChange={(e)=>setRole(e.target.value)}>
         <option>Admin</option>
         <option>Editor</option>
         <option>Viewer</option>

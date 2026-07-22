@@ -6,6 +6,7 @@ from src.entities.audit_log import AuditLog
 from src.entities.issue import Issue
 from src.entities.file import File
 from src.entities.user import User
+from src.entities.system_health import SystemHealth
 
 from src.admin.routes import router as admin_router
 from src.api import api_router

@@ -10,6 +10,7 @@ from src.entities.file import File
 from fastapi import Body
 from src.schemas.file import FileCreate
 from fastapi.responses import StreamingResponse
+from src.entities.system_health import SystemHealth
 import io
 import csv
 
@@ -172,25 +173,28 @@ def storage_file_types(db: Session = Depends(get_db)):
     return result
 @router.get("/system-health")
 def system_health(db: Session = Depends(get_db)):
+    health = db.query(SystemHealth).first()
+
     issues = db.query(Issue).all()
 
-    recent_events = []
-
-    for issue in issues:
-        recent_events.append({
+    recent_events = [
+        {
             "event": issue.title,
             "time": issue.status
-        })
+        }
+        for issue in issues
+    ]
 
     return {
-        "api_response_time": "48 ms",
-        "database_load": "23%",
-        "storage_io": "Normal",
-        "active_connections": 231,
-        "cpu_usage": "34%",
-        "error_rate": "0.02%",
+        "api_response_time": health.api_response_time,
+        "database_load": health.database_load,
+        "storage_io": health.storage_io,
+        "active_connections": health.active_connections,
+        "cpu_usage": health.cpu_usage,
+        "error_rate": health.error_rate,
         "recent_events": recent_events
     }
+     
 
 @router.get("/audit-reports")
 def audit_reports(db: Session = Depends(get_db)):
