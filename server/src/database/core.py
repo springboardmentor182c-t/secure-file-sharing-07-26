@@ -7,6 +7,7 @@ Every other module imports `get_db` from here for its route dependencies,
 and imports `Base` (re-exported from `src.entities.base`) for Alembic.
 """
 
+
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
@@ -40,7 +41,7 @@ SessionLocal = sessionmaker(
 
 
 def get_db():
-    db = SessionLocal()
+    db: Session = SessionLocal()
     try:
         yield db
     finally:
@@ -49,5 +50,7 @@ def get_db():
 
 
 def create_all_tables() -> None:
+
     """Create all tables (used only for SQLite development)."""
+
     Base.metadata.create_all(bind=engine)

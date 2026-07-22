@@ -33,7 +33,7 @@ def create_notification(
 
     notification = Notification(
     user_id=user_id,
-    notification_type=type_.value,
+    notification_type=notification_type,
     title=title,
     message=message,
     related_entity="shared_link",

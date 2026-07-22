@@ -159,7 +159,7 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
                 text-gray-400
               "
             >
-              Student
+              Engineering Lead
             </p>
           </div>
 

@@ -159,7 +159,7 @@ export default function Sidebar({ users, stats }) {
                   text-gray-400
                 "
               >
-                Student
+                Engineering Lead
               </p>
             </div>
           </div>
@@ -170,3 +170,4 @@ export default function Sidebar({ users, stats }) {
     </div>
   );
 }
+

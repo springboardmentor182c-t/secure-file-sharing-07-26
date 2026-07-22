@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
-from src.core import Base
 
+from src.entities.base import Base
 class File(Base):
     __tablename__ = "files"
 
