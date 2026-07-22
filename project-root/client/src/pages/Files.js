@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { filesAPI, foldersAPI } from '../utils/api';
+import { events, EVENTS } from '../utils/events';
 
 const FILE_ICON = (mime = '') => {
   if (mime.startsWith('image/')) return { icon: '🖼️', color: '#8b5cf6' };
@@ -58,6 +59,7 @@ export default function Files() {
         await filesAPI.upload(fd, pct => setUploadPct(pct));
       }
       showToast(`${filesToUpload.length} file(s) uploaded successfully!`);
+      events.emit(EVENTS.STORAGE_CHANGED);
       load();
     } catch (e) {
       showToast(e.response?.data?.detail || 'Upload failed', 'error');
@@ -66,7 +68,7 @@ export default function Files() {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Move this file to trash?')) return;
-    try { await filesAPI.delete(id); showToast('File deleted'); load(); }
+    try { await filesAPI.delete(id); showToast('File deleted');  events.emit(EVENTS.STORAGE_CHANGED); load(); }
     catch { showToast('Delete failed', 'error'); }
   };
 
