@@ -11,10 +11,10 @@ from src.auth.dependencies import (
     create_refresh_token,
 )
 from src.auth import email_service
-import os
 import random
 import secrets
 from datetime import datetime, timedelta, timezone
+from src.config import frontend_url
 
 from src.analytics.services import log_event
 from src.analytics.constants import (
@@ -22,7 +22,7 @@ from src.analytics.constants import (
     AnalyticsEventStatus,
 )
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+FRONTEND_URL = frontend_url()
 
 # In-memory store for OTPs: {user_id: {"otp": str, "expires_at": datetime}}
 otp_store = {}

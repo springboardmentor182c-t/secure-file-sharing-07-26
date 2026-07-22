@@ -5,16 +5,23 @@ Reads client IDs and secrets from environment variables (set in .env).
 """
 import os
 from authlib.integrations.httpx_client import AsyncOAuth2Client
+from src.config import backend_url
 
 # ── Environment variables ──────────────────────────────────────────────────────
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
-GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/auth/oauth/google/callback")
+GOOGLE_REDIRECT_URI = os.getenv(
+    "GOOGLE_REDIRECT_URI",
+    f"{backend_url()}/api/auth/oauth/google/callback",
+)
 
 MICROSOFT_CLIENT_ID = os.getenv("MICROSOFT_CLIENT_ID", "")
 MICROSOFT_CLIENT_SECRET = os.getenv("MICROSOFT_CLIENT_SECRET", "")
 MICROSOFT_TENANT_ID = os.getenv("MICROSOFT_TENANT_ID", "common")
-MICROSOFT_REDIRECT_URI = os.getenv("MICROSOFT_REDIRECT_URI", "http://localhost:8000/api/auth/oauth/microsoft/callback")
+MICROSOFT_REDIRECT_URI = os.getenv(
+    "MICROSOFT_REDIRECT_URI",
+    f"{backend_url()}/api/auth/oauth/microsoft/callback",
+)
 
 # ── Google OAuth2 endpoints ────────────────────────────────────────────────────
 GOOGLE_AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth"

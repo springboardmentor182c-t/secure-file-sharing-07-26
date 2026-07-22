@@ -8,6 +8,7 @@ import smtplib
 import threading
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from src.config import frontend_url
 
 # Read SMTP settings from environment (set in .env file)
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
@@ -15,7 +16,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 EMAIL_FROM = os.getenv("EMAIL_FROM", SMTP_USER)
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+FRONTEND_URL = frontend_url()
 
 
 def _send_email(to_email: str, subject: str, html_body: str):

@@ -1,21 +1,51 @@
-version: "3.9"
-
 services:
+  database:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: trustshare
+      POSTGRES_USER: trustshare
+      POSTGRES_PASSWORD: trustshare-local-only
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trustshare -d trustshare"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend:
     build: .
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./app.db
+      DATABASE_URL: ${COMPOSE_DATABASE_URL:?Copy .env.example to .env and configure COMPOSE_DATABASE_URL}
+      SECRET_KEY: ${SECRET_KEY:?Copy .env.example to .env and configure SECRET_KEY}
+      MASTER_KEY: ${MASTER_KEY:?Copy .env.example to .env and configure MASTER_KEY}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:?Copy .env.example to .env and configure BACKEND_CORS_ORIGINS}
+      FRONTEND_URL: ${FRONTEND_URL:?Copy .env.example to .env and configure FRONTEND_URL}
+      BACKEND_URL: ${BACKEND_URL:?Copy .env.example to .env and configure BACKEND_URL}
+      DATA_DIR: /app/data
     volumes:
       - .:/app
+      - encrypted-data:/app/data
+    depends_on:
+      database:
+        condition: service_healthy
     command: uvicorn src.api:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
-    build:
-      context: ../client
-      dockerfile: Dockerfile
+    image: node:22-alpine
+    working_dir: /app
     ports:
       - "3000:3000"
+    environment:
+      REACT_APP_API_URL: ${REACT_APP_API_URL:?Copy .env.example to .env and configure REACT_APP_API_URL}
+    volumes:
+      - ../client:/app
     depends_on:
       - backend
+    command: sh -c "npm ci && npm start"
+
+volumes:
+  postgres-data:
+  encrypted-data:

@@ -2,10 +2,15 @@
 node_modules/
 __pycache__/
 *.pyc
+.env
+.env.*
+!.env.example
 .env.local
 dist/
 build/
 .venv/
 *.db
 uploads/
+keys/
+master.key
 venv/
