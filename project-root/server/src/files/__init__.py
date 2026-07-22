@@ -1,2 +1,1 @@
-from fastapi import APIRouter
-router = APIRouter()
+# Files package stub
