@@ -12,6 +12,7 @@ Backend:
 ```powershell
 cd server
 Copy-Item .env.example .env
+# Set FRONTEND_URL, BACKEND_URL, BACKEND_CORS_ORIGINS, and REACT_APP_API_URL in .env.
 python -m pip install -r requirements-dev.txt
 python -m src.main
 ```
@@ -21,6 +22,7 @@ Frontend (in another terminal):
 ```powershell
 cd client
 Copy-Item .env.example .env
+# Set REACT_APP_API_URL in .env to the backend origin used on this machine.
 npm ci
 npm start
 ```
@@ -33,9 +35,13 @@ Open `http://localhost:3000`. The API and interactive documentation are at
 Run this from `server/`:
 
 ```powershell
+# Copy .env.example to .env and set every required URL before the first run.
 docker compose up --build
 ```
 
+The committed example files intentionally leave environment-specific URL values
+blank. Each developer supplies local values in ignored `.env` files. Docker
+Compose reads `server/.env` for both the backend runtime and the frontend build.
 This starts React, FastAPI, PostgreSQL, and persistent local volumes.
 
 ## Production architecture
