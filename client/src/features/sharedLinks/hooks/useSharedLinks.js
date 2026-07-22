@@ -75,9 +75,17 @@ export default function useSharedLinks() {
     try {
       const [statsResult, chartResult] = await Promise.all([getStats(), getMonthlyActivity()]);
       setStats(statsResult);
-      setChartData(chartResult);
-    } catch {
+      // Ensure all data points have both created and access fields
+      const processedData = (chartResult || []).map(point => ({
+        ...point,
+        label: point.label || '',
+        created: point.created || 0,
+        access: point.access_events || 0,
+      }));
+      setChartData(processedData);
+    } catch (err) {
       // Non-fatal: the table is still usable without the stat cards/chart.
+      console.warn('Failed to fetch analytics summary:', err);
     }
   }, []);
 

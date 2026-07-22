@@ -56,6 +56,10 @@ analytics_router = APIRouter(prefix="/analytics", tags=["Analytics"])
 notifications_router = APIRouter(prefix="/notifications", tags=["Notifications"])
 dev_router = APIRouter(tags=["Dev/Testing Only"])
 
+# Compatibility aliases used by the main API aggregator.
+api_shared_router = router
+api_users_router = dev_router
+
 
 def _serialize(link) -> SharedLinkRead:
     return SharedLinkRead(

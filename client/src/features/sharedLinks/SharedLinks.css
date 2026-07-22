@@ -68,7 +68,7 @@
 .activity-chart__gridline { stroke: var(--border-subtle); stroke-width: 1; }
 .activity-chart__axis-label { fill: var(--text-muted); font-size: 11px; }
 .activity-chart__bar--created { fill: #4d3fa8; }
-.activity-chart__bar--access { fill: #c3b8ff; }
+.activity-chart__bar--access { fill: #df9112; }
 .activity-chart__bar { transition: opacity 0.15s ease; }
 .activity-chart__bar:hover { opacity: 0.8; }
 

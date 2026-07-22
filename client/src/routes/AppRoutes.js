@@ -32,20 +32,12 @@ function AppRoutes() {
           <Route path="/trash" element={<MyFilesPage initialView="trash" />} />
           <Route path="/shared-files" element={<SharedFiles />} />
           <Route path="/shared-links" element={<SharedLinksPage />} />
-<<<<<<< HEAD
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/monitoring" element={<Monitoring />} />
           <Route path="/security" element={<Monitoring />} />
-          <Route path="/analytics" element={<Analytics />} />
           <Route path="/audit" element={<Monitoring />} />
           <Route path="/admin" element={<Dashboard />} />
           <Route path="/notifications" element={<Notifications />} />
-=======
-          <Route path="/analytics" element={<AnalyticsView />} />
-
-          <Route path="/monitoring" element={<Monitoring />} />
-          <Route path="/security" element={<Monitoring />} />
-
->>>>>>> origin/main-group-B
           <Route path="/settings" element={<Settings />} />
           <Route path="/profile" element={<Profile />} />
         </Route>
