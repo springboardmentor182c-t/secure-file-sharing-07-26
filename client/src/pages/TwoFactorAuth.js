@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 import VerifiedUserOutlinedIcon from "@mui/icons-material/VerifiedUserOutlined";
 
@@ -9,37 +10,100 @@ import TwoFactorForm from "../features/authentication/components/TwoFactorForm";
 
 const TwoFactorAuth = () => {
 
-  const navigate = useNavigate();
+    const navigate = useNavigate();
 
-  const handleVerify = (otp) => {
+    const handleVerify = async (otp) => {
 
-    console.log("OTP:", otp);
+        try {
 
-    // Backend verification here later
+            const email = localStorage.getItem("email");
 
-    navigate("/home");
+            if (!email) {
 
-  };
+                alert("Session expired. Please login again.");
 
-  return (
+                navigate("/login");
 
-    <AuthLayout>
+                return;
 
-      <AuthCard
-        title="Two-Factor Authentication"
-        subtitle="Enter the 6-digit verification code sent to your registered email address."
-        icon={VerifiedUserOutlinedIcon}
-      >
+            }
 
-        <TwoFactorForm
-          onVerify={handleVerify}
-        />
+            const response = await axios.post(
+                "http://localhost:8000/auth/verify-otp",
+                {
+                    email: email,
+                    otp_code: otp
+                }
+            );
 
-      </AuthCard>
+            // Store JWT tokens
+            localStorage.setItem(
+                "token",
+                response.data.access_token
+            );
 
-    </AuthLayout>
+            localStorage.setItem(
+                "refresh_token",
+                response.data.refresh_token
+            );
 
-  );
+            // Store user role
+            localStorage.setItem(
+                "role",
+                response.data.role
+            );
+
+            // Remove temporary email
+            localStorage.removeItem("email");
+
+            // Redirect based on role
+            if (response.data.role === "admin") {
+
+                navigate("/admin");
+
+            } else {
+
+                navigate("/home");
+
+            }
+
+        }
+
+        catch (error) {
+
+            console.error(error);
+
+            alert(
+
+                error.response?.data?.detail ||
+
+                "Invalid OTP"
+
+            );
+
+        }
+
+    };
+
+    return (
+
+        <AuthLayout>
+
+            <AuthCard
+                title="Two-Factor Authentication"
+                subtitle="Enter the 6-digit verification code sent to your registered email address."
+                icon={VerifiedUserOutlinedIcon}
+            >
+
+                <TwoFactorForm
+                    onVerify={handleVerify}
+                />
+
+            </AuthCard>
+
+        </AuthLayout>
+
+    );
 
 };
 

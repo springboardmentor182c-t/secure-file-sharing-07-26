@@ -15,6 +15,9 @@ import OTPVerification from "./pages/OTPVerification";
 import EmailVerification from "./pages/EmailVerification";
 import TwoFactorAuth from "./pages/TwoFactorAuth";
 import SessionExpired from "./pages/SessionExpired";
+import AdminHome from "./pages/AdminHome";
+
+import AdminRoute from "./features/authentication/components/AdminRoute";
 
 // Dashboard Page
 import Home from "./pages/Home";
@@ -88,6 +91,14 @@ function App() {
         <Route
           path="*"
           element={<Navigate to="/login" replace />}
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+                <AdminHome />
+            </AdminRoute>
+          }
         />
 
       </Routes>

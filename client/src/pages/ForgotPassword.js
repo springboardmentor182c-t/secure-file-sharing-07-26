@@ -1,201 +1,194 @@
-import React, {useState} from "react";
+import React, { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 import {
- Paper,
- Typography,
- TextField,
- Button,
- InputAdornment
+  Stack,
+  TextField,
+  InputAdornment,
+  Alert,
+  Typography
 } from "@mui/material";
 
-import {
- Email,
- LockReset
-} from "@mui/icons-material";
+import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
+import LockResetOutlinedIcon from "@mui/icons-material/LockResetOutlined";
 
-import {useNavigate} from "react-router-dom";
+import AuthLayout from "../features/authentication/components/AuthLayout";
+import AuthCard from "../features/authentication/components/AuthCard";
+import LoadingButton from "../features/authentication/components/LoadingButton";
 
+const ForgotPassword = () => {
 
-const ForgotPassword =()=>{
+  const navigate = useNavigate();
 
-const navigate=useNavigate();
+  const [email, setEmail] = useState("");
 
+  const [loading, setLoading] = useState(false);
 
-const [email,setEmail]=useState("");
+  const [error, setError] = useState("");
 
+  const [success, setSuccess] = useState("");
 
-const handleSubmit=(e)=>{
+  const handleSubmit = async () => {
 
-e.preventDefault();
+    if (!email.trim()) {
 
-console.log(email);
+      setError("Please enter your registered email.");
 
-// API call later
+      return;
 
-navigate("/otp-verification");
+    }
+
+    try {
+
+      setLoading(true);
+
+      setError("");
+
+      setSuccess("");
+
+      const response = await axios.post(
+
+        "http://localhost:8000/auth/forgot-password",
+
+        {
+
+          email: email
+
+        }
+
+      );
+
+      setSuccess(response.data.message);
+
+    }
+
+    catch (err) {
+
+      setError(
+
+        err.response?.data?.detail ||
+
+        "Unable to send reset email."
+
+      );
+
+    }
+
+    finally {
+
+      setLoading(false);
+
+    }
+
+  };
+
+  return (
+
+    <AuthLayout>
+
+      <AuthCard
+
+        title="Forgot Password"
+
+        subtitle="Enter your registered email address. A password reset link will be sent to your inbox."
+
+        icon={LockResetOutlinedIcon}
+
+      >
+
+        <Stack spacing={3}>
+
+          {error &&
+
+            <Alert severity="error">
+
+              {error}
+
+            </Alert>
+
+          }
+
+          {success &&
+
+            <Alert severity="success">
+
+              {success}
+
+            </Alert>
+
+          }
+
+          <TextField
+
+            fullWidth
+
+            label="Email Address"
+
+            value={email}
+
+            onChange={(e) =>
+
+              setEmail(e.target.value)
+
+            }
+
+            InputProps={{
+
+              startAdornment: (
+
+                <InputAdornment position="start">
+
+                  <EmailOutlinedIcon />
+
+                </InputAdornment>
+
+              )
+
+            }}
+
+          />
+
+          <LoadingButton
+
+            loading={loading}
+
+            onClick={handleSubmit}
+
+          >
+
+            Send Reset Link
+
+          </LoadingButton>
+
+          <Typography
+
+            align="center"
+
+            sx={{
+
+              cursor: "pointer",
+
+              color: "#8B6F47"
+
+            }}
+
+            onClick={() => navigate("/login")}
+
+          >
+
+            Back to Login
+
+          </Typography>
+
+        </Stack>
+
+      </AuthCard>
+
+    </AuthLayout>
+
+  );
 
 };
-
-
-return(
-
-<div style={styles.container}>
-
-<Paper elevation={5} sx={styles.card}>
-
-
-<LockReset sx={styles.icon}/>
-
-
-<Typography variant="h4" sx={styles.title}>
-Forgot Password
-</Typography>
-
-
-<Typography sx={styles.text}>
-Enter your registered email to receive OTP
-</Typography>
-
-
-
-<form onSubmit={handleSubmit}>
-
-
-<TextField
-
-fullWidth
-
-label="Email Address"
-
-value={email}
-
-onChange={(e)=>setEmail(e.target.value)}
-
-margin="normal"
-
-required
-
-
-InputProps={{
-
-startAdornment:
-
-<InputAdornment position="start">
-
-<Email/>
-
-</InputAdornment>
-
-}}
-
-
-/>
-
-
-
-<Button
-
-fullWidth
-
-type="submit"
-
-variant="contained"
-
-sx={styles.button}
-
->
-
-Send OTP
-
-</Button>
-
-
-
-</form>
-
-
-</Paper>
-
-</div>
-
-)
-
-}
-
-
-
-const styles={
-
-container:{
-
-minHeight:"100vh",
-
-background:"#F5EBDD",
-
-display:"flex",
-
-justifyContent:"center",
-
-alignItems:"center"
-
-},
-
-
-card:{
-
-width:420,
-
-padding:4,
-
-borderRadius:"20px",
-
-textAlign:"center"
-
-},
-
-
-icon:{
-
-fontSize:55,
-
-color:"#795548"
-
-},
-
-
-title:{
-
-fontWeight:700,
-
-color:"#5D4037"
-
-},
-
-
-text:{
-
-color:"#8D6E63"
-
-},
-
-
-button:{
-
-marginTop:3,
-
-padding:1.3,
-
-background:"#795548",
-
-"&:hover":{
-
-background:"#5D4037"
-
-}
-
-}
-
-};
-
 
 export default ForgotPassword;

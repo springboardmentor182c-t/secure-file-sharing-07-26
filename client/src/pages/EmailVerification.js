@@ -1,152 +1,224 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
+import axios from "axios";
 
 import {
-Paper,
-Typography,
-Button
+    Paper,
+    Typography,
+    Button,
+    CircularProgress,
+    Alert
 } from "@mui/material";
 
-
 import {
-MarkEmailRead
+    MarkEmailRead
 } from "@mui/icons-material";
 
+import {
+    useNavigate,
+    useSearchParams
+} from "react-router-dom";
 
-import {useNavigate} from "react-router-dom";
+const EmailVerification = () => {
 
+    const navigate = useNavigate();
 
+    const [searchParams] = useSearchParams();
 
-const EmailVerification=()=>{
+    const token = searchParams.get("token");
 
+    const [loading, setLoading] = useState(true);
 
-const navigate=useNavigate();
+    const [success, setSuccess] = useState(false);
 
+    const [message, setMessage] = useState("");
 
+    useEffect(() => {
 
-return(
+        const verifyEmail = async () => {
 
-<div style={styles.container}>
+            if (!token) {
 
+                setLoading(false);
 
-<Paper sx={styles.card} elevation={5}>
+                setSuccess(false);
 
+                setMessage("Check your email for the verification link");
 
-<MarkEmailRead sx={styles.icon}/>
+                return;
 
+            }
 
-<Typography variant="h4" sx={styles.title}>
-Verify Email
-</Typography>
+            try {
 
+                const response = await axios.get(
+                    "http://localhost:8000/auth/verify-email",
+                    {
+                        params: {
+                            token: token
+                        }
+                    }
+                );
 
-<Typography sx={styles.text}>
-A verification link has been sent to your email address.
-</Typography>
+                setSuccess(true);
 
+                setMessage(response.data.message);
 
+            }
 
-<Button
+            catch (error) {
 
-variant="contained"
+                setSuccess(false);
 
-sx={styles.button}
+                setMessage(
 
-onClick={()=>navigate("/login")}
+                    error.response?.data?.detail ||
 
->
+                    "Email verification failed."
 
-Continue to Login
+                );
 
-</Button>
+            }
 
+            finally {
 
-</Paper>
+                setLoading(false);
 
+            }
 
-</div>
+        };
 
-)
+        verifyEmail();
 
-}
+    }, [token]);
 
+    return (
 
+        <div style={styles.container}>
 
-const styles={
+            <Paper sx={styles.card} elevation={5}>
 
+                <MarkEmailRead sx={styles.icon} />
 
-container:{
+                <Typography variant="h4" sx={styles.title}>
 
-minHeight:"100vh",
+                    Email Verification
 
-background:"#F5EBDD",
+                </Typography>
 
-display:"flex",
+                {loading ? (
 
-justifyContent:"center",
+                    <>
 
-alignItems:"center"
+                        <CircularProgress sx={{ mt: 3 }} />
 
-},
+                        <Typography sx={{ mt: 2 }}>
 
+                            Verifying your email...
 
-card:{
+                        </Typography>
 
-width:420,
+                    </>
 
-padding:4,
+                ) : (
 
-borderRadius:"20px",
+                    <>
 
-textAlign:"center"
+                        <Alert
+                            severity={success ? "success" : "error"}
+                            sx={{ mt: 3 }}
+                        >
 
-},
+                            {message}
 
+                        </Alert>
 
-icon:{
+                        <Button
 
-fontSize:55,
+                            variant="contained"
 
-color:"#795548"
+                            sx={styles.button}
 
-},
+                            onClick={() => navigate("/login")}
 
+                        >
 
-title:{
+                            Continue to Login
 
-fontWeight:700,
+                        </Button>
 
-color:"#5D4037"
+                    </>
 
-},
+                )}
 
+            </Paper>
 
-text:{
+        </div>
 
-color:"#8D6E63",
-
-marginBottom:2
-
-},
-
-
-button:{
-
-background:"#795548",
-
-padding:"10px 30px",
-
-"&:hover":{
-
-background:"#5D4037"
-
-}
-
-}
-
+    );
 
 };
 
+const styles = {
 
+    container: {
+
+        minHeight: "100vh",
+
+        background: "#F5EBDD",
+
+        display: "flex",
+
+        justifyContent: "center",
+
+        alignItems: "center"
+
+    },
+
+    card: {
+
+        width: 420,
+
+        padding: 4,
+
+        borderRadius: "20px",
+
+        textAlign: "center"
+
+    },
+
+    icon: {
+
+        fontSize: 55,
+
+        color: "#795548"
+
+    },
+
+    title: {
+
+        fontWeight: 700,
+
+        color: "#5D4037"
+
+    },
+
+    button: {
+
+        marginTop: 3,
+
+        background: "#795548",
+
+        padding: "10px 30px",
+
+        "&:hover": {
+
+            background: "#5D4037"
+
+        }
+
+    }
+
+};
 
 export default EmailVerification;

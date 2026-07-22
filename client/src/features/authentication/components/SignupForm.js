@@ -1,239 +1,280 @@
-import React,{useState} from "react";
+import React, { useState } from "react";
 
 import {
- Paper,
- Typography,
- TextField,
- Button,
- InputAdornment
+    Paper,
+    Typography,
+    TextField,
+    Button,
+    InputAdornment,
+    Alert
 } from "@mui/material";
 
-
 import {
- Person,
- Email,
- Lock,
- Security
+    Person,
+    Email,
+    Lock,
+    Security
 } from "@mui/icons-material";
 
+import axios from "axios";
 
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
+const SignupForm = () => {
 
-const SignupForm=()=>{
+    const navigate = useNavigate();
 
+    const [formData, setFormData] = useState({
 
-const navigate=useNavigate();
+        name: "",
 
+        email: "",
 
-const [formData,setFormData]=useState({
+        password: "",
 
-name:"",
-email:"",
-password:"",
-confirmPassword:""
+        confirmPassword: ""
 
-});
+    });
 
+    const [error, setError] = useState("");
 
-const handleChange=(e)=>{
+    const [loading, setLoading] = useState(false);
 
-setFormData({
+    const handleChange = (e) => {
 
-...formData,
+        setFormData({
 
-[e.target.name]:e.target.value
+            ...formData,
 
-});
+            [e.target.name]: e.target.value
+
+        });
+
+    };
+
+    const handleSubmit = async (e) => {
+
+        e.preventDefault();
+
+        setError("");
+
+        if (formData.password !== formData.confirmPassword) {
+
+            setError("Passwords do not match.");
+
+            return;
+
+        }
+
+        try {
+
+            setLoading(true);
+
+            await axios.post(
+                "http://localhost:8000/auth/signup",
+                {
+
+                    username: formData.name,
+
+                    email: formData.email,
+
+                    password: formData.password
+
+                }
+            );
+
+            navigate("/email-verification");
+
+        }
+
+        catch (err) {
+
+            if (err.response) {
+
+                setError(err.response.data.detail);
+
+            }
+
+            else {
+
+                setError("Unable to connect to server.");
+
+            }
+
+        }
+
+        finally {
+
+            setLoading(false);
+
+        }
+
+    };
+
+    return (
+
+        <Paper sx={styles.card} elevation={5}>
+
+            <Security sx={styles.icon} />
+
+            <Typography variant="h4" sx={styles.title}>
+                Create Account
+            </Typography>
+
+            <Typography sx={styles.subtitle}>
+                Join VaultShare Secure Workspace
+            </Typography>
+
+            {error && (
+
+                <Alert severity="error" sx={{ mt: 2 }}>
+
+                    {error}
+
+                </Alert>
+
+            )}
+
+            <form onSubmit={handleSubmit}>
+
+                <TextField
+                    fullWidth
+                    label="Username"
+                    name="name"
+                    margin="normal"
+                    required
+                    value={formData.name}
+                    onChange={handleChange}
+                    InputProps={{
+                        startAdornment:
+                            <InputAdornment position="start">
+                                <Person />
+                            </InputAdornment>
+                    }}
+                />
+
+                <TextField
+                    fullWidth
+                    label="Email"
+                    name="email"
+                    margin="normal"
+                    required
+                    value={formData.email}
+                    onChange={handleChange}
+                    InputProps={{
+                        startAdornment:
+                            <InputAdornment position="start">
+                                <Email />
+                            </InputAdornment>
+                    }}
+                />
+
+                <TextField
+                    fullWidth
+                    label="Password"
+                    name="password"
+                    type="password"
+                    margin="normal"
+                    required
+                    value={formData.password}
+                    onChange={handleChange}
+                    InputProps={{
+                        startAdornment:
+                            <InputAdornment position="start">
+                                <Lock />
+                            </InputAdornment>
+                    }}
+                />
+
+                <TextField
+                    fullWidth
+                    label="Confirm Password"
+                    name="confirmPassword"
+                    type="password"
+                    margin="normal"
+                    required
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    InputProps={{
+                        startAdornment:
+                            <InputAdornment position="start">
+                                <Lock />
+                            </InputAdornment>
+                    }}
+                />
+
+                <Button
+                    fullWidth
+                    type="submit"
+                    variant="contained"
+                    disabled={loading}
+                    sx={styles.button}
+                >
+
+                    {loading ? "Creating Account..." : "Create Account"}
+
+                </Button>
+
+            </form>
+
+        </Paper>
+
+    );
 
 };
 
+const styles = {
 
+    card: {
 
-const handleSubmit=(e)=>{
+        width: 420,
 
-e.preventDefault();
+        padding: 4,
 
-console.log(formData);
+        borderRadius: "20px",
 
+        textAlign: "center"
 
-// backend signup later
+    },
 
-navigate("/email-verification");
+    icon: {
+
+        fontSize: 55,
+
+        color: "#795548"
+
+    },
+
+    title: {
+
+        color: "#5D4037",
+
+        fontWeight: 700
+
+    },
+
+    subtitle: {
+
+        color: "#8D6E63"
+
+    },
+
+    button: {
+
+        marginTop: 3,
+
+        padding: 1.3,
+
+        background: "#795548",
+
+        "&:hover": {
+
+            background: "#5D4037"
+
+        }
+
+    }
 
 };
-
-
-
-return(
-
-<Paper sx={styles.card} elevation={5}>
-
-
-<Security sx={styles.icon}/>
-
-
-<Typography variant="h4" sx={styles.title}>
-Create Account
-</Typography>
-
-
-<Typography sx={styles.subtitle}>
-Join VaultShare Secure Workspace
-</Typography>
-
-
-
-<form onSubmit={handleSubmit}>
-
-
-<TextField
-fullWidth
-label="Full Name"
-name="name"
-margin="normal"
-required
-value={formData.name}
-onChange={handleChange}
-
-InputProps={{
-startAdornment:
-<InputAdornment position="start">
-<Person/>
-</InputAdornment>
-}}
-
-/>
-
-
-
-<TextField
-fullWidth
-label="Email"
-name="email"
-margin="normal"
-required
-value={formData.email}
-onChange={handleChange}
-
-InputProps={{
-startAdornment:
-<InputAdornment position="start">
-<Email/>
-</InputAdornment>
-}}
-
-/>
-
-
-
-<TextField
-fullWidth
-label="Password"
-name="password"
-type="password"
-margin="normal"
-required
-value={formData.password}
-onChange={handleChange}
-
-InputProps={{
-startAdornment:
-<InputAdornment position="start">
-<Lock/>
-</InputAdornment>
-}}
-
-/>
-
-
-
-<TextField
-fullWidth
-label="Confirm Password"
-name="confirmPassword"
-type="password"
-margin="normal"
-required
-value={formData.confirmPassword}
-onChange={handleChange}
-
-InputProps={{
-startAdornment:
-<InputAdornment position="start">
-<Lock/>
-</InputAdornment>
-}}
-
-/>
-
-
-
-<Button
-fullWidth
-type="submit"
-variant="contained"
-sx={styles.button}
->
-
-Create Account
-
-</Button>
-
-
-</form>
-
-
-</Paper>
-
-)
-
-}
-
-
-
-const styles={
-
-
-card:{
-width:420,
-padding:4,
-borderRadius:"20px",
-textAlign:"center"
-},
-
-
-icon:{
-fontSize:55,
-color:"#795548"
-},
-
-
-title:{
-color:"#5D4037",
-fontWeight:700
-},
-
-
-subtitle:{
-color:"#8D6E63"
-},
-
-
-button:{
-marginTop:3,
-padding:1.3,
-background:"#795548",
-
-"&:hover":{
-background:"#5D4037"
-}
-
-}
-
-
-};
-
-
 
 export default SignupForm;

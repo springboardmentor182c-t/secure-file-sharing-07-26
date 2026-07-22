@@ -1,254 +1,230 @@
-import React,{useState} from "react";
+import React, { useState } from "react";
+import axios from "axios";
+
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import {
-Paper,
-Typography,
-TextField,
-Button,
-InputAdornment
+
+  Stack,
+
+  TextField,
+
+  InputAdornment,
+
+  Alert
+
 } from "@mui/material";
 
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 
-import {
-Lock,
-LockReset
-} from "@mui/icons-material";
+import LockResetOutlinedIcon from "@mui/icons-material/LockResetOutlined";
 
+import AuthLayout from "../features/authentication/components/AuthLayout";
 
-import {useNavigate} from "react-router-dom";
+import AuthCard from "../features/authentication/components/AuthCard";
 
+import LoadingButton from "../features/authentication/components/LoadingButton";
 
-const ResetPassword=()=>{
+const ResetPassword = () => {
 
+  const navigate = useNavigate();
 
-const navigate=useNavigate();
+  const [searchParams] = useSearchParams();
 
+  const token = searchParams.get("token");
 
-const [password,setPassword]=useState("");
+  const [password, setPassword] = useState("");
 
-const [confirm,setConfirm]=useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
+  const [loading, setLoading] = useState(false);
 
+  const [error, setError] = useState("");
 
-const handleSubmit=(e)=>{
+  const [success, setSuccess] = useState("");
 
-e.preventDefault();
+  const handleSubmit = async () => {
 
+    if (password !== confirmPassword) {
 
-if(password!==confirm){
+      setError("Passwords do not match.");
 
-alert("Passwords do not match");
+      return;
 
-return;
+    }
 
-}
+    try {
 
+      setLoading(true);
 
-// API reset password later
+      setError("");
 
-navigate("/login");
+      setSuccess("");
+
+      const response = await axios.post(
+
+        "http://localhost:8000/auth/reset-password",
+
+        {
+
+          token: token,
+
+          new_password: password
+
+        }
+
+      );
+
+      setSuccess(response.data.message);
+
+      setTimeout(() => {
+
+        navigate("/login");
+
+      }, 2000);
+
+    }
+
+    catch (err) {
+
+      setError(
+
+        err.response?.data?.detail ||
+
+        "Unable to reset password."
+
+      );
+
+    }
+
+    finally {
+
+      setLoading(false);
+
+    }
+
+  };
+
+  return (
+
+    <AuthLayout>
+
+      <AuthCard
+
+        title="Reset Password"
+
+        subtitle="Create a new secure password for your account."
+
+        icon={LockResetOutlinedIcon}
+
+      >
+
+        <Stack spacing={3}>
+
+          {error &&
+
+            <Alert severity="error">
+
+              {error}
+
+            </Alert>
+
+          }
+
+          {success &&
+
+            <Alert severity="success">
+
+              {success}
+
+            </Alert>
+
+          }
+
+          <TextField
+
+            fullWidth
+
+            type="password"
+
+            label="New Password"
+
+            value={password}
+
+            onChange={(e) =>
+
+              setPassword(e.target.value)
+
+            }
+
+            InputProps={{
+
+              startAdornment: (
+
+                <InputAdornment position="start">
+
+                  <LockOutlinedIcon />
+
+                </InputAdornment>
+
+              )
+
+            }}
+
+          />
+
+          <TextField
+
+            fullWidth
+
+            type="password"
+
+            label="Confirm Password"
+
+            value={confirmPassword}
+
+            onChange={(e) =>
+
+              setConfirmPassword(e.target.value)
+
+            }
+
+            InputProps={{
+
+              startAdornment: (
+
+                <InputAdornment position="start">
+
+                  <LockOutlinedIcon />
+
+                </InputAdornment>
+
+              )
+
+            }}
+
+          />
+
+          <LoadingButton
+
+            loading={loading}
+
+            onClick={handleSubmit}
+
+          >
+
+            Reset Password
+
+          </LoadingButton>
+
+        </Stack>
+
+      </AuthCard>
+
+    </AuthLayout>
+
+  );
 
 };
-
-
-
-return(
-
-<div style={styles.container}>
-
-
-<Paper sx={styles.card} elevation={5}>
-
-
-<LockReset sx={styles.icon}/>
-
-
-<Typography variant="h4" sx={styles.title}>
-Reset Password
-</Typography>
-
-
-<Typography sx={styles.text}>
-Create your new secure password
-</Typography>
-
-
-
-<form onSubmit={handleSubmit}>
-
-
-<TextField
-
-fullWidth
-
-label="New Password"
-
-type="password"
-
-margin="normal"
-
-value={password}
-
-onChange={(e)=>setPassword(e.target.value)}
-
-required
-
-
-InputProps={{
-
-startAdornment:
-
-<InputAdornment position="start">
-
-<Lock/>
-
-</InputAdornment>
-
-}}
-
-/>
-
-
-
-<TextField
-
-fullWidth
-
-label="Confirm Password"
-
-type="password"
-
-margin="normal"
-
-value={confirm}
-
-onChange={(e)=>setConfirm(e.target.value)}
-
-required
-
-
-InputProps={{
-
-startAdornment:
-
-<InputAdornment position="start">
-
-<Lock/>
-
-</InputAdornment>
-
-}}
-
-/>
-
-
-
-<Button
-
-fullWidth
-
-variant="contained"
-
-type="submit"
-
-sx={styles.button}
-
->
-
-Reset Password
-
-</Button>
-
-
-</form>
-
-
-
-</Paper>
-
-
-</div>
-
-)
-
-}
-
-
-
-const styles={
-
-
-container:{
-
-minHeight:"100vh",
-
-background:"#F5EBDD",
-
-display:"flex",
-
-justifyContent:"center",
-
-alignItems:"center"
-
-},
-
-
-card:{
-
-width:420,
-
-padding:4,
-
-borderRadius:"20px",
-
-textAlign:"center"
-
-},
-
-
-icon:{
-
-fontSize:55,
-
-color:"#795548"
-
-},
-
-
-title:{
-
-fontWeight:700,
-
-color:"#5D4037"
-
-},
-
-
-text:{
-
-color:"#8D6E63"
-
-},
-
-
-button:{
-
-marginTop:3,
-
-padding:1.3,
-
-background:"#795548",
-
-"&:hover":{
-
-background:"#5D4037"
-
-}
-
-}
-
-
-};
-
 
 export default ResetPassword;
