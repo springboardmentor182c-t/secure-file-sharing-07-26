@@ -2,15 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  FiShield, FiGrid, FiFolder, FiShare2, FiLock, FiActivity,
+  FiShield, FiGrid, FiShare2, FiActivity,
   FiBell, FiBarChart2, FiUsers, FiSettings, FiMoon, FiSun, FiLogOut,
 } from 'react-icons/fi';
 
 const NAV = [
   { to: '/dashboard',     icon: <FiGrid />,      label: 'Dashboard' },
-  { to: '/files',         icon: <FiFolder />,    label: 'My Files' },
   { to: '/sharing',       icon: <FiShare2 />,    label: 'Secure Sharing' },
-  { to: '/encryption',    icon: <FiLock />,      label: 'Encryption' },
   { to: '/activity',      icon: <FiActivity />,  label: 'Activity Logs', adminOnly: true },
   { to: '/notifications', icon: <FiBell />,      label: 'Notifications', badge: true },
   { to: '/analytics',     icon: <FiBarChart2 />, label: 'Analytics' },

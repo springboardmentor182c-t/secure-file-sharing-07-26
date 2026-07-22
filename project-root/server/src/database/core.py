@@ -3,22 +3,33 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from dotenv import load_dotenv
 import os
 
-# Load variables from a .env file (if present) so DATABASE_URL etc. are available
+# Load environment variables from .env
 load_dotenv()
 
-# PostgreSQL by default; override via the DATABASE_URL env var (e.g. SQLite for local dev).
-DATABASE_URL = os.getenv(
+# PostgreSQL URL (default: postgresql+psycopg2://secureshare:secureshare@localhost:5432/secureshare)
+PG_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+psycopg2://SecureShare:SecureShare@localhost:5432/SecureShareDB",
+    "postgresql+psycopg2://secureshare:secureshare@localhost:5432/secureshare",
 )
 
-is_sqlite = DATABASE_URL.startswith("sqlite")
+def _get_engine():
+    """Attempt PostgreSQL connection first; fall back to SQLite if PostgreSQL server is not running."""
+    if PG_URL.startswith("sqlite"):
+        return create_engine(PG_URL, connect_args={"check_same_thread": False})
 
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False} if is_sqlite else {},
-    pool_pre_ping=True,  # transparently recover from dropped Postgres connections
-)
+    try:
+        pg_engine = create_engine(PG_URL, pool_pre_ping=True)
+        # Test connection
+        with pg_engine.connect() as conn:
+            pass
+        return pg_engine
+    except Exception:
+        # Fall back to SQLite if PostgreSQL is offline or unreachable
+        sqlite_url = "sqlite:///./app.db"
+        return create_engine(sqlite_url, connect_args={"check_same_thread": False})
+
+engine = _get_engine()
+is_sqlite = engine.url.drivername.startswith("sqlite")
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

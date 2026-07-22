@@ -468,3 +468,14 @@ input,textarea,select{font-family:inherit;outline:none;border:none}
 :root.light .sidebar{background:rgba(255,255,255,.92);border-right-color:var(--border-subtle)}
 :root.light .navbar{background:rgba(255,255,255,.85);border-bottom-color:var(--border-subtle)}
 :root.light .notif-dot{border-color:#fff}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.search-result-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+:root.light .search-result-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
