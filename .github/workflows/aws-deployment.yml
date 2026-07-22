@@ -78,8 +78,10 @@ jobs:
         shell: bash
         env:
           ECR_REPOSITORY: ${{ steps.stack.outputs.repository }}
+          APPLICATION_URL: ${{ steps.stack.outputs.application_url }}
         run: |
           docker build \
+            --build-arg "REACT_APP_API_URL=$APPLICATION_URL" \
             --tag "$ECR_REPOSITORY:${GITHUB_SHA}" \
             --tag "$ECR_REPOSITORY:latest" \
             project-root

@@ -40,6 +40,9 @@ jobs:
       DATABASE_URL: sqlite:///./test.db
       SECRET_KEY: ci-only-secret
       MASTER_KEY: ci-only-master-key
+      FRONTEND_URL: https://frontend.example.invalid
+      BACKEND_URL: https://backend.example.invalid
+      BACKEND_CORS_ORIGINS: https://frontend.example.invalid
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -66,3 +69,4 @@ jobs:
       - run: npm run build
         env:
           CI: "false"
+          REACT_APP_API_URL: https://example.invalid

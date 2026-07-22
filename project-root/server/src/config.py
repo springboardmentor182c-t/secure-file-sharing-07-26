@@ -18,45 +18,27 @@ KEYS_DIR = DATA_DIR / "keys"
 MASTER_KEY_FILE = DATA_DIR / "master.key"
 
 
+def _required_url(variable_name: str) -> str:
+    """Load a required public URL from the environment."""
+    configured = os.getenv(variable_name, "").strip().rstrip("/")
+    if not configured:
+        raise RuntimeError(f"{variable_name} must be configured")
+    return configured
+
+
 def frontend_url() -> str:
     """Return the public application URL, including its URL scheme."""
-    configured = os.getenv("FRONTEND_URL", "").strip().rstrip("/")
-    if configured:
-        return configured
-
-    render_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
-    if render_hostname:
-        return f"https://{render_hostname}"
-
-    return "http://localhost:3000"
+    return _required_url("FRONTEND_URL")
 
 
 def backend_url() -> str:
     """Return the public backend URL used for OAuth callback defaults."""
-    configured = os.getenv("BACKEND_URL", "").strip().rstrip("/")
-    if configured:
-        return configured
-
-    render_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
-    if render_hostname:
-        return f"https://{render_hostname}"
-
-    return "http://localhost:8000"
+    return _required_url("BACKEND_URL")
 
 
 def cors_origins() -> list[str]:
-    """Load a comma-separated CORS allowlist and keep local defaults for dev."""
+    """Load the required comma-separated CORS allowlist."""
     configured = os.getenv("BACKEND_CORS_ORIGINS", "").strip()
-    if configured:
-        return [origin.strip().rstrip("/") for origin in configured.split(",") if origin.strip()]
-
-    origins = {
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-    }
-    public_frontend = frontend_url()
-    if public_frontend:
-        origins.add(public_frontend)
-    return sorted(origins)
+    if not configured:
+        raise RuntimeError("BACKEND_CORS_ORIGINS must be configured")
+    return [origin.strip().rstrip("/") for origin in configured.split(",") if origin.strip()]

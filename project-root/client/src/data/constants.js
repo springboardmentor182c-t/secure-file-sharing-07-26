@@ -1,7 +1,12 @@
 // Application-wide constants
 
-export const API_BASE_URL = process.env.REACT_APP_API_URL
-  || (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');
+const configuredApiBaseUrl = process.env.REACT_APP_API_URL;
+
+if (!configuredApiBaseUrl) {
+  throw new Error('REACT_APP_API_URL must be configured before the frontend is built.');
+}
+
+export const API_BASE_URL = configuredApiBaseUrl.replace(/\/+$/, '');
 
 export const ROUTES = {
   HOME: '/',

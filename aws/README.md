@@ -76,9 +76,11 @@ automatically. This must happen only after the CloudFormation stack and
 the repository's default branch, it can also be started manually from GitHub
 Actions with **Run workflow**.
 
-The workflow obtains temporary AWS credentials, builds the existing Dockerfile,
-pushes commit-specific and `latest` images to ECR, starts one ECS task, waits for
-it to stabilize, and calls `/health` through the API Gateway HTTPS URL.
+The workflow obtains temporary AWS credentials, reads `ApplicationUrl` from the
+CloudFormation stack, passes it to the React build as `REACT_APP_API_URL`, builds
+the Dockerfile, pushes commit-specific and `latest` images to ECR, starts one ECS
+task, waits for it to stabilize, and calls `/health` through the API Gateway HTTPS
+URL.
 
 The live application, health endpoint, and API-documentation URL are written to
 the workflow summary and are also available in CloudFormation Outputs.
