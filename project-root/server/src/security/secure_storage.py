@@ -9,10 +9,11 @@ without changing encryption logic.
 from pathlib import Path
 
 from .exceptions import EncryptionError
+from src.config import UPLOADS_DIR
 
 # Local encrypted storage
-STORAGE_DIR = Path("uploads")
-STORAGE_DIR.mkdir(exist_ok=True)
+STORAGE_DIR = UPLOADS_DIR
+STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 import os  # ensure this is at the top of the file, not inline
