@@ -320,8 +320,8 @@ export default function Navbar({ unreadCount = 0, setSidebarOpen, darkMode, setD
                 className="navbar-actions"
                 ref={notificationRef}
             >
-                <button className="nav-icon-btn" onClick={() => setDarkMode(!darkMode)}>
-                    {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+                <button className="nav-icon-btn" onClick={toggleTheme}>
+                    {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
 
                 <button

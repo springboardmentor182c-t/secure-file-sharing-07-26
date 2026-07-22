@@ -15,6 +15,7 @@ import OAuthCallback from './pages/OAuthCallback';
 import Dashboard from './pages/Dashboard';
 import Files from './pages/Files';
 import Sharing from './pages/Sharing';
+import SharedWithMe from './pages/SharedWithMe';
 import Activity from './pages/Activity';
 import Analytics from './pages/Analytics';
 import Notifications from './pages/Notifications';
@@ -42,6 +43,7 @@ function AppShell() {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/files" element={<Files />} />
       <Route path="/sharing" element={<Sharing />} />
+      <Route path="/shared-with-me" element={<SharedWithMe />} />
       <Route path="/activity" element={<Activity />} />
       <Route path="/analytics" element={<Analytics />} />
       <Route path="/notifications" element={<Notifications />} />

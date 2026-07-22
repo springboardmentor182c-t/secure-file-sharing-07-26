@@ -1,9 +1,8 @@
 import axios from 'axios';
-
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+import { API_BASE_URL } from '../data/constants';
 
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -24,7 +23,7 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token');
       if (refreshToken) {
         try {
-          const { data } = await axios.post(`${BASE_URL}/api/auth/refresh`, {
+          const { data } = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
             refresh_token: refreshToken,
           });
           const storage = localStorage.getItem('refresh_token') ? localStorage : sessionStorage;
@@ -100,7 +99,34 @@ export const notificationsAPI = {
 
 // ── Analytics ─────────────────────────────────────────────────────────────
 export const analyticsAPI = {
-  summary: () => api.get('/api/analytics/summary'),
+  summary: (days = 30, userId = null) => {
+    const params = { days };
+    if (userId) params.user_id = userId;
+    return api.get('/api/analytics/summary', { params });
+  },
+  users: () => api.get('/api/analytics/users'),
+  systemStats: () => api.get('/api/analytics/system-stats'),
+  exportFileAnalytics: (days = 30) =>
+    api.get('/api/analytics/export/file-analytics', {
+      params: { days },
+      responseType: 'blob',
+    }),
+  exportSecurity: (days = 30) =>
+    api.get('/api/analytics/export/security', {
+      params: { days },
+      responseType: 'blob',
+    }),
+  // Expose raw axios for custom calls
+  get: (url, config) => api.get(url, config),
+};
+
+export const dashboardAPI = {
+  get: () => api.get('/api/dashboard/'),
+};
+
+export const sharedWithMeAPI = {
+  list: () => api.get('/api/shared-with-me/'),
+  download: (fileId) => api.get(`/api/shared-with-me/${fileId}/download`, { responseType: 'blob' }),
 };
 
 // ── Admin ─────────────────────────────────────────────────────────────────
