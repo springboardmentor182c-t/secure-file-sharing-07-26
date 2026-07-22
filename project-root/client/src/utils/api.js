@@ -51,6 +51,10 @@ export const authAPI = {
   login: (email, password) => api.post('/api/auth/login', { email, password }),
   signup: (name, email, password) => api.post('/api/auth/signup', { name, email, password }),
   me: () => api.get('/api/auth/me'),
+  
+   // NEW: Storage breakdown
+  storageBreakdown: () => api.get('/api/auth/me/storage-breakdown'),
+  
   logout: () => api.post('/api/auth/logout'),
   verifyOTP: (mfa_token, code) => api.post('/api/auth/verify-otp', { mfa_token, code }),
   resendOTP: (mfa_token) => api.post('/api/auth/resend-otp', { mfa_token }),
@@ -141,7 +145,6 @@ export const auditAPI = {
 };
 
 // ── Search ───────────────────────────────────────────────────────────────
-
 export const searchAPI = {
   search: (query) =>
     api.get("/api/search/", {
@@ -149,4 +152,31 @@ export const searchAPI = {
     }),
 };
 
+// ── Settings (API Placeholders) ──────────────────────────────────────────
+export const settingsAPI = {
+  getProfile: () => api.get("/settings/profile"),
+
+  updateProfile: (data) =>
+    api.put("/settings/profile", data),
+
+  changePassword: (data) =>
+    api.post("/settings/change-password", data),
+
+  getSessions: () =>
+    api.get("/settings/sessions"),
+
+  logoutSession: (id) =>
+    api.delete(`/settings/sessions/${id}`),
+
+  logoutAllSessions: () =>
+    api.delete("/settings/sessions"),
+
+  getNotificationPreferences: () =>
+    api.get("/settings/notifications"),
+
+  updateNotificationPreferences: (data) =>
+    api.put("/settings/notifications", data),
+};
+
 export default api;
+

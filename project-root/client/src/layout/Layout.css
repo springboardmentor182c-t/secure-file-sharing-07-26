@@ -1,46 +1,70 @@
-/* ==================================================
-   Layout
-================================================== */
+/* ══════════════════════════════════════════════════════════════════════════
+   Layout — Premium App Shell (Medium Size)
+   ══════════════════════════════════════════════════════════════════════════ */
 
-.app-shell{
-    display:flex;
-    min-height:100vh;
-    background:#f8fafc;
+:root {
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 76px;
+  --navbar-height: 60px;
 }
 
-.main-area{
-    flex:1;
-    margin-left:var(--sidebar-width);
-    display:flex;
-    flex-direction:column;
-    min-height:100vh;
-    transition:margin-left .3s ease;
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background: #f8fafc;
+  transition: background 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-/* Desktop collapsed sidebar */
+.main-area {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-width: 0;
 
-.main-area-collapsed{
-    margin-left:80px;
+  will-change: margin-left;
+  transition: margin-left 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-@media (max-width:992px){
-
-.main-area{
-    margin-left:var(--sidebar-width);
+.main-area-collapsed {
+  margin-left: var(--sidebar-collapsed-width);
 }
 
-.main-area-collapsed{
-    margin-left:var(--sidebar-width);
+@media (max-width: 768px) {
+  .main-area,
+  .main-area-collapsed {
+    margin-left: 0;
+  }
 }
 
-/* ================= DARK MODE ================= */
+/* ── Dark Mode ─────────────────────────────────────────────────────────── */
 
-body.dark .app-shell{
-    background:#000000;
+body.dark .app-shell {
+  background: #0b1220;
 }
 
-body.dark .main-area{
-    background:#000000;
+body.dark .main-area {
+  background: transparent;
 }
 
+/* ── Reduced motion ────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell,
+  .main-area {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Smooth scroll globally ────────────────────────────────────────────── */
+
+html {
+  scroll-behavior: smooth;
+}
+
+.app-shell,
+.main-area {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
