@@ -8,7 +8,8 @@ from fastapi import FastAPI
 
 from src.files.controller import folders_router, router as files_router
 from src.shared_links.controller import (
-    analytics_router as shared_links_analytics_router,
+    api_shared_router,
+    api_users_router,
     dev_router as shared_links_dev_router,
     notifications_router as shared_links_notifications_router,
     public_router as shared_links_public_router,
@@ -28,7 +29,6 @@ def register_routes(app: FastAPI) -> None:
 
     app.include_router(shared_links_router)
     app.include_router(shared_links_public_router)
-    app.include_router(shared_links_analytics_router)
     app.include_router(shared_links_notifications_router)
     app.include_router(shared_links_dev_router)
 

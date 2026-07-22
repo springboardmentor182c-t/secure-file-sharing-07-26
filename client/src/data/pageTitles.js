@@ -3,6 +3,7 @@ const pageTitles = {
   "/files": "My Files",
   "/shared-files": "Shared Files",
   "/shared-links": "Shared Links",
+  "/analytics": "Analytics",
   "/trash": "Trash",
   "/monitoring": "Access Monitoring",
   "/audit": "Audit Logs",

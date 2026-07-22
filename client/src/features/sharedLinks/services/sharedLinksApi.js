@@ -130,6 +130,8 @@ export async function getStats() {
     totalViews: res.data.total_views,
     totalDownloads: res.data.total_downloads,
     expiringSoon: res.data.expiring_soon,
+    totalFiles: res.data.total_files || 0,
+    totalStorageBytes: res.data.total_storage_bytes || 0,
   };
 }
 
@@ -140,6 +142,11 @@ export async function getMonthlyActivity() {
     created: point.created,
     access: point.access_events,
   }));
+}
+
+export async function fetchAnalyticsOverview() {
+  const res = await request("/analytics/overview");
+  return res.data;
 }
 
 export { ApiError };
