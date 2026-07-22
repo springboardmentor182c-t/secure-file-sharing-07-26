@@ -11,8 +11,12 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:12345@localhost:5432/trustshare",
+    "sqlite:///./app.db",
 )
+
+# Some providers still expose the legacy postgres:// URL scheme.
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # Configure engine based on dialect
 if DATABASE_URL.startswith("sqlite"):

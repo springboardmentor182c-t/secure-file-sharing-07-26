@@ -1,8 +1,13 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI
+import os
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from src.config import cors_origins
 from src.search.controller import router as search_router
 from src.auth.controller import router as auth_router
 from src.users.controller import router as users_router
@@ -31,12 +36,7 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
     )
-    origins = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3001",
-]
+    origins = cors_origins()
     # ── CORS ──────────────────────────────────────────────────────────────────
     app.add_middleware(
         CORSMiddleware,
@@ -75,6 +75,33 @@ def create_app() -> FastAPI:
     prefix="/api/search",
     tags=["Search"],
 )
+
+    # In production the compiled React application is served by FastAPI so
+    # frontend and API share one origin. This route is registered last to keep
+    # every API and documentation route authoritative.
+    frontend_dir = Path(
+        os.getenv(
+            "FRONTEND_DIST_DIR",
+            Path(__file__).resolve().parents[2] / "client" / "build",
+        )
+    )
+    frontend_index = frontend_dir / "index.html"
+
+    if frontend_index.is_file():
+        @app.get("/{full_path:path}", include_in_schema=False)
+        def serve_frontend(full_path: str):
+            if full_path.startswith("api/"):
+                raise HTTPException(status_code=404, detail="API route not found")
+
+            requested_file = (frontend_dir / full_path).resolve()
+            try:
+                requested_file.relative_to(frontend_dir.resolve())
+            except ValueError:
+                raise HTTPException(status_code=404, detail="File not found")
+
+            if requested_file.is_file():
+                return FileResponse(requested_file)
+            return FileResponse(frontend_index)
 
     return app
 

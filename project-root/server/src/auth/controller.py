@@ -222,7 +222,7 @@ def reset_password(
 
 # ── Real OAuth2 Endpoints ─────────────────────────────────────────────────
 
-import os
+from src.config import frontend_url
 from src.auth.oauth_config import (
     make_google_client,
     make_microsoft_client,
@@ -236,7 +236,7 @@ from src.auth.oauth_config import (
     MICROSOFT_REDIRECT_URI,
 )
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+FRONTEND_URL = frontend_url()
 
 
 # ── Google OAuth2 ──────────────────────────────────────────────────────────

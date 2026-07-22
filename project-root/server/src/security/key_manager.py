@@ -4,13 +4,12 @@ Key Management utilities for the TrustShare Encryption & Security module.
 
 import os
 import secrets
-from pathlib import Path
 
 from .exceptions import KeyManagementError
+from src.config import KEYS_DIR
 
 # Directory to securely store encryption keys
-KEYS_DIR = Path("keys")
-KEYS_DIR.mkdir(exist_ok=True)
+KEYS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def generate_key() -> bytes:
