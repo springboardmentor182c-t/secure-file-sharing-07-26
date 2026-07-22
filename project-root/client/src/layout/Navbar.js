@@ -18,6 +18,44 @@ import {
 import { searchAPI, notificationsAPI } from "../utils/api";
 import "./Navbar.css";
 
+export default function Navbar({ unreadCount = 0, setSidebarOpen, darkMode, setDarkMode }) {
+    const [query, setQuery] = useState("");
+    const [results, setResults] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const searchRef = useRef(null);
+    const navigate = useNavigate();
+    const { theme, toggleTheme } = useTheme();
+    const [notifications, setNotifications] = useState([]);
+    const notificationRef = useRef(null);
+    const [showNotifications, setShowNotifications] = useState(false);
+
+    useEffect(() => {
+        if (!query.trim()) {
+            setResults(null);
+            setLoading(false);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            try {
+                setLoading(true);
+
+                const res = await searchAPI.search(query);
+
+                console.log("Search Results:", res.data);
+
+                setResults(res.data);
+            } catch (err) {
+                console.error(err);
+
+                setResults(null);
+            } finally {
+                setLoading(false);
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [query]);
 const FILE_ICON_MAP = {
   image: ["png", "jpg", "jpeg", "gif", "svg", "webp"],
   video: ["mp4", "avi", "mov", "mkv"],

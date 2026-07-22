@@ -145,7 +145,6 @@ export const auditAPI = {
 };
 
 // ── Search ───────────────────────────────────────────────────────────────
-
 export const searchAPI = {
   search: (query) =>
     api.get("/api/search/", {
@@ -153,4 +152,31 @@ export const searchAPI = {
     }),
 };
 
+// ── Settings (API Placeholders) ──────────────────────────────────────────
+export const settingsAPI = {
+  getProfile: () => api.get("/settings/profile"),
+
+  updateProfile: (data) =>
+    api.put("/settings/profile", data),
+
+  changePassword: (data) =>
+    api.post("/settings/change-password", data),
+
+  getSessions: () =>
+    api.get("/settings/sessions"),
+
+  logoutSession: (id) =>
+    api.delete(`/settings/sessions/${id}`),
+
+  logoutAllSessions: () =>
+    api.delete("/settings/sessions"),
+
+  getNotificationPreferences: () =>
+    api.get("/settings/notifications"),
+
+  updateNotificationPreferences: (data) =>
+    api.put("/settings/notifications", data),
+};
+
 export default api;
+

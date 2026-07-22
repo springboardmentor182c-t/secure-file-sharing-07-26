@@ -57,7 +57,11 @@ def login(
     if user.mfa_enabled:
         return service.build_mfa_pending_response(user)
 
-    return service._build_token_response(user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Account suspended"
+        )
+    # Store session when building token response
+    return service._build_token_response(user, db=db, request=request)
 
 
 @router.post("/login/swagger", response_model=models.TokenResponse)
@@ -65,6 +69,7 @@ def swagger_login(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
+    request: Request = None,
 ):
     ip = _get_client_ip(request)
 
@@ -87,7 +92,7 @@ def swagger_login(
             detail="Account suspended",
         )
 
-    return service._build_token_response(user)
+    return service._build_token_response(user, db=db, request=request)
 
 
 @router.post(
@@ -376,6 +381,15 @@ def disable_mfa(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    return service.disable_mfa(db, current_user) 
+@router.post("/change-password")
+def change_password(
+    body: models.ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    service.change_password(db, current_user, body.current_password, body.new_password)
+    return {"status": "success", "message": "Password changed successfully"}
     return service.disable_mfa(db, current_user)
 
 
