@@ -304,6 +304,39 @@ def generate_file_analytics_pdf(
             col_widths=[8 * cm, 4 * cm],
         ))
 
+        # ── Recent Activity ───────────────────────────────────────────────────
+    recent_activity = data.get("recent_activity", {}) or {}
+    activities = recent_activity.get("activities", []) or []
+    
+    if activities:
+        elements.append(Paragraph("Recent Activity", styles["TrustSection"]))
+        rows = []
+        for activity in activities[:20]:  # Show last 20 activities
+            # Handle both dict and object types
+            if isinstance(activity, dict):
+                event = activity.get("event_type", "") or activity.get("action", "")
+                user = activity.get("user", "")
+                file = activity.get("file", "")
+                time = str(activity.get("time", "") or activity.get("date", ""))
+            else:
+                event = getattr(activity, "event_type", "") or getattr(activity, "action", "")
+                user = getattr(activity, "user", "")
+                file = getattr(activity, "file", "")
+                time = str(getattr(activity, "time", "") or getattr(activity, "date", ""))
+            
+            rows.append([
+                str(event)[:20],
+                str(user)[:20],
+                str(file)[:35],
+                str(time)[:20],
+            ])
+        
+        elements.append(_section_table(
+            ["Event", "User", "File", "Time"],
+            rows,
+            col_widths=[3.5 * cm, 3.5 * cm, 6 * cm, 4 * cm],
+        ))
+
     # Build PDF
     doc.build(elements, onFirstPage=_footer, onLaterPages=_footer)
     pdf_bytes = buffer.getvalue()

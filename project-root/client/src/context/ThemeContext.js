@@ -17,11 +17,11 @@ export const ThemeProvider = ({ children }) => {
 
   const [theme, setTheme] = useState(getInitialTheme);
 
- useEffect(() => {
-  document.body.classList.remove("light", "dark");
-  document.body.classList.add(theme);
-  localStorage.setItem("theme", theme);
-}, [theme]);
+  useEffect(() => {
+    document.body.classList.remove("light", "dark");
+    document.body.classList.add(theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   const toggleTheme = () => {
     setTheme((prevTheme) =>
@@ -30,9 +30,7 @@ export const ThemeProvider = ({ children }) => {
   };
 
   return (
-    <ThemeContext.Provider
-      value={{ theme, toggleTheme }}
-    >
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

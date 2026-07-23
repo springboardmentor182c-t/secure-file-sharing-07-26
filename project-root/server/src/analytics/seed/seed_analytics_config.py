@@ -135,9 +135,29 @@ ANALYTICS_UI_CONFIG = {
             "title": "Sharing by Department",
             "empty": "No sharing data yet.",
         },
+
+        # ═══ ✅ NEW: File Type Distribution ═══
+        "file_types": {
+            "title": "File Type Distribution",
+            "subtitle": "Breakdown by file format",
+            "meta": "by file count",
+            "empty": "No files uploaded yet.",
+            "total_label_singular": "File",
+            "total_label_plural": "Files",
+        },
+
+        # ═══ ✅ NEW: Failed Login Heatmap ═══
+        "login_heatmap": {
+            "title": "Failed Login Heatmap",
+            "subtitle": "Attack patterns by day and hour",
+            "meta": "last 7 days",
+            "empty": "No failed login attempts recorded.",
+            "low_label": "Low",
+            "high_label": "High",
+        },
     },
 
-        "panels": {
+    "panels": {
         "top_files": {
             "title": "Top Shared Files",
             "meta": "by opens",
@@ -188,7 +208,42 @@ ANALYTICS_UI_CONFIG = {
                 "python_version":   "Python",
                 "platform":         "Platform"
             }
-        }
+        },
+
+        # ═══ ✅ NEW: Top Active Users ═══
+        "top_active_users": {
+            "title": "Top Active Users",
+            "subtitle": "Most active workspace members",
+            "meta": "by activity",
+            "empty": "No user activity yet.",
+            "events_label": "events",
+            "event_singular": "event",
+            "badge_prefix": "Top",
+        },
+
+        # ═══ ✅ NEW: Security Score ═══
+        "security_score": {
+            "title": "Security Score",
+            "subtitle": "Overall security health",
+            "meta": "0-100 scale",
+            "empty": "Not enough data to calculate score.",
+            "breakdown_title": "Score Breakdown",
+            "login_success_label": "Login Success Rate",
+            "attack_response_label": "Attack Response",
+            "failed_score_label": "Failed Login Score",
+        },
+
+        # ═══ ✅ NEW: MFA Adoption ═══
+        "mfa_adoption": {
+            "title": "MFA Adoption",
+            "subtitle": "Multi-factor authentication usage",
+            "meta": "across all users",
+            "empty": "No user data available.",
+            "enabled_label": "MFA Enabled",
+            "disabled_label": "MFA Disabled",
+            "recommendation_low": "Enable MFA for better security",
+            "recommendation_good": "Great adoption rate!",
+        },
     },
 
     "severity": {

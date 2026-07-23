@@ -5,25 +5,25 @@ import {
   AreaChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { motion }              from "framer-motion";
-import Card, { CardHeader }    from "../shared/Card";
-import ChartTooltip            from "./ChartTooltip";
-import { ChartSkeleton }       from "../shared/Skeleton";
-import EmptyState              from "../shared/EmptyState";
-import useChartTheme           from "../../hooks/useChartTheme";
+import { motion } from "framer-motion";
+import Card, { CardHeader } from "../shared/Card";
+import ChartTooltip from "./ChartTooltip";
+import { AreaChartSkeleton } from "../shared/Skeleton";
+import EmptyState from "../shared/EmptyState";
+import useChartTheme from "../../hooks/useChartTheme";
 
 export default function StorageAreaChart({
-  trend    = [],
-  loading  = false,
-  config   = {},
+  trend = [],
+  loading = false,
+  config = {},
 }) {
-  const ct       = useChartTheme();
-  const gradId   = "an-storage-grad";
+  const ct = useChartTheme();
+  const gradId = "an-storage-grad";
 
-  const title    = config.title       || "Storage Usage Over Time";
-  const meta     = config.meta        || "";
-  const xKey     = config.x_key       || "month";
-  const dataKey  = config.data_key    || "gb";
+  const title = config.title || "Storage Usage Over Time";
+  const meta = config.meta || "";
+  const xKey = config.x_key || "month";
+  const dataKey = config.data_key || "gb";
   const valLabel = config.value_label || "Storage";
 
   // Auto-scale to MB if all values are < 1 GB
@@ -45,7 +45,7 @@ export default function StorageAreaChart({
       />
 
       {loading ? (
-        <ChartSkeleton height={200} />
+        <AreaChartSkeleton height={200} />
       ) : !trend.length ? (
         <EmptyState message="No storage trend data yet." />
       ) : (
@@ -61,7 +61,7 @@ export default function StorageAreaChart({
             >
               <defs>
                 <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor={ct.storageStroke} stopOpacity={0.18} />
+                  <stop offset="5%" stopColor={ct.storageStroke} stopOpacity={0.18} />
                   <stop offset="95%" stopColor={ct.storageStroke} stopOpacity={0.01} />
                 </linearGradient>
               </defs>

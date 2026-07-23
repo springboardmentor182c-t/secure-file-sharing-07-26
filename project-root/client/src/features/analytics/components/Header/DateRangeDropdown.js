@@ -1,13 +1,17 @@
 // client/src/features/analytics/components/Header/DateRangeDropdown.js
 /**
- * Custom dropdown with rounded corners — adapts to light/dark mode.
- * Renders menu in a portal so it can overflow parent containers.
+ * Premium date range dropdown with custom picker.
+ * Follows page scroll, but respects the top navbar boundary.
  */
 
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, Calendar, ArrowRight, ArrowLeft } from "lucide-react";
+
+// ═══ Header height where dropdown should stop ═══
+// Adjust this value to match your app's navbar height
+const NAVBAR_HEIGHT = 10; // pixels
 
 export default function DateRangeDropdown({
   options   = [],
@@ -16,16 +20,29 @@ export default function DateRangeDropdown({
 }) {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 0 });
+  const [showCustom, setShowCustom] = useState(false);
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+  const [activePreset, setActivePreset] = useState(null);
   const triggerRef = useRef(null);
   const menuRef    = useRef(null);
 
-  // Calculate menu position based on trigger button
+  // ═══ Update position — follows scroll but respects navbar boundary ═══
   const updatePosition = () => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
+
+    // If trigger scrolled above navbar → close dropdown
+    if (rect.bottom < NAVBAR_HEIGHT) {
+      setOpen(false);
+      setShowCustom(false);
+      return;
+    }
+
+    // Otherwise position below trigger (clamped to navbar minimum)
     setMenuPos({
-      top:   rect.bottom + window.scrollY + 6,
-      left:  rect.left + window.scrollX,
+      top:   Math.max(NAVBAR_HEIGHT, rect.bottom + 8),
+      left:  rect.left,
       width: rect.width,
     });
   };
@@ -33,6 +50,7 @@ export default function DateRangeDropdown({
   useEffect(() => {
     if (open) {
       updatePosition();
+      // Track scroll + resize to reposition dropdown
       window.addEventListener("scroll", updatePosition, true);
       window.addEventListener("resize", updatePosition);
       return () => {
@@ -42,7 +60,7 @@ export default function DateRangeDropdown({
     }
   }, [open]);
 
-  // Close on outside click (both trigger and portal)
+  // Close on outside click
   useEffect(() => {
     function handleClick(e) {
       if (
@@ -52,6 +70,7 @@ export default function DateRangeDropdown({
         !menuRef.current.contains(e.target)
       ) {
         setOpen(false);
+        setShowCustom(false);
       }
     }
     if (open) {
@@ -63,23 +82,89 @@ export default function DateRangeDropdown({
   // Close on Escape
   useEffect(() => {
     function handleKey(e) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+        setShowCustom(false);
+      }
     }
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
   }, []);
 
-  const selected = options.find((o) => o.value === value);
-  const label    = selected?.label || "Select...";
+  const getSelectedLabel = () => {
+    if (value?.startsWith("custom-")) {
+      const parts = value.replace("custom-", "").split("-to-");
+      if (parts.length === 2) {
+        const start = new Date(parts[0]);
+        const end = new Date(parts[1]);
+        return `${formatDate(start)} → ${formatDate(end)}`;
+      }
+    }
+    const selected = options.find((o) => o.value === value);
+    return selected?.label || "Select...";
+  };
+
+  const formatDate = (d) => {
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
 
   const handleSelect = (val) => {
+    if (val === "custom") {
+      setShowCustom(true);
+      const today = new Date();
+      const monthAgo = new Date(today);
+      monthAgo.setDate(today.getDate() - 30);
+      setCustomEnd(today.toISOString().split("T")[0]);
+      setCustomStart(monthAgo.toISOString().split("T")[0]);
+      setActivePreset("month");
+      return;
+    }
     if (onChange) onChange(val);
     setOpen(false);
+    setShowCustom(false);
   };
+
+  const applyPreset = (days, key) => {
+    const t = new Date();
+    const s = new Date(t);
+    s.setDate(t.getDate() - (days - 1));
+    setCustomStart(s.toISOString().split("T")[0]);
+    setCustomEnd(t.toISOString().split("T")[0]);
+    setActivePreset(key);
+  };
+
+  const handleApplyCustom = () => {
+    if (!customStart || !customEnd) return;
+    const startDate = new Date(customStart);
+    const endDate = new Date(customEnd);
+    if (startDate > endDate) return;
+    const customValue = `custom-${customStart}-to-${customEnd}`;
+    if (onChange) onChange(customValue);
+    setOpen(false);
+    setShowCustom(false);
+  };
+
+  const isCustomValid = () => {
+    if (!customStart || !customEnd) return false;
+    return new Date(customStart) <= new Date(customEnd);
+  };
+
+  const getDayCount = () => {
+    if (!isCustomValid()) return 0;
+    return Math.ceil((new Date(customEnd) - new Date(customStart)) / (1000 * 60 * 60 * 24)) + 1;
+  };
+
+  const maxDate = new Date().toISOString().split("T")[0];
+
+  const presets = [
+    { key: "7d",    label: "7 Days",  days: 7 },
+    { key: "14d",   label: "14 Days", days: 14 },
+    { key: "month", label: "1 Month", days: 30 },
+    { key: "3m",    label: "3 Months", days: 90 },
+  ];
 
   return (
     <div className="an-dropdown">
-      {/* Trigger button */}
       <button
         ref={triggerRef}
         type="button"
@@ -88,7 +173,7 @@ export default function DateRangeDropdown({
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className="an-dropdown-label">{label}</span>
+        <span className="an-dropdown-label">{getSelectedLabel()}</span>
         <motion.span
           className="an-dropdown-chevron"
           animate={{ rotate: open ? 180 : 0 }}
@@ -98,49 +183,233 @@ export default function DateRangeDropdown({
         </motion.span>
       </button>
 
-      {/* Menu — rendered via portal so it escapes overflow:hidden parents */}
       {createPortal(
         <AnimatePresence>
           {open && (
             <motion.div
               ref={menuRef}
-              className="an-dropdown-menu-portal"
+              className={`an-dropdown-menu-portal ${showCustom ? "an-dropdown-menu-portal--custom" : ""}`}
               role="listbox"
               style={{
-                position: "absolute",
+                position: "fixed",
                 top:      menuPos.top,
-                left:     menuPos.left,
-                minWidth: Math.max(menuPos.width, 160),
+                left:     showCustom ? Math.max(20, menuPos.left - 100) : menuPos.left,
+                minWidth: showCustom ? 340 : Math.max(menuPos.width, 180),
               }}
               initial={{ opacity: 0, y: -8, scale: 0.96 }}
               animate={{ opacity: 1, y:  0, scale: 1    }}
-              exit={{    opacity: 0, y: -6, scale: 0.97  }}
-              transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+              exit={{    opacity: 0, y: -6, scale: 0.97 }}
+              transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
             >
-              {options.map((opt) => {
-                const isActive = opt.value === value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    role="option"
-                    aria-selected={isActive}
-                    className={`an-dropdown-item ${isActive ? "an-dropdown-item--active" : ""}`}
-                    onClick={() => handleSelect(opt.value)}
+              <AnimatePresence mode="wait">
+                {!showCustom ? (
+                  <motion.div
+                    key="options"
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
                   >
-                    <span className="an-dropdown-item-label">{opt.label}</span>
-                    {isActive && (
+                    {options.map((opt) => {
+                      const isActive = opt.value === value && !value?.startsWith("custom-");
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          role="option"
+                          aria-selected={isActive}
+                          className={`an-dropdown-item ${isActive ? "an-dropdown-item--active" : ""}`}
+                          onClick={() => handleSelect(opt.value)}
+                        >
+                          <span className="an-dropdown-item-label">{opt.label}</span>
+                          {isActive && (
+                            <motion.span
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="an-dropdown-check"
+                            >
+                              <Check size={13} />
+                            </motion.span>
+                          )}
+                        </button>
+                      );
+                    })}
+
+                    <div className="an-dropdown-divider" />
+
+                    <button
+                      type="button"
+                      className={`an-dropdown-item an-dropdown-item--custom ${value?.startsWith("custom-") ? "an-dropdown-item--active" : ""}`}
+                      onClick={() => handleSelect("custom")}
+                    >
+                      <span className="an-dropdown-item-icon">
+                        <Calendar size={14} strokeWidth={2.5} />
+                      </span>
+                      <span className="an-dropdown-item-label">Custom Range</span>
                       <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="an-dropdown-check"
+                        className="an-dropdown-item-chevron"
+                        whileHover={{ x: 3 }}
                       >
-                        <Check size={13} />
+                        <ArrowRight size={13} strokeWidth={2.5} />
                       </motion.span>
-                    )}
-                  </button>
-                );
-              })}
+                    </button>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="custom"
+                    className="an-custom-panel"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                  >
+                    {/* Header with back + title + day badge */}
+                    <div className="an-custom-header">
+                      <motion.button
+                        className="an-custom-back"
+                        onClick={() => setShowCustom(false)}
+                        whileHover={{ x: -2 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <ArrowLeft size={13} strokeWidth={2.5} />
+                      </motion.button>
+                      <div className="an-custom-title-wrap">
+                        <span className="an-custom-title">Custom Range</span>
+                        <span className="an-custom-subtitle">Pick your date range</span>
+                      </div>
+                      {isCustomValid() && (
+                        <motion.div
+                          className="an-custom-day-badge"
+                          initial={{ opacity: 0, scale: 0.7 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          key={getDayCount()}
+                          transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+                        >
+                          {getDayCount()}d
+                        </motion.div>
+                      )}
+                    </div>
+
+                    {/* Quick presets pills */}
+                    <div className="an-custom-presets">
+                      {presets.map((p, i) => (
+                        <motion.button
+                          key={p.key}
+                          className={`an-custom-preset ${activePreset === p.key ? "an-custom-preset--active" : ""}`}
+                          onClick={() => applyPreset(p.days, p.key)}
+                          whileHover={{ y: -1 }}
+                          whileTap={{ scale: 0.96 }}
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.05 + i * 0.03, duration: 0.25 }}
+                        >
+                          {p.label}
+                        </motion.button>
+                      ))}
+                    </div>
+
+                    {/* Divider */}
+                    <div className="an-custom-divider">
+                      <span className="an-custom-divider-line" />
+                      <span className="an-custom-divider-text">OR CHOOSE DATES</span>
+                      <span className="an-custom-divider-line" />
+                    </div>
+
+                    {/* Date inputs — stacked cards */}
+                    <div className="an-custom-dates">
+                      <motion.div
+                        className="an-custom-date-card"
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.15, duration: 0.25 }}
+                      >
+                        <div className="an-custom-date-header">
+                          <div className="an-custom-date-dot an-custom-date-dot--start" />
+                          <span className="an-custom-date-label">FROM</span>
+                        </div>
+                        <input
+                          type="date"
+                          className="an-custom-date-input"
+                          value={customStart}
+                          max={customEnd || maxDate}
+                          onChange={(e) => {
+                            setCustomStart(e.target.value);
+                            setActivePreset(null);
+                          }}
+                        />
+                        {customStart && (
+                          <div className="an-custom-date-display">
+                            {new Date(customStart).toLocaleDateString("en-US", {
+                              weekday: "short",
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </div>
+                        )}
+                      </motion.div>
+
+                      <div className="an-custom-connector">
+                        <div className="an-custom-connector-line" />
+                        <motion.div
+                          className="an-custom-connector-arrow"
+                          animate={{ y: [0, 3, 0] }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          <ArrowRight size={14} strokeWidth={2.5} style={{ transform: "rotate(90deg)" }} />
+                        </motion.div>
+                        <div className="an-custom-connector-line" />
+                      </div>
+
+                      <motion.div
+                        className="an-custom-date-card"
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2, duration: 0.25 }}
+                      >
+                        <div className="an-custom-date-header">
+                          <div className="an-custom-date-dot an-custom-date-dot--end" />
+                          <span className="an-custom-date-label">TO</span>
+                        </div>
+                        <input
+                          type="date"
+                          className="an-custom-date-input"
+                          value={customEnd}
+                          min={customStart}
+                          max={maxDate}
+                          onChange={(e) => {
+                            setCustomEnd(e.target.value);
+                            setActivePreset(null);
+                          }}
+                        />
+                        {customEnd && (
+                          <div className="an-custom-date-display">
+                            {new Date(customEnd).toLocaleDateString("en-US", {
+                              weekday: "short",
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </div>
+                        )}
+                      </motion.div>
+                    </div>
+
+                    {/* Apply button */}
+                    <motion.button
+                      className="an-custom-apply"
+                      onClick={handleApplyCustom}
+                      disabled={!isCustomValid()}
+                      whileHover={isCustomValid() ? { y: -1 } : {}}
+                      whileTap={isCustomValid() ? { scale: 0.98 } : {}}
+                      transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+                    >
+                      <span>Apply Range</span>
+                      <ArrowRight size={14} strokeWidth={2.5} />
+                    </motion.button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
         </AnimatePresence>,
