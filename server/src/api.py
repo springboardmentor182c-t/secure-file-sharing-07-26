@@ -15,12 +15,11 @@ from src.recent.controller import router as recent_router
 
 
 from src.analytics.controller import router as analytics_router
-from src.recent.controller import router as recent_router
+
 from src.security.controller import router as security_router
 
 from src.shared_links.controller import (
-    api_shared_router,
-    api_users_router,
+    
     dev_router as shared_links_dev_router,
     notifications_router as shared_links_notifications_router,
     public_router as shared_links_public_router,
@@ -40,8 +39,7 @@ def register_routes(app: FastAPI) -> None:
 
     app.include_router(analytics_router)
     app.include_router(security_router)
-    app.include_router(api_shared_router)
-    app.include_router(api_users_router)
+
 
     app.include_router(recent_router)
 

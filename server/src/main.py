@@ -15,6 +15,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.exceptions import register_exception_handlers
+from src.logging import configure_logging
+from src.shared_links.scheduler import start_scheduler, stop_scheduler
+
 from .api import register_routes
 from .core import APP_NAME, ALLOWED_ORIGINS
 from .database.core import Base, engine, DATABASE_URL, create_all_tables
@@ -32,11 +36,11 @@ async def lifespan(app: FastAPI):
         create_all_tables()
         logger.info("SQLite dev database ready")
 
-   
+    start_scheduler()
     logger.info("Secure File Sharing System backend starting up")
 
     yield
-
+    stop_scheduler()
     logger.info("Secure File Sharing System backend shutting down")
 
 
