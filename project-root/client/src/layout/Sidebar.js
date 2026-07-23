@@ -1,66 +1,37 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
+import UserDropdownMenu from "./UserDropdownMenu";
 import "./Sidebar.css";
 
 import {
-  ShieldCheck,
   LayoutDashboard,
   FolderOpen,
   Share2,
+  UsersRound,
   Activity,
   Bell,
   BarChart3,
   Shield,
   Settings,
-  ChevronDown,
-  LogOut,
+  ChevronUp,
   Menu,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  {
-    to: "/dashboard",
-    label: "Dashboard",
-    icon: <LayoutDashboard size={16} />,
-  },
-  {
-    to: "/files",
-    label: "My Files",
-    icon: <FolderOpen size={16} />,
-  },
-  {
-    to: "/sharing",
-    label: "Sharing",
-    icon: <Share2 size={16} />,
-  },
-  {
-    to: "/activity",
-    label: "Activity",
-    icon: <Activity size={16} />,
-  },
-  {
-    to: "/notifications",
-    label: "Notifications",
-    icon: <Bell size={16} />,
-    badge: true,
-  },
-  {
-  to: "/analytics",
-  label: "Analytics",
-  icon: <BarChart3 size={16} />,
-},
-{
-  to: "/admin",
-  label: "Admin",
-  icon: <Shield size={16} />,
-},
-{
-  to: "/settings",
-  label: "Settings",
-  icon: <Settings size={16} />,
-},
+  { to: "/dashboard",      label: "Dashboard",      icon: LayoutDashboard },
+  { to: "/files",          label: "My Files",       icon: FolderOpen },
+  { to: "/sharing",        label: "Sharing",        icon: Share2 },
+  { to: "/shared-with-me", label: "Shared with Me", icon: UsersRound },
+  { to: "/activity",       label: "Activity",       icon: Activity },
+  { to: "/notifications",  label: "Notifications",  icon: Bell, badge: true },
+  { to: "/analytics",      label: "Analytics",      icon: BarChart3 },
+  { to: "/admin",          label: "Admin",          icon: Shield },
+  { to: "/settings",       label: "Settings",       icon: Settings },
 ];
 
 export default function Sidebar({
@@ -70,12 +41,10 @@ export default function Sidebar({
   sidebarCollapsed,
   setSidebarCollapsed,
 }) {
-
   const { user, logout } = useAuth();
-
   const navigate = useNavigate();
-
-
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userTriggerRef = useRef(null);
 
   const initials =
     user?.name
@@ -93,20 +62,28 @@ export default function Sidebar({
   return (
     <>
       {/* Mobile Toggle */}
+      {!sidebarOpen && (
+        <motion.button
+          className="sidebar-mobile-toggle"
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open sidebar"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ duration: 0.15, ease: [0.32, 0.72, 0, 1] }}
+        >
+          <Menu size={22} />
+        </motion.button>
+      )}
 
-      <button
-        className="sidebar-mobile-toggle"
-        onClick={() => setSidebarOpen(true)}
-      >
-        <Menu size={22} />
-      </button>
-
-      {/* Overlay */}
-
+      {/* Mobile Overlay */}
       {sidebarOpen && (
-        <div
+        <motion.div
           className="sidebar-overlay"
           onClick={() => setSidebarOpen(false)}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
         />
       )}
 
@@ -116,166 +93,162 @@ export default function Sidebar({
           ${sidebarCollapsed ? "sidebar-collapsed" : ""}
         `}
       >
-        {/* Mobile Close */}
-<div className="sidebar-header-mobile">
-  <button
-    className="sidebar-close-btn"
-    onClick={() => setSidebarOpen(false)}
-  >
-    <X size={20} />
-  </button>
-</div>
-
-{/* Logo */}
-
-<div className="sidebar-logo">
-
-  <button
-    className="sidebar-brand"
-    onClick={() => navigate("/dashboard")}
-  >
-
-    <div className="sidebar-logo-icon">
-      <ShieldCheck size={18} />
-    </div>
-
-    {!sidebarCollapsed && (
-      <>
-        <div className="sidebar-logo-text">
-          <span className="brand-title">
-            TrustShare
-          </span>
-
-          <span className="brand-subtitle">
-            Secure Sharing
-          </span>
+        {/* Mobile Close Button */}
+        <div className="sidebar-header-mobile">
+          <button
+            className="sidebar-close-btn"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close sidebar"
+          >
+            <X size={20} />
+          </button>
         </div>
 
-        <span className="sidebar-beta">
-          Beta
-        </span>
-      </>
-    )}
+        {/* Logo */}
+        <div className="sidebar-logo">
+          <button
+            className="sidebar-brand"
+            onClick={() => navigate("/dashboard")}
+            aria-label="Go to dashboard"
+          >
+            <motion.div
+              className="sidebar-logo-icon"
+              whileHover={{ scale: 1.05, rotate: -5 }}
+              transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+            >
+              <img
+                src="/logo.png"
+                alt="TrustShare"
+                className="sidebar-logo-img"
+              />
+            </motion.div>
 
-  </button>
+            {!sidebarCollapsed && (
+              <>
+                <div className="sidebar-logo-text">
+                  <span className="brand-title">TrustShare</span>
+                </div>
+                <span className="sidebar-beta">BETA</span>
+              </>
+            )}
+          </button>
 
-  <button
-    className="sidebar-collapse-btn"
-    onClick={() =>
-      setSidebarCollapsed(!sidebarCollapsed)
-    }
-  >
-    {sidebarCollapsed ? "»" : "«"}
-  </button>
+          {!sidebarCollapsed && (
+            <button
+              className="sidebar-collapse-btn"
+              onClick={() => setSidebarCollapsed(true)}
+              aria-label="Collapse sidebar"
+              title="Collapse sidebar"
+            >
+              <ChevronLeft size={16} />
+            </button>
+          )}
+        </div>
 
-</div>
+        {/* Navigation */}
+        <nav className="sidebar-nav">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                onClick={() => setSidebarOpen(false)}
+                data-tooltip={item.label}
+                className={({ isActive }) =>
+                  `sidebar-link ${isActive ? "active" : ""}`
+                }
+              >
+                <span className="sidebar-link-icon">
+                  <Icon size={18} />
+                </span>
 
-{/* Navigation */}
+                {!sidebarCollapsed && (
+                  <span className="sidebar-link-text">{item.label}</span>
+                )}
 
-<nav className="sidebar-nav">
+                {!sidebarCollapsed && item.badge && unreadCount > 0 && (
+                  <span className="sidebar-link-badge">{unreadCount}</span>
+                )}
 
-  {NAV_ITEMS.map((item) => (
+                {sidebarCollapsed && item.badge && unreadCount > 0 && (
+                  <span className="sidebar-link-dot" />
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
 
-    <NavLink
-      key={item.to}
-      to={item.to}
-      onClick={() => setSidebarOpen(false)}
-      className={({ isActive }) =>
-        `sidebar-link ${isActive ? "active" : ""}`
-      }
-    >
+        {/* Footer — User section with dropdown */}
+        <div className="sidebar-footer">
+          <button
+            ref={userTriggerRef}
+            className={`sidebar-user ${userMenuOpen ? "sidebar-user--open" : ""}`}
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
+            aria-label="Open user menu"
+            aria-expanded={userMenuOpen}
+            aria-haspopup="menu"
+          >
+            <div
+              className="sidebar-avatar"
+              style={{
+                background:
+                  user?.avatar_color ||
+                  "linear-gradient(135deg, #3b82f6, #6366f1)",
+              }}
+            >
+              {initials}
+            </div>
 
-      <span className="sidebar-link-icon">
-        {item.icon}
-      </span>
+            {!sidebarCollapsed && (
+              <div className="sidebar-user-info">
+                <span className="sidebar-user-name">
+                  {user?.name || "Guest User"}
+                </span>
+                <span className="sidebar-user-email">
+                  {user?.email || "guest@user.com"}
+                </span>
+              </div>
+            )}
 
-      {!sidebarCollapsed && (
-        <span className="sidebar-link-text">
-          {item.label}
-        </span>
+            {!sidebarCollapsed && (
+              <motion.span
+                className="sidebar-user-chevron"
+                animate={{ rotate: userMenuOpen ? 0 : 180 }}
+                transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+              >
+                <ChevronUp size={14} />
+              </motion.span>
+            )}
+          </button>
+        </div>
+      </aside>
+
+      {/* Floating expand button when collapsed */}
+      {sidebarCollapsed && (
+        <motion.button
+          className="sidebar-expand-btn"
+          onClick={() => setSidebarCollapsed(false)}
+          aria-label="Expand sidebar"
+          title="Expand sidebar"
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.2, delay: 0.15 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <ChevronRight size={14} />
+        </motion.button>
       )}
 
-      {!sidebarCollapsed &&
-        item.badge &&
-        unreadCount > 0 && (
-
-        <span className="sidebar-link-badge">
-          {unreadCount}
-        </span>
-
-      )}
-
-    </NavLink>
-
-  ))}
-
-</nav>
-{/* Bottom User Section */}
-
-<div className="sidebar-footer">
-
-  <button
-    className="sidebar-user"
-    onClick={() => navigate("/settings")}
-  >
-
-    <div
-      className="sidebar-avatar"
-      style={{
-        background:
-          user?.avatar_color ||
-          "linear-gradient(135deg,#2563eb,#4f46e5)"
-      }}
-    >
-      {initials}
-    </div>
-
-    {!sidebarCollapsed && (
-
-      <div className="sidebar-user-info">
-
-        <span className="sidebar-user-name">
-          {user?.name || "Badal"}
-        </span>
-
-        <span className="sidebar-user-email">
-          {user?.email || "guest@user.com"}
-        </span>
-
-      </div>
-
-      )}
-
-
-    {!sidebarCollapsed && (
-
-      <ChevronDown
-        size={16}
-        className="sidebar-chevron"
+      {/* User dropdown menu (portal) */}
+      <UserDropdownMenu
+        open={userMenuOpen}
+        onClose={() => setUserMenuOpen(false)}
+        triggerRef={userTriggerRef}
+        user={user}
+        onLogout={handleLogout}
       />
-
-      )}
-
-  </button>
-
-  <button
-    className="sidebar-logout"
-    onClick={handleLogout}
-  >
-    <LogOut size={16} />
-
-   {!sidebarCollapsed && (
-      <span>
-        Sign Out
-      </span>
-    )}
-
-  </button>
-
-</div>
-
-</aside>
-
-</>
-);
+    </>
+  );
 }

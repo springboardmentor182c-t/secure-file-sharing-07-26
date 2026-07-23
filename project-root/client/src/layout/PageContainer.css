@@ -1,34 +1,33 @@
-/* ==================================================
-   Page Container
-================================================== */
+/* ══════════════════════════════════════════════════════════════════════════
+   Page Container (Medium Size)
+   ══════════════════════════════════════════════════════════════════════════ */
 
-.page-wrapper{
-    flex:1;
-    overflow-y:auto;
-    background:#f8fafc;
+.page-wrapper {
+  flex: 1;
+  background: #f8fafc;
+  padding-top: 60px;
+  transition: background 0.3s ease;
 }
 
-.page-container{
-    width:100%;
-    max-width:1440px;
-    margin:0 auto;
-    padding:32px;
+.page-container {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px;
 }
 
-@media(max-width:992px){
-
-.page-container{
-    padding:20px;
+@media (max-width: 768px) {
+  .page-container {
+    padding: 16px;
+  }
 }
 
-/* ================= DARK MODE ================= */
+/* ── Dark Mode ────────────────────────────────────────────────────────── */
 
-body.dark .page-wrapper{
-    background:#111827;
+body.dark .page-wrapper {
+  background: transparent;
 }
 
-body.dark .page-container{
-    background:#111827;
-}
-
+body.dark .page-container {
+  background: transparent;
 }

@@ -2,7 +2,6 @@
 node_modules/
 __pycache__/
 *.pyc
-.env
 .env.local
 dist/
 build/
@@ -10,3 +9,7 @@ build/
 *.db
 uploads/
 venv/
+# Environment
+server/.env
+# Encryption keys
+server/keys/

@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()  # Load .env file before anything else reads os.getenv()
+
 import uvicorn
 from src.api import app
 from src.database.init_db import init_db
@@ -13,3 +16,10 @@ if __name__ == "__main__":
         reload=True,
         log_level="info",
     )
+
+
+
+
+
+
+

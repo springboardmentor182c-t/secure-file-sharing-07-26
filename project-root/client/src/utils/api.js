@@ -1,15 +1,14 @@
 import axios from 'axios';
-
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+import { API_BASE_URL } from '../data/constants';
 
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 
 // ── Request interceptor: attach JWT ────────────────────────────────────────
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
+  const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -21,22 +20,25 @@ api.interceptors.response.use(
     const originalRequest = err.config;
     if (err.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const refreshToken = localStorage.getItem('refresh_token');
+      const refreshToken = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token');
       if (refreshToken) {
         try {
-          const { data } = await axios.post(`${BASE_URL}/api/auth/refresh`, {
+          const { data } = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
             refresh_token: refreshToken,
           });
-          localStorage.setItem('access_token', data.access_token);
-          localStorage.setItem('refresh_token', data.refresh_token);
+          const storage = localStorage.getItem('refresh_token') ? localStorage : sessionStorage;
+          storage.setItem('access_token', data.access_token);
+          storage.setItem('refresh_token', data.refresh_token);
           originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
           return api(originalRequest);
         } catch {
           localStorage.clear();
+          sessionStorage.clear();
           window.location.href = '/login';
         }
       } else {
         localStorage.clear();
+        sessionStorage.clear();
         window.location.href = '/login';
       }
     }
@@ -49,7 +51,17 @@ export const authAPI = {
   login: (email, password) => api.post('/api/auth/login', { email, password }),
   signup: (name, email, password) => api.post('/api/auth/signup', { name, email, password }),
   me: () => api.get('/api/auth/me'),
+  
+   // NEW: Storage breakdown
+  storageBreakdown: () => api.get('/api/auth/me/storage-breakdown'),
+  
   logout: () => api.post('/api/auth/logout'),
+  verifyOTP: (mfa_token, code) => api.post('/api/auth/verify-otp', { mfa_token, code }),
+  resendOTP: (mfa_token) => api.post('/api/auth/resend-otp', { mfa_token }),
+  forgotPassword: (email) => api.post('/api/auth/forgot-password', { email }),
+  resetPassword: (token, new_password) => api.post('/api/auth/reset-password', { token, new_password }),
+  oauthToken: (provider, code) => api.post('/api/auth/oauth/token', { provider, code }),
+  updateProfile: (data) => api.patch('/api/users/me', data),
 };
 
 // ── Files ─────────────────────────────────────────────────────────────────
@@ -91,7 +103,34 @@ export const notificationsAPI = {
 
 // ── Analytics ─────────────────────────────────────────────────────────────
 export const analyticsAPI = {
-  summary: () => api.get('/api/analytics/summary'),
+  summary: (days = 30, userId = null) => {
+    const params = { days };
+    if (userId) params.user_id = userId;
+    return api.get('/api/analytics/summary', { params });
+  },
+  users: () => api.get('/api/analytics/users'),
+  systemStats: () => api.get('/api/analytics/system-stats'),
+  exportFileAnalytics: (days = 30) =>
+    api.get('/api/analytics/export/file-analytics', {
+      params: { days },
+      responseType: 'blob',
+    }),
+  exportSecurity: (days = 30) =>
+    api.get('/api/analytics/export/security', {
+      params: { days },
+      responseType: 'blob',
+    }),
+  // Expose raw axios for custom calls
+  get: (url, config) => api.get(url, config),
+};
+
+export const dashboardAPI = {
+  get: () => api.get('/api/dashboard/'),
+};
+
+export const sharedWithMeAPI = {
+  list: () => api.get('/api/shared-with-me/'),
+  download: (fileId) => api.get(`/api/shared-with-me/${fileId}/download`, { responseType: 'blob' }),
 };
 
 // ── Admin ─────────────────────────────────────────────────────────────────
@@ -106,7 +145,6 @@ export const auditAPI = {
 };
 
 // ── Search ───────────────────────────────────────────────────────────────
-
 export const searchAPI = {
   search: (query) =>
     api.get("/api/search/", {
@@ -114,4 +152,31 @@ export const searchAPI = {
     }),
 };
 
+// ── Settings (API Placeholders) ──────────────────────────────────────────
+export const settingsAPI = {
+  getProfile: () => api.get("/settings/profile"),
+
+  updateProfile: (data) =>
+    api.put("/settings/profile", data),
+
+  changePassword: (data) =>
+    api.post("/settings/change-password", data),
+
+  getSessions: () =>
+    api.get("/settings/sessions"),
+
+  logoutSession: (id) =>
+    api.delete(`/settings/sessions/${id}`),
+
+  logoutAllSessions: () =>
+    api.delete("/settings/sessions"),
+
+  getNotificationPreferences: () =>
+    api.get("/settings/notifications"),
+
+  updateNotificationPreferences: (data) =>
+    api.put("/settings/notifications", data),
+};
+
 export default api;
+
