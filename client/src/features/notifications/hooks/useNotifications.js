@@ -6,8 +6,16 @@ function useNotifications() {
 
   useEffect(() => {
     async function loadNotifications() {
-      const data = await getNotifications();
-      setNotifications(data);
+      try {
+        const data = await getNotifications();
+
+        console.log("Notifications:", data);
+
+        setNotifications(data);
+
+      } catch (error) {
+        console.error("Notification Error:", error);
+      }
     }
 
     loadNotifications();
