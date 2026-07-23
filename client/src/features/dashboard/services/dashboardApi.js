@@ -1,16 +1,11 @@
 import axios from 'axios';
-import { mockDashboardData } from '../data/mockDashboardData';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const dashboardClient = axios.create({
   baseURL: `${API_BASE_URL}/api/v1/dashboard`,
   timeout: 5000,
 });
-
-function cloneMockDashboardData() {
-  return JSON.parse(JSON.stringify(mockDashboardData));
-}
 
 async function getDashboardFromApi() {
   const [
@@ -48,19 +43,10 @@ async function getDashboardFromApi() {
   };
 }
 
-export async function fetchDashboardData({ useMockFallback = true } = {}) {
-  try {
-    return await getDashboardFromApi();
-  } catch (error) {
-    if (!useMockFallback) {
-      throw error;
-    }
-
-    console.warn('FastAPI dashboard service unavailable. Using local dashboard mock data.', error);
-    return cloneMockDashboardData();
-  }
+export async function fetchDashboardData() {
+  return getDashboardFromApi();
 }
 
 export async function fetchDashboardDataFromApiOnly() {
-  return fetchDashboardData({ useMockFallback: false });
+  return getDashboardFromApi();
 }
