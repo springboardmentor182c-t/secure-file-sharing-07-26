@@ -1,17 +1,32 @@
+# Dependency folders
 node_modules/
-.npm-cache/
-__pycache__/
-*.py[cod]
-.venv/
+
+# Production build outputs
 dist/
 build/
+
+# Testing and coverage logs
 coverage/
+*.log
+logs/
+
+# Environments and Secrets
 .env
 .env.*
-!.env.example
-!client/.env.example
-!server/.env.example
-logs/
-*.log
+environment.ts
+environment.prod.ts
+
+# Python local virtual environments & cache
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# OS specific system files
 .DS_Store
 Thumbs.db
+
+# Project specific optional files
+package-lock.json

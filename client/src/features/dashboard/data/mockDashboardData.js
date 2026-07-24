@@ -149,7 +149,7 @@ export const mockDashboardData = {
       type: 'expired',
       title: 'Temporary link expired',
       time: '3 hours ago',
-    },``
+    },
   ],
   security: [
     { id: 'encryption', label: 'AES-256 Encryption', value: 'Enabled', tone: 'success' },

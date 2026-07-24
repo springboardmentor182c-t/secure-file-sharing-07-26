@@ -17,6 +17,9 @@ export default function SecurityStatusCard({ security }) {
             Encryption & Security
           </h2>
           <p className="mt-1 text-sm text-[#64748B]">Protect your confidential files with advanced encryption and secure authentication.</p>
+          <p className="mt-2 text-sm text-[#64748B]">
+  Encryption Level: AES-256 Bit
+</p>
         </div>
         <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#16A34A]">
           Encrypted

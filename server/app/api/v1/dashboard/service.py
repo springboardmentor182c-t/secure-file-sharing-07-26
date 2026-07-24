@@ -221,11 +221,17 @@ def seed_dashboard_data(db: Session) -> None:
         DashboardSecurityStatus,
         [
             {"item_key": "encryption", "label": "AES-256 Encryption", "value": "Enabled", "tone": "success", "display_order": 1},
-            {"item_key": "mfa", "label": "MFA", "value": "Active", "tone": "success", "display_order": 2},
-            {"item_key": "sharing", "label": "Secure Sharing", "value": "Enabled", "tone": "success", "display_order": 3},
-            {"item_key": "logging", "label": "Audit Logging", "value": "Running", "tone": "success", "display_order": 4},
-            {"item_key": "suspicious", "label": "Suspicious Activity", "value": "None detected", "tone": "success", "display_order": 5},
+
+{"item_key": "key-management", "label": "Key Management", "value": "Rotated Successfully", "tone": "success", "display_order": 2},
+
+{"item_key": "file-integrity", "label": "File Integrity", "value": "Verified", "tone": "success", "display_order": 3},
+
+{"item_key": "access-control", "label": "Role-Based Access", "value": "Protected", "tone": "success", "display_order": 4},
+
+{"item_key": "audit", "label": "Security Audit Logs", "value": "Recording", "tone": "success", "display_order": 5},
+
         ],
+        
     )
 
     _seed_if_empty(
