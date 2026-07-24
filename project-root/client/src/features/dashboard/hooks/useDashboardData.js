@@ -1,64 +1,51 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchDashboardData } from '../services/dashboardApi';
-
-function hasDashboardContent(data) {
-  return Boolean(
-    data &&
-      (data.stats?.length ||
-        data.recentFiles?.length ||
-        data.activities?.length ||
-        data.notifications?.length ||
-        data.teamActivity?.length),
-  );
-}
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { fetchDashboardData } from '../services/dashboardService';
 
 export function useDashboardData() {
+  const isMounted = useRef(true);
   const [dashboardData, setDashboardData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const loadDashboard = useCallback(async (canUpdate = () => true) => {
-    setIsLoading(true);
-    setError(null);
+  useEffect(() => {
+    isMounted.current = true;
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  const loadDashboard = useCallback(async () => {
+    if (isMounted.current) {
+      setIsLoading(true);
+      setError(null);
+    }
 
     try {
       const data = await fetchDashboardData();
-      if (canUpdate()) {
+      if (isMounted.current) {
         setDashboardData(data);
       }
     } catch (requestError) {
-      if (canUpdate()) {
-        setError(requestError);
+      if (isMounted.current) {
         setDashboardData(null);
+        setError(requestError);
       }
     } finally {
-      if (canUpdate()) {
+      if (isMounted.current) {
         setIsLoading(false);
       }
     }
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-
-    loadDashboard(() => isMounted);
-
-    return () => {
-      isMounted = false;
-    };
+    loadDashboard();
   }, [loadDashboard]);
-
-  const isEmpty = useMemo(() => !isLoading && !error && !hasDashboardContent(dashboardData), [
-    dashboardData,
-    error,
-    isLoading,
-  ]);
 
   return {
     dashboardData,
-    isLoading,
     error,
-    isEmpty,
+    isLoading,
     refetch: loadDashboard,
   };
 }
