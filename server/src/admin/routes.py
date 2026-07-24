@@ -37,14 +37,17 @@ def dashboard(db: Session = Depends(get_db)):
     active_users = db.query(User).filter(User.status == "Active").count()
     suspended_users = db.query(User).filter(User.status == "Suspended").count()
 
+    health = db.query(SystemHealth).first()
+    open_issues = db.query(Issue).count()
+
     return {
         "total_users": total_users,
         "active_users": active_users,
         "suspended_users": suspended_users,
         "storage_used": f"{total_size} KB",
         "storage_limit": "50 GB",
-        "system_health": "99.9%",
-        "open_issues": 2,
+        "system_health": health.system_health if health else "0%",
+        "open_issues": open_issues,
         "total_files": total_files
     }
 @router.get("/users")
