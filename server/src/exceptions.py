@@ -80,6 +80,21 @@ class FileTooLargeError(AppError):
     error_code = "file_too_large"
 
 
+class UnsupportedFileTypeError(AppError):
+    status_code = 415
+    error_code = "unsupported_file_type"
+
+
+class StorageQuotaExceededError(AppError):
+    status_code = 413
+    error_code = "storage_quota_exceeded"
+
+
+class EmptyFileError(AppError):
+    status_code = 422
+    error_code = "empty_file"
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def handle_app_error(request: Request, exc: AppError) -> JSONResponse:

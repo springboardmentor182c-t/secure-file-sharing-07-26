@@ -1,3 +1,9 @@
+<<<<<<< HEAD
+@import '../assets/global.css';
+@import './fonts.css';
+@import './common.css';
+@import './tailwind.css';
+=======
 @import "./fonts.css";
 @import "tailwindcss";
 
@@ -7,3 +13,4 @@ body {
   color: #ffffff;
 }
  
+>>>>>>> origin/main-group-B

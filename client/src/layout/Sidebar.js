@@ -88,12 +88,42 @@ export default function Sidebar({ users, stats }) {
               <HardDrive size={16} className="text-purple-400" />
               Storage
             </div>
+<<<<<<< HEAD
+
+            <span
+              className="
+                text-xs
+                text-gray-400
+              "
+            >
+              82%
+=======
             <span className="text-gray-400 text-xs">
               {stats ? `${Math.round(storagePercent)}%` : "..."}
+>>>>>>> origin/main-group-B
             </span>
           </div>
           <div className="w-full bg-gray-800 rounded-full h-2 mb-2">
             <div
+<<<<<<< HEAD
+              className="
+                h-full
+                w-4/5
+                rounded-full
+                bg-[#7C5CFC]
+              "
+            />
+          </div>
+
+          <p
+            className="
+              mt-3
+              text-xs
+              text-gray-400
+            "
+          >
+            412 GB / 500 GB Used
+=======
               className="bg-purple-500 h-2 rounded-full"
               style={{ width: `${storagePercent}%` }}
             />
@@ -102,6 +132,7 @@ export default function Sidebar({ users, stats }) {
             {stats
               ? `${stats.total_storage_gb.toFixed(0)} GB / ${stats.total_storage_limit_gb} GB Used`
               : "Loading..."}
+>>>>>>> origin/main-group-B
           </p>
         </div>
 
@@ -142,7 +173,7 @@ export default function Sidebar({ users, stats }) {
                 font-bold
               "
             >
-              X
+              V
             </div>
             <div>
               <h3
@@ -152,7 +183,7 @@ export default function Sidebar({ users, stats }) {
                   text-white
                 "
               >
-                XYZ
+                Vamshi
               </h3>
 
               <p
@@ -161,7 +192,7 @@ export default function Sidebar({ users, stats }) {
                   text-gray-400
                 "
               >
-                Engineering Lead
+                Student
               </p>
             </div>
           </div>
@@ -173,3 +204,7 @@ export default function Sidebar({ users, stats }) {
   );
 }
 
+<<<<<<< HEAD
+export default Sidebar;
+=======
+>>>>>>> origin/main-group-B

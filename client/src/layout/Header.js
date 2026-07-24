@@ -1,8 +1,11 @@
 import { Menu, Search, Bell, ChevronDown } from "lucide-react";
+<<<<<<< HEAD
+=======
 import { useLocation } from "react-router-dom";
+>>>>>>> origin/main-group-B
 
+import { useLocation } from "react-router-dom";
 import pageTitles from "../data/pageTitles";
-import NotificationBell from "../components/NotificationBell";
 
 function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
   const location = useLocation();
@@ -99,7 +102,38 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
       <div className="flex items-center gap-3 lg:gap-5">
 
         {/* Notification */}
-        <NotificationBell />
+
+        <button
+          className="
+            relative
+            h-11
+            w-11
+            rounded-xl
+            bg-[#272938]
+            border
+            border-[#34364A]
+            flex
+            items-center
+            justify-center
+            hover:bg-[#34364A]
+            transition
+          "
+          aria-label="Notifications"
+        >
+          <Bell size={20} className="text-gray-300" />
+
+          <span
+            className="
+              absolute
+              top-2
+              right-2
+              h-2
+              w-2
+              rounded-full
+              bg-[#7C5CFC]
+            "
+          />
+        </button>
 
          <button
           className="
@@ -132,7 +166,7 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
               font-semibold
             "
           >
-            X
+            V
           </div>
 
       
@@ -150,7 +184,7 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
                 text-white
               "
             >
-              XYZ
+              Vamshi
             </p>
 
             <p
@@ -159,7 +193,7 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
                 text-gray-400
               "
             >
-              Engineering Lead
+              Student
             </p>
           </div>
 

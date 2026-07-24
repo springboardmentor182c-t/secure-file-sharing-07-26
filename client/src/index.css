@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+=======
 @import "tailwindcss";
 
 
@@ -104,3 +109,4 @@ code {
   background: var(--code-bg);
 }
 @import "tailwindcss";
+>>>>>>> origin/main-group-B
