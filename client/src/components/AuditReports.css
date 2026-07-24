@@ -1,0 +1,143 @@
+.audit-card{
+    background:#fff;
+    border-radius:20px;
+    padding:25px;
+    margin-top:20px;
+    border:1px solid #ececec;
+    box-shadow:0 4px 12px rgba(0,0,0,.05);
+}
+
+.audit-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:25px;
+}
+
+.audit-header h2{
+    font-size:28px;
+    color:#333;
+    font-weight:600;
+}
+
+.export-btn{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:#5F514A;
+    color:#fff;
+    border:none;
+    border-radius:12px;
+    padding:12px 20px;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:600;
+    transition:.3s;
+    justify-content: center;
+white-space: nowrap;
+}
+
+.export-btn:hover{
+    background:#4B403A;
+}
+
+.audit-table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+.audit-table thead{
+    background:#fafafa;
+}
+
+.audit-table th{
+    text-align:left;
+    padding:18px;
+    color:#888;
+    font-size:14px;
+    font-weight:600;
+}
+
+.audit-table td{
+    padding:20px 18px;
+    border-top:1px solid #f2f2f2;
+    font-size:15px;
+    color:#444;
+}
+
+.audit-table tr:hover{
+    background:#fcfcfc;
+}
+
+.green{
+    color:#2E9D58;
+    font-weight:600;
+}
+
+.orange{
+    color:#D68A00;
+    font-weight:600;
+}
+
+.red{
+    color:#D94141;
+    font-weight:600;
+}
+
+.download{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    color:#666;
+    cursor:pointer;
+    font-weight:500;
+}
+
+.download:hover{
+    color:#000;
+}
+
+@media(max-width:900px){
+
+.audit-card{
+    overflow-x:auto;
+}
+
+.audit-table{
+    min-width:900px;
+}
+
+.audit-header{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:15px;
+}
+
+}
+.download {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+
+  background-color: #8B5E3C; /* Brown */
+  color: white;
+
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+
+  transition: 0.3s ease;
+}
+
+.download:hover {
+  background-color: #6F4E37; /* Dark Brown */
+}
+
+.download svg {
+  width: 16px;
+  height: 16px;
+}

@@ -9,6 +9,7 @@ import Securesharing from "./pages/Securesharing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./features/dashboard/Dashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import ActivityMonitorPage from "./pages/ActivityMonitorPage";
 
 function App() {
@@ -43,6 +44,8 @@ function App() {
           }
         />
 
+        <Route path="/login" element={<Login />} />
+
         <Route
           path="/dashboard"
           element={
@@ -60,6 +63,10 @@ function App() {
             </PageContainer>
           }
         />
+        <Route
+  path="/admin"
+  element={<AdminDashboard />}
+/>
 
         {/* Auth Routes (Without Sidebar/Navbar) */}
         <Route path="/login" element={<Login />} />
