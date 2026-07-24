@@ -19,7 +19,7 @@ This document records anomalies found while reviewing and locally exercising the
 - User Authentication
 - Settings
 
-The product was hosted from an isolated deployment-branch copy because the merged branch does not currently compile. Disposable accounts and a disposable SQLite database were used for runtime verification. No production data or cloud resource was changed.
+The source audit used an isolated deployment-branch copy because the merged branch does not currently compile. The labelled UI evidence below was captured directly from the live Render deployment at **https://trustshare-group-d.onrender.com** using a temporary audit account. No screenshot in the live-evidence section was generated or mocked.
 
 ## Executive summary
 
@@ -72,47 +72,59 @@ The audit reproduced **five P1 findings** and **four P2 findings**. The most urg
 | User Authentication | Merged backend blocked | Duplicate `request` parameter prevents Python compilation and API startup. | P1 |
 | Settings | Partially functional | Email Notifications can show “Saved!” but the value is neither sent to the backend nor persisted locally. | P2 |
 
-## Labelled evidence
+## Labelled live-deployment evidence
 
-### 01 — Merged frontend build blocker
+Capture source for every image in this section: **https://trustshare-group-d.onrender.com** on **24 July 2026**. These are raw browser screenshots of the deployed application; labels and explanations are kept outside the images.
 
-![Merged frontend build blocker](screenshots/01-main-frontend-build-blocker.png)
+### Anomaly 01 — Analytics data-isolation dispute
 
-### 02 — Merged backend authentication blocker
+A newly created member account with no files can open Analytics and sees `User attachment (3).png` under Top Shared Files.
 
-![Merged backend authentication blocker](screenshots/02-main-backend-auth-syntax-blocker.png)
+![Live Analytics anomaly](screenshots/live-03-analytics.png)
 
-### 03 — Public user-directory exposure
+Comparison: the same account's Dashboard and File Manager both report zero files.
 
-![Public user directory](screenshots/03-security-public-user-directory.png)
+![Live Dashboard baseline](screenshots/live-01-dashboard-deployment-response.png)
 
-### 04 — Analytics access and database-seeding dispute
+![Live File Manager baseline](screenshots/live-09-files-encryption-state.png)
 
-![Analytics anomaly](screenshots/04-analytics-access-and-seeding.png)
+### Anomaly 02 — Settings reports Saved but loses the value
 
-### 05 — Shared With Me has no permission-grant workflow
+Email Notifications was enabled and the deployed UI displayed `Saved!`.
 
-![Shared With Me anomaly](screenshots/05-shared-with-me-no-grant-workflow.png)
+![Live Settings saved state](screenshots/live-05-settings-saved.png)
 
-### 06 — Settings preference is not persisted
+Reloading the deployed Settings route returns Email Notifications to disabled.
 
-![Settings anomaly](screenshots/06-settings-not-persisted.png)
+![Live Settings after reload](screenshots/live-06-settings-after-reload.png)
 
-### 07 — Members see a non-functional Admin navigation item
+Initial state before the test:
 
-![Admin navigation dispute](screenshots/07-member-admin-navigation-dispute.png)
+![Live Settings initial state](screenshots/live-04-settings.png)
 
-### 08 — Database migrations and required seed data are missing
+### Anomaly 03 — Member sees a non-functional Admin navigation item
 
-![Database lifecycle anomaly](screenshots/08-database-migrations-and-seeding.png)
+The standard member sidebar displays an Admin link. Opening `/admin` redirects the member to Dashboard, leaving a visible but non-functional navigation item.
 
-### 09 — Project-wide quality gates are missing
+![Live member Admin redirect](screenshots/live-07-member-admin-route-redirect.png)
 
-![Project quality gates](screenshots/09-project-quality-gates.png)
+### Anomaly 04 — Shared With Me promises a workflow the deployed Sharing page does not provide
 
-### 10 — Complete requested-module verification summary
+Shared With Me describes email/direct TrustShare invitations and sender-set permissions.
 
-![Module verification summary](screenshots/10-module-verification-summary.png)
+![Live Shared With Me page](screenshots/live-02-shared-with-me.png)
+
+The deployed Sharing Center exposes share-link creation but no teammate invitation or permission grant/revoke action.
+
+![Live Sharing Center](screenshots/live-08-sharing-page.png)
+
+### Live authentication verification — not classified as an anomaly
+
+The deployed login page responds successfully. It is retained only as deployment/authentication verification.
+
+![Live authentication page](screenshots/live-10-authentication-login.png)
+
+The frontend build conflict, backend syntax error, public API authorization, missing migrations/seed data, and missing quality gates are source/build findings and cannot be truthfully demonstrated by screenshots of a working deployed UI. They remain documented above without fabricated live screenshots.
 
 ## Verification performed
 
@@ -123,6 +135,7 @@ The audit reproduced **five P1 findings** and **four P2 findings**. The most urg
 - Ran the isolated backend suite: **13 passed** with **11 deprecation warnings**.
 - Started the combined frontend/backend locally and verified `/health` returned **200**.
 - Exercised the relevant pages with disposable admin and member accounts.
+- Captured the labelled anomaly evidence directly from the live Render deployment with a temporary member account.
 - Verified unauthenticated and member-authenticated API behavior.
 - Inspected a fresh SQLite database for tables, migrations, and Analytics seed rows.
 
