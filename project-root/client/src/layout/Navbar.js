@@ -18,44 +18,7 @@ import {
 import { searchAPI, notificationsAPI } from "../utils/api";
 import "./Navbar.css";
 
-export default function Navbar({ unreadCount = 0, setSidebarOpen, darkMode, setDarkMode }) {
-    const [query, setQuery] = useState("");
-    const [results, setResults] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const searchRef = useRef(null);
-    const navigate = useNavigate();
-    const { theme, toggleTheme } = useTheme();
-    const [notifications, setNotifications] = useState([]);
-    const notificationRef = useRef(null);
-    const [showNotifications, setShowNotifications] = useState(false);
-
-    useEffect(() => {
-        if (!query.trim()) {
-            setResults(null);
-            setLoading(false);
-            return;
-        }
-
-        const timer = setTimeout(async () => {
-            try {
-                setLoading(true);
-
-                const res = await searchAPI.search(query);
-
-                console.log("Search Results:", res.data);
-
-                setResults(res.data);
-            } catch (err) {
-                console.error(err);
-
-                setResults(null);
-            } finally {
-                setLoading(false);
-            }
-        }, 300);
-
-        return () => clearTimeout(timer);
-    }, [query]);
+// File type icon resolver
 const FILE_ICON_MAP = {
   image: ["png", "jpg", "jpeg", "gif", "svg", "webp"],
   video: ["mp4", "avi", "mov", "mkv"],
@@ -89,10 +52,14 @@ function getNotificationIcon(notification) {
   return <RiNotification3Line className="notification-type-icon" />;
 }
 
-/* ──────────────────────────────────────────────────────────────────────────
-   NAVBAR
-   ────────────────────────────────────────────────────────────────────────── */
-export default function Navbar({ unreadCount = 0, connectionStatus }) {
+// NAVBAR — merged: teammate's props (setSidebarOpen, darkMode) + your features (connectionStatus, keyboard nav, mark all read)
+export default function Navbar({
+  unreadCount = 0,
+  setSidebarOpen,
+  darkMode,
+  setDarkMode,
+  connectionStatus,
+}) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -100,8 +67,6 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [markingAllRead, setMarkingAllRead] = useState(false);
-
-  // Keyboard navigation for search results
   const [activeIndex, setActiveIndex] = useState(-1);
 
   const searchRef = useRef(null);
@@ -110,7 +75,7 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
 
-  /* ── Search (debounced) ─────────────────────────────────────────────── */
+  // Search (debounced)
   useEffect(() => {
     if (!query.trim()) {
       setResults(null);
@@ -134,7 +99,7 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
     return () => clearTimeout(timer);
   }, [query]);
 
-  /* ── Click outside handling ─────────────────────────────────────────── */
+  // Click outside handling
   useEffect(() => {
     function handleClickOutside(event) {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
@@ -152,7 +117,7 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  /* ── Global keyboard shortcuts (Ctrl+K / Esc) ───────────────────────── */
+  // Global keyboard shortcuts (Ctrl+K / Esc)
   useEffect(() => {
     function handleKeyDown(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -170,14 +135,14 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  /* ── Scroll shadow detection ────────────────────────────────────────── */
+  // Scroll shadow detection
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  /* ── Load notifications when opened ─────────────────────────────────── */
+  // Load notifications when opened
   useEffect(() => {
     if (!showNotifications) return;
     const load = async () => {
@@ -191,7 +156,7 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
     load();
   }, [showNotifications]);
 
-  /* ── Flatten search results for keyboard navigation ─────────────────── */
+  // Flatten search results for keyboard navigation
   const flatResults = useMemo(() => {
     if (!results) return [];
     const list = [];
@@ -210,10 +175,9 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
     return list;
   }, [results]);
 
-  /* ── Search input keyboard navigation ──────────────────────────────── */
+  // Search input keyboard navigation
   const handleSearchKeyDown = (e) => {
     if (!results || flatResults.length === 0) return;
-
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setActiveIndex((prev) => (prev + 1) % flatResults.length);
@@ -229,7 +193,7 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
     }
   };
 
-  /* ── Scroll active item into view ──────────────────────────────────── */
+  // Scroll active item into view
   useEffect(() => {
     if (activeIndex < 0) return;
     const el = document.querySelector(`[data-result-index="${activeIndex}"]`);
@@ -249,7 +213,7 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
     navigate(routes[type] || "/dashboard");
   };
 
-  /* ── Mark all notifications as read ────────────────────────────────── */
+  // Mark all notifications as read
   const handleMarkAllRead = async () => {
     if (markingAllRead || notifications.length === 0) return;
     setMarkingAllRead(true);
@@ -270,24 +234,21 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
     !results.shares?.length &&
     !results.notifications?.length;
 
-  /* ── Render helpers ────────────────────────────────────────────────── */
+  // Render helpers
   const renderSearchItem = (item, globalIndex) => {
     const isActive = activeIndex === globalIndex;
-
     const iconMap = {
       file: () => getSearchFileIcon(item.data.original_name),
       folder: () => <RiFolderOpenLine className="search-icon" />,
       share: () => <RiShareForwardLine className="search-icon" />,
       notification: () => <RiNotification3Line className="search-icon" />,
     };
-
     const labelMap = {
       file: item.data.original_name,
       folder: item.data.name,
       share: `Share #${item.data.id}`,
       notification: item.data.title,
     };
-
     return (
       <motion.div
         key={item.id}
@@ -323,10 +284,8 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
 
   return (
     <header className={`navbar-modern ${scrolled ? "scrolled" : ""}`}>
-      {/* ── Search ────────────────────────────────── */}
       <div className="navbar-search" ref={searchRef}>
         <RiSearch2Line className="search-icon" />
-
         <input
           ref={searchInputRef}
           type="text"
@@ -372,11 +331,7 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
                     {renderSection("Files", results.files, "file")}
                     {renderSection("Folders", results.folders, "folder")}
                     {renderSection("Shares", results.shares, "share")}
-                    {renderSection(
-                      "Notifications",
-                      results.notifications,
-                      "notification"
-                    )}
+                    {renderSection("Notifications", results.notifications, "notification")}
                   </>
                 );
               })()}
@@ -396,16 +351,9 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
 
               {flatResults.length > 0 && (
                 <div className="search-hints">
-                  <span>
-                    <kbd>↑</kbd>
-                    <kbd>↓</kbd> Navigate
-                  </span>
-                  <span>
-                    <kbd>↵</kbd> Select
-                  </span>
-                  <span>
-                    <kbd>Esc</kbd> Close
-                  </span>
+                  <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+                  <span><kbd>↵</kbd> Select</span>
+                  <span><kbd>Esc</kbd> Close</span>
                 </div>
               )}
             </motion.div>
@@ -415,11 +363,9 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
         <kbd className="search-shortcut">Ctrl+K</kbd>
       </div>
 
-      {/* ── Actions ────────────────────────────────── */}
       <div className="navbar-actions" ref={notificationRef}>
-        {/* Connection status indicator */}
         {connectionStatus}
-        {/* Theme toggle */}
+
         <motion.button
           className="nav-icon-btn"
           onClick={toggleTheme}
@@ -455,12 +401,10 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
           </AnimatePresence>
         </motion.button>
 
-        {/* Notifications */}
         <motion.button
           className={`nav-icon-btn ${showNotifications ? "active" : ""}`}
           onClick={() => setShowNotifications(!showNotifications)}
-          aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ""
-            }`}
+          aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ""}`}
           title="Notifications"
           whileTap={{ scale: 0.9 }}
           transition={{ duration: 0.15 }}
@@ -478,7 +422,6 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
           )}
         </motion.button>
 
-        {/* Notification dropdown */}
         <AnimatePresence>
           {showNotifications && (
             <motion.div
@@ -492,9 +435,7 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
                 <div className="notification-header-left">
                   <span>Notifications</span>
                   {unreadCount > 0 && (
-                    <span className="notification-count">
-                      {unreadCount} new
-                    </span>
+                    <span className="notification-count">{unreadCount} new</span>
                   )}
                 </div>
                 {notifications.length > 0 && unreadCount > 0 && (
@@ -538,12 +479,8 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
                       {getNotificationIcon(notification)}
                     </div>
                     <div className="notification-content">
-                      <div className="notification-title">
-                        {notification.title}
-                      </div>
-                      <div className="notification-message">
-                        {notification.message}
-                      </div>
+                      <div className="notification-title">{notification.title}</div>
+                      <div className="notification-message">{notification.message}</div>
                     </div>
                   </motion.div>
                 ))

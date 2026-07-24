@@ -1,18 +1,14 @@
 // client/src/features/analytics/components/panels/RecentActivityPanel.js
-/**
- * Recent Activity feed with user filter — audit monitoring.
- * Powered by data.recent_activity.activities.
- */
 
-import React from "react";
+import React, { useState, memo } from "react";
 import { motion } from "framer-motion";
 import {
   LogIn, Upload, Download, Share2, Trash2, ShieldAlert, Activity,
 } from "lucide-react";
-import Card, { CardHeader } from "../shared/Card";
-import Skeleton   from "../shared/Skeleton";
-import EmptyState from "../shared/EmptyState";
-import DateRangeDropdown from "../Header/DateRangeDropdown";
+import Card, { CardHeader }         from "../shared/Card";
+import { RecentActivitySkeleton }   from "../shared/Skeleton";
+import EmptyState                   from "../shared/EmptyState";
+import DateRangeDropdown            from "../Header/DateRangeDropdown";
 
 const EVENT_ICONS = {
   LOGIN:    LogIn,
@@ -46,14 +42,14 @@ function timeAgo(iso) {
   const then = new Date(iso);
   const diff = (now - then) / 1000;
 
-  if (diff < 60)   return "Just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 60)     return "Just now";
+  if (diff < 3600)   return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400)  return `${Math.floor(diff / 3600)}h ago`;
   if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
   return then.toLocaleDateString();
 }
 
-export default function RecentActivityPanel({
+function RecentActivityPanel({
   activities   = [],
   loading      = false,
   config       = {},
@@ -65,7 +61,10 @@ export default function RecentActivityPanel({
   const empty    = config.empty      || "No recent activity.";
   const allLabel = config.filter_all || "All users";
 
-  // Build options list for the premium dropdown
+  // Event type filter state
+  const [eventFilter, setEventFilter] = useState("");
+
+  // User dropdown options
   const userOptions = [
     { value: "", label: allLabel },
     ...users.map((u) => ({
@@ -74,13 +73,44 @@ export default function RecentActivityPanel({
     })),
   ];
 
-  const UserFilter = () => (
-    <div className="an-recent-filter">
-      <DateRangeDropdown
-        options={userOptions}
-        value={String(selectedUser || "")}
-        onChange={(val) => onUserChange && onUserChange(val)}
-      />
+  // Event type dropdown options
+  const eventOptions = [
+    { value: "",         label: "All events" },
+    { value: "LOGIN",    label: "Logins"     },
+    { value: "UPLOAD",   label: "Uploads"    },
+    { value: "DOWNLOAD", label: "Downloads"  },
+    { value: "SHARE",    label: "Shares"     },
+    { value: "DELETE",   label: "Deletes"    },
+    { value: "SECURITY", label: "Security"   },
+  ];
+
+  // Filter activities by event type
+  const filteredActivities = activities.filter((a) =>
+    eventFilter ? a.event_type === eventFilter : true
+  );
+
+  // Combined filters in header right
+  const Filters = () => (
+    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      {/* Event type filter */}
+      <div className="an-recent-filter">
+        <DateRangeDropdown
+          options={eventOptions}
+          value={eventFilter}
+          onChange={setEventFilter}
+        />
+      </div>
+
+      {/* User filter — only show if users exist */}
+      {users.length > 0 && (
+        <div className="an-recent-filter">
+          <DateRangeDropdown
+            options={userOptions}
+            value={String(selectedUser || "")}
+            onChange={(val) => onUserChange && onUserChange(val)}
+          />
+        </div>
+      )}
     </div>
   );
 
@@ -88,33 +118,28 @@ export default function RecentActivityPanel({
     <Card delay={0.3} noPadding>
       <CardHeader
         title={title}
-        right={!loading && users.length > 0 && <UserFilter />}
+        right={!loading && <Filters />}
         borderBottom
       />
 
       {loading ? (
-        <div className="an-recent-list">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="an-recent-skeleton">
-              <Skeleton className="an-skeleton--icon-sm" />
-              <div style={{ flex: 1 }}>
-                <Skeleton style={{ width: "40%", height: 12 }} />
-                <Skeleton style={{ width: "25%", height: 10, marginTop: 4 }} />
-              </div>
-              <Skeleton style={{ width: 50, height: 10 }} />
-            </div>
-          ))}
-        </div>
-      ) : !activities.length ? (
+        <RecentActivitySkeleton rows={5} />
+      ) : !filteredActivities.length ? (
         <div className="an-recent-empty">
-          <EmptyState message={empty} />
+          <EmptyState
+            message={
+              eventFilter
+                ? `No ${eventFilter.toLowerCase()} events found.`
+                : empty
+            }
+          />
         </div>
       ) : (
         <div className="an-recent-list">
-          {activities.map((a, i) => {
-            const Icon  = EVENT_ICONS[a.event_type] || Activity;
-            const color = EVENT_COLORS[a.event_type] || "var(--an-kpi-blue)";
-            const bg    = EVENT_BG[a.event_type]    || "var(--an-kpi-blue-bg)";
+          {filteredActivities.map((a, i) => {
+            const Icon     = EVENT_ICONS[a.event_type]  || Activity;
+            const color    = EVENT_COLORS[a.event_type] || "var(--an-kpi-blue)";
+            const bg       = EVENT_BG[a.event_type]     || "var(--an-kpi-blue-bg)";
             const isFailed = a.status === "FAILED";
 
             return (
@@ -122,7 +147,7 @@ export default function RecentActivityPanel({
                 key={a.id}
                 className="an-recent-item"
                 initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x:  0 }}
+                animate={{ opacity: 1, x: 0 }}
                 transition={{
                   duration: 0.3,
                   delay:    0.05 * i,
@@ -144,8 +169,8 @@ export default function RecentActivityPanel({
                     )}
                   </div>
                   <div className="an-recent-meta">
-                    {a.user_id && <span>User #{a.user_id}</span>}
-                    {a.file_id && <span> · File #{a.file_id}</span>}
+                    {a.user_id    && <span>User #{a.user_id}</span>}
+                    {a.file_id    && <span> · File #{a.file_id}</span>}
                     {a.ip_address && <span> · {a.ip_address}</span>}
                   </div>
                 </div>
@@ -159,3 +184,12 @@ export default function RecentActivityPanel({
     </Card>
   );
 }
+
+export default memo(RecentActivityPanel, (prevProps, nextProps) => {
+  return (
+    prevProps.loading === nextProps.loading &&
+    prevProps.selectedUser === nextProps.selectedUser &&
+    prevProps.activities === nextProps.activities &&
+    prevProps.users === nextProps.users
+  );
+});

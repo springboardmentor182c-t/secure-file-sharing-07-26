@@ -71,8 +71,9 @@ def main():
         seed_severity_map(db)
         print("  ✓ Severity map seeded")
 
-        print("\n[Bonus] Generating demo data...")
-        seed_demo_data(db)
+        # ⚠️ DISABLED FOR PRODUCTION SUBMISSION
+        #print("\n[Bonus] Generating demo data...")
+        #seed_demo_data(db)
 
     finally:
         db.close()

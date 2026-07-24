@@ -110,17 +110,36 @@ export const analyticsAPI = {
   },
   users: () => api.get('/api/analytics/users'),
   systemStats: () => api.get('/api/analytics/system-stats'),
-  exportFileAnalytics: (days = 30) =>
-    api.get('/api/analytics/export/file-analytics', {
-      params: { days },
+  trends: () => api.get('/api/analytics/trends'),
+
+  // ═══ ✅ Now support custom date range ═══
+  exportFileAnalytics: (days = 30, startDate = null, endDate = null) => {
+    const params = { days };
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+    return api.get('/api/analytics/export/file-analytics', {
+      params,
       responseType: 'blob',
-    }),
-  exportSecurity: (days = 30) =>
-    api.get('/api/analytics/export/security', {
-      params: { days },
+    });
+  },
+  exportSecurity: (days = 30, startDate = null, endDate = null) => {
+    const params = { days };
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+    return api.get('/api/analytics/export/security', {
+      params,
       responseType: 'blob',
-    }),
-  // Expose raw axios for custom calls
+    });
+  },
+  exportCSV: (tab = "file", days = 30, startDate = null, endDate = null) => {
+    const params = { tab, days };
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+    return api.get('/api/analytics/export/csv', {
+      params,
+      responseType: 'blob',
+    });
+  },
   get: (url, config) => api.get(url, config),
 };
 
