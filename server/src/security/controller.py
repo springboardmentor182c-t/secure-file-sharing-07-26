@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from src.database.core import get_db
 from src.security.models import SecurityDashboardDataSchema
@@ -10,6 +10,11 @@ router = APIRouter(prefix="/api/security", tags=["security"])
 
 @router.get("/dashboard", response_model=SecurityDashboardDataSchema)
 def get_dashboard_data(db: Session = Depends(get_db)):
+    # Role check validation
+    user = db.query(User).filter(User.id == 1).first()
+    if not user or "admin" not in user.role.lower():
+        raise HTTPException(status_code=403, detail="Forbidden: Admin access required.")
+
     events = get_security_events(db)
     keys = get_encryption_keys(db)
     users = db.query(User).all()
@@ -75,5 +80,10 @@ def get_dashboard_data(db: Session = Depends(get_db)):
 
 @router.post("/rotate-keys")
 def rotate_keys(db: Session = Depends(get_db)):
+    # Role check validation
+    user = db.query(User).filter(User.id == 1).first()
+    if not user or "admin" not in user.role.lower():
+        raise HTTPException(status_code=403, detail="Forbidden: Admin access required.")
+
     return rotate_all_keys(db)
 
