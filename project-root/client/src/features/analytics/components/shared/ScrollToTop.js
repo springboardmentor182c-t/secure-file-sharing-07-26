@@ -1,8 +1,4 @@
 // client/src/features/analytics/components/shared/ScrollToTop.js
-/**
- * Floating "Back to Top" button.
- * Appears after user scrolls down 400px.
- */
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";

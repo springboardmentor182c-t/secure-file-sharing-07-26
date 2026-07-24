@@ -21,4 +21,5 @@ class AnalyticsSummaryResponse(BaseModel):
     security:        SecurityAnalyticsResponse
     recent_activity: RecentActivityResponse
     system_stats:    SystemStatsResponse
+    trends:          Dict[str, Any] = {}
     ui_config:       Dict[str, Any] = {}
