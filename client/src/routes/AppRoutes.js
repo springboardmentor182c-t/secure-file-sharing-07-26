@@ -10,7 +10,7 @@ import SharedLinksPage from "../features/sharedLinks/SharedLinksPage";
 import Monitoring from "../pages/Monitoring/Monitoring";
 import Settings from "../pages/Settings/Settings";
 import Profile from "../pages/Profile/Profile";
-import { SecurityView } from "../security/security";
+import { SecurityView } from "../pages/security/security";
 import Trash from "../pages/Trash";
 
 import { AnalyticsView } from "../analytics/analytics";

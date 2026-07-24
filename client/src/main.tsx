@@ -10,4 +10,8 @@ import "./assets/global.css";
 // Shared Links screen, etc). Flag this with your team if `security.tsx`
 // was meant to be wired in some other way - for now the real app
 // (App.js -> routes/AppRoutes.js) is what boots.
-createRoot(document.getElementById("root")!).render(<App />);
+const root = document.getElementById("root");
+
+if (root) {
+  createRoot(root).render(<App />);
+}

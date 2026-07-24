@@ -1,3 +1,9 @@
+
+
+
+
+
+
 import uuid
 
 from sqlalchemy import (
@@ -11,6 +17,7 @@ from sqlalchemy.sql import func
 
 from src.entities.base import Base
 from src.entities.guid import GUID
+
 
 
 class User(Base):

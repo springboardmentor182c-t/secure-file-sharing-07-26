@@ -1,5 +1,4 @@
 
-
 """
 Database engine + session setup (synchronous SQLAlchemy 2.0, matching this
 project's existing dependency set — no async driver is installed).
@@ -10,19 +9,17 @@ and imports `Base` (re-exported from `src.entities.base`) for Alembic.
 
 
 import os
-
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
-
+from sqlalchemy.orm import sessionmaker,Session, declarative_base
 from src.entities.base import Base
 
 load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is not set")
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+psycopg2://sharedlinks_user:sharedlinks_pass@localhost:5432/sharedlinks_db",
-)
+
 
 _connect_args = (
     {"check_same_thread": False}
@@ -48,6 +45,7 @@ def get_db():
     try:
         yield db
     finally:
+
         db.close()
 
 
