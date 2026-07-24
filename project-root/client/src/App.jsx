@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import AppLayout from './components/AppLayout';
-import DashboardPage from './pages/Dashboard.jsx';
-import MyFilesPage from './pages/MyFiles.jsx';
+import DashboardPage from './pages/Dashboard';
+import MyFilesPage from './pages/MyFiles';
 
 export default function App() {
   return (
