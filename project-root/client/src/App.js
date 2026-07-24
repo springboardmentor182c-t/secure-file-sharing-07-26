@@ -5,6 +5,8 @@ import ProtectedRoute from './layout/ProtectedRoute';
 import Layout from './layout/Layout';
 import ScrollToTop from './layout/ScrollToTop';
 import ThemeToggle from './components/ThemeToggle';
+import PageTitle from './layout/PageTitle';
+import { ToastProvider } from './layout/ToastProvider';
 
 // Public pages
 import Login from './pages/Login';
@@ -25,8 +27,6 @@ import Notifications from './pages/Notifications';
 import Admin from './pages/Admin';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
-import { ToastProvider } from './layout/ToastProvider';
-import PageTitle from './layout/PageTitle';
 
 import { notificationsAPI } from './utils/api';
 import './assets/global.css';
@@ -37,13 +37,14 @@ function AppShell() {
 
   useEffect(() => {
     if (!user) return;
-    const load = () =>
+
+    const load = () => {
       notificationsAPI
         .list()
-        .then((r) =>
-          setUnreadCount(r.data.filter((n) => !n.is_read).length)
-        )
+        .then((r) => setUnreadCount(r.data.filter((n) => !n.is_read).length))
         .catch(() => {});
+    };
+
     load();
     const iv = setInterval(load, 30000);
     return () => clearInterval(iv);
@@ -77,24 +78,24 @@ export default function App() {
           <PageTitle />
           <ThemeToggle />
           <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/verify-otp" element={<VerifyOtp />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/oauth-callback" element={<OAuthCallback />} />
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/verify-otp" element={<VerifyOtp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/oauth-callback" element={<OAuthCallback />} />
 
-          {/* Protected routes — wrapped in AppShell (Layout + Sidebar + Navbar) */}
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <AppShell />
-              </ProtectedRoute>
-            }
-          />
-                  </Routes>
+            {/* Protected routes */}
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <AppShell />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
         </Router>
       </ToastProvider>
     </AuthProvider>

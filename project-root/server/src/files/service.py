@@ -161,7 +161,7 @@ def get_file(
         .first()
     )
 
-    if not f:
+    if not file:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
 
     # Owner authorization
@@ -170,8 +170,8 @@ def get_file(
             db,
             owner_id,
             "UNAUTHORIZED_ACCESS",
-            f.original_name,
-            resource_id=f.id,
+            file.original_name,
+            resource_id=file.id,
             level="warning",
         )
         _detect_suspicious_activity(db, owner_id, ip_address=ip_address)
@@ -199,7 +199,7 @@ def get_file(
             detail="You are not authorized to access this file.",
         )
 
-    return f
+    return file
 
 # ═══════════════════════════════════════════════════════════════════════════
 # UPLOAD
@@ -365,8 +365,8 @@ def delete_file(
         db,
         owner_id,
         "DELETE",
-        f.original_name,
-        resource_id=f.id,
+        file.original_name,
+        resource_id=file.id,
         level="warn",
     )
 
