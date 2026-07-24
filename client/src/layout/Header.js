@@ -1,11 +1,14 @@
 import { Menu, Search, Bell, ChevronDown } from "lucide-react";
+<<<<<<< HEAD
+=======
+import { useLocation } from "react-router-dom";
+>>>>>>> origin/main-group-B
 
 import { useLocation } from "react-router-dom";
 import pageTitles from "../data/pageTitles";
 
-function Header({ setSidebarOpen }) {
+function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
   const location = useLocation();
-
   const title = pageTitles[location.pathname] || "TrustShare";
 
   return (
@@ -24,51 +27,26 @@ function Header({ setSidebarOpen }) {
       "
     >
       {/* Left Section */}
-
       <div className="flex items-center gap-4">
-        {/* Mobile Menu */}
-
         <button
           onClick={() => setSidebarOpen(true)}
-          className="
-            lg:hidden
-            text-gray-300
-            hover:text-white
-          "
+          className="lg:hidden text-gray-300 hover:text-white"
           aria-label="Open sidebar"
         >
           <Menu size={24} />
         </button>
 
-        {/* Page Title */}
-
         <div>
-          <h1
-            className="
-              text-xl
-              lg:text-2xl
-              font-semibold
-              text-white
-              capitalize
-            "
-          >
+          <h1 className="text-xl lg:text-2xl font-semibold text-white capitalize">
             {title}
           </h1>
-
-          <p
-            className="
-              text-sm
-              text-gray-400
-              mt-1
-            "
-          >
+          <p className="text-sm text-gray-400 mt-1">
             Home / {title}
           </p>
         </div>
       </div>
 
       {/* Search */}
-
       <div
         className="
           hidden
@@ -88,6 +66,8 @@ function Header({ setSidebarOpen }) {
 
         <input
           type="text"
+          value={searchTerm}
+          onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search files..."
           className="
             ml-3
@@ -119,14 +99,8 @@ function Header({ setSidebarOpen }) {
 
       {/* Right Section */}
 
-      <div
-        className="
-          flex
-          items-center
-          gap-3
-          lg:gap-5
-        "
-      >
+      <div className="flex items-center gap-3 lg:gap-5">
+
         {/* Notification */}
 
         <button
@@ -161,9 +135,7 @@ function Header({ setSidebarOpen }) {
           />
         </button>
 
-        {/* User Profile */}
-
-        <button
+         <button
           className="
             flex
             items-center
@@ -178,9 +150,10 @@ function Header({ setSidebarOpen }) {
             transition
           "
         >
-          {/* Avatar */}
+       
 
-          <div
+
+          <div 
             className="
               h-10
               w-10
@@ -196,8 +169,7 @@ function Header({ setSidebarOpen }) {
             V
           </div>
 
-          {/* User Info */}
-
+      
           <div
             className="
               hidden
@@ -225,12 +197,7 @@ function Header({ setSidebarOpen }) {
             </p>
           </div>
 
-          <ChevronDown
-            size={18}
-            className="
-              text-gray-400
-            "
-          />
+          <ChevronDown size={18} className="text-gray-400" />
         </button>
       </div>
     </header>

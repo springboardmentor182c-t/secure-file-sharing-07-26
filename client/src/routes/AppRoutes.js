@@ -16,6 +16,11 @@ import Analytics from "../pages/Analytics/Analytics";
 import Notifications from "../pages/Notifications/Notifications";
 import Settings from "../pages/Settings/Settings";
 import Profile from "../pages/Profile/Profile";
+<<<<<<< HEAD
+=======
+import { SecurityView } from "../pages/security/security";
+import Trash from "../pages/Trash";
+>>>>>>> origin/main-group-B
 
 import { AnalyticsView } from "../analytics/analytics";
 

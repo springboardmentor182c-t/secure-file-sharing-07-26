@@ -1,8 +1,14 @@
+<<<<<<< HEAD
 """
 File entity - the real My Files module schema (this used to be a
 temporary, minimal placeholder table owned by "whoever builds Files
 first" - that's this module now).
 """
+=======
+
+
+
+>>>>>>> origin/main-group-B
 import uuid
 from datetime import datetime
 
@@ -11,6 +17,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.entities.base import Base
 from src.entities.guid import GUID
+
 
 
 class File(Base):

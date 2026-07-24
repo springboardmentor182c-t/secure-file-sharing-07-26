@@ -6,7 +6,6 @@ Every other module imports `get_db` from here for its route dependencies,
 and imports `Base` (re-exported from `src.entities.base`) for Alembic.
 """
 import os
-
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -14,6 +13,10 @@ from sqlalchemy.orm import Session, sessionmaker
 from src.entities.base import Base  # re-exported for `from src.database.core import Base`
 
 load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is not set")
+
 
 # PostgreSQL is this project's database — every teammate's module targets
 # the same Postgres instance. Set DATABASE_URL in .env; the value below is
@@ -39,6 +42,7 @@ def get_db():
     try:
         yield db
     finally:
+
         db.close()
 
 

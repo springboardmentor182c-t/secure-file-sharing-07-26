@@ -11,8 +11,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api import register_routes
-from src.database.core import DATABASE_URL, create_all_tables
 from src.exceptions import register_exception_handlers
 from src.files.scheduler import start_scheduler as start_files_scheduler, stop_scheduler as stop_files_scheduler
 from src.logging import configure_logging
@@ -20,9 +18,11 @@ from src.shared_links.scheduler import start_scheduler, stop_scheduler
 
 # Ensures every entity is registered on Base.metadata before create_all/Alembic runs.
 import src.entities  # noqa: F401
+Base.metadata.create_all(bind=engine)
 
-configure_logging()
-logger = logging.getLogger("app.main")
+
+logger = logging.getLogger(__name__)
+
 
 
 @asynccontextmanager
@@ -53,13 +53,12 @@ app = FastAPI(
 _cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in _cors_origins if o.strip()],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-register_exception_handlers(app)
 register_routes(app)
 
 

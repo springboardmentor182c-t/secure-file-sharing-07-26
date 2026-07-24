@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from src.core import get_db
+from src.database.core import get_db
 from src.security.models import SecurityDashboardDataSchema
 from src.security.service import get_security_events, get_encryption_keys, rotate_all_keys
 from src.entities.user import User

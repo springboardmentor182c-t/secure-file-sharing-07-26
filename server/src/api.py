@@ -1,3 +1,4 @@
+
 """
 Aggregates every module's router and registers them on the FastAPI app.
 
@@ -8,8 +9,7 @@ from fastapi import FastAPI
 
 from src.files.controller import folders_router, router as files_router
 from src.shared_links.controller import (
-    api_shared_router,
-    api_users_router,
+    
     dev_router as shared_links_dev_router,
     notifications_router as shared_links_notifications_router,
     public_router as shared_links_public_router,
