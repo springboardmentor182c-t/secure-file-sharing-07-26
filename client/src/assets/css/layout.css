@@ -1,45 +1,202 @@
 @import "./variables.css";
 
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Inter,sans-serif;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Inter", sans-serif;
 }
 
-body{
-    background:var(--background);
+body {
+  background: #f7f4f1;
+  overflow-x: hidden;
 }
 
-.app-layout{
-    display:flex;
-    min-height:100vh;
+#root {
+  min-height: 100vh;
 }
 
-.content-area{
-    flex:1;
-    display:flex;
-    flex-direction:column;
+/* ===========================
+   APP LAYOUT
+=========================== */
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
 }
 
-.dashboard-body{
+/* Sidebar width reduced */
 
-    display:grid;
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: 220px;
+  background: #f7f4f1;
+  min-width: 0;
+}
 
-    grid-template-columns:280px 1fr;
+/* ===========================
+   MAIN DASHBOARD
+=========================== */
 
-    gap:25px;
+.dashboard-body {
+  display: grid;
 
-    padding:25px;
+  /* Folder card smaller */
+
+  grid-template-columns: 220px 1fr;
+
+  gap: 18px;
+
+  padding: 24px;
+
+  flex: 1;
+
+  align-items: start;
+
+  width: 100%;
+}
+
+/* ===========================
+   COMMON CARD
+=========================== */
+
+.card {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e7ddd7;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+/* ===========================
+   FOLDER CARD
+=========================== */
+
+.folder-card {
+  width: 220px;
+  min-width: 220px;
+
+  display: flex;
+  flex-direction: column;
+
+  min-height: 580px;
+}
+
+/* ===========================
+   TABLE SECTION
+=========================== */
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+  width: 100%;
+}
+
+.table-container {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e7ddd7;
+  overflow: hidden;
+}
+
+.table-card {
+
+  flex: 1;
+
+  width: 100%;
+
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  min-height: 580px;
+
+  overflow: hidden;
+
+  background: white;
+
+  border-radius: 18px;
+
+  border: 1px solid #e7ddd7;
+}
+
+.table-card .toolbar {
+
+  margin: 0;
+
+  border: none;
+
+  border-bottom: 1px solid #ece3dd;
+
+  border-radius: 18px 18px 0 0;
+}
+
+.table-card table {
+
+  width: 100%;
+
+  table-layout: fixed;
+}
+
+/* ===========================
+   RESPONSIVE
+=========================== */
+
+@media (max-width: 1400px) {
+
+  .dashboard-body {
+
+    grid-template-columns: 200px 1fr;
+
+    gap: 16px;
+  }
+
+  .folder-card {
+
+    width: 200px;
+
+    min-width: 200px;
+  }
 
 }
 
-.card{
+@media (max-width: 1100px) {
 
-    background:var(--card);
+  .dashboard-body {
 
-    border-radius:var(--radius);
+    grid-template-columns: 1fr;
+  }
 
-    box-shadow:var(--shadow);
+  .folder-card {
+
+    width: 100%;
+
+    min-width: 100%;
+  }
+
+  .content-area {
+
+    margin-left: 220px;
+  }
+
+}
+
+@media (max-width: 768px) {
+
+  .content-area {
+
+    margin-left: 0;
+  }
+
+  .dashboard-body {
+
+    padding: 16px;
+  }
 
 }

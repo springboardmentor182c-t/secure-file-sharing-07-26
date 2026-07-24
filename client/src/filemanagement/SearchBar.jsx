@@ -13,7 +13,7 @@ import {
   LogOut,
   HardDrive,
 } from "lucide-react";
-
+import { FiSearch } from "react-icons/fi";
 const Sidebar = () => {
   const menuItems = [
     { icon: <LayoutDashboard size={20} />, title: "Dashboard" },
@@ -68,7 +68,15 @@ const Sidebar = () => {
         </div>
 
       </div>
+<div className="search-box">
 
+   <FiSearch />
+
+   <input
+      placeholder="Search files..."
+   />
+
+</div>
     </aside>
   );
 };

@@ -1,34 +1,128 @@
-import React from "react";
+import React, { useState } from "react";
+import { FiUpload } from "react-icons/fi";
 
-const UploadButton = ({ files, setFiles, selectedFolder }) => {
+const OWNER_ID = "aafe9b9d-0109-46fd-b525-33e24d9ee9b5";
+const API_URL = "http://127.0.0.1:8000";
 
-  const handleUpload = (event) => {
+const UploadButton = ({
+  selectedFolder,
+  refreshFiles,
+}) => {
 
-    const selectedFiles = Array.from(event.target.files);
+  const [uploading, setUploading] =
+    useState(false);
 
-    const formattedFiles = selectedFiles.map((file) => ({
-  id: Date.now() + Math.random(),
+  const handleUpload = async (event) => {
 
-  name: file.name,
+    const selectedFiles =
+      Array.from(event.target.files);
 
-  size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+    if (selectedFiles.length === 0) {
+      return;
+    }
 
-  type: file.name.split(".").pop().toUpperCase(),
+    setUploading(true);
 
-  modified: new Date().toLocaleDateString(),
+    try {
 
-  uploadDate: new Date().toLocaleDateString(),
+      for (const file of selectedFiles) {
 
-  owner: "You",
+        const formData =
+          new FormData();
 
-  folder: selectedFolder,
+        // Owner
+        formData.append(
+          "owner_id",
+          OWNER_ID
+        );
 
-  status: "Encrypted",
+        // Actual file
+        formData.append(
+          "uploaded_file",
+          file
+        );
 
-  version: "1.0",
-}));
+        // IMPORTANT:
+        // selectedFolder contains database folder object.
+        if (selectedFolder?.id) {
 
-    setFiles([...files, ...formattedFiles]);
+          console.log(
+            "Uploading to folder:",
+            selectedFolder.folder_name,
+            selectedFolder.id
+          );
+
+          formData.append(
+            "folder_id",
+            selectedFolder.id
+          );
+        } else {
+
+          console.log(
+            "Uploading to All Files"
+          );
+
+        }
+
+        const response = await fetch(
+          `${API_URL}/files/upload`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (!response.ok) {
+
+          const errorText =
+            await response.text();
+
+          console.error(
+            "Backend upload error:",
+            errorText
+          );
+
+          throw new Error(
+            `Upload failed for ${file.name}`
+          );
+        }
+
+        const uploadedFile =
+          await response.json();
+
+        console.log(
+          "Uploaded successfully:",
+          uploadedFile
+        );
+      }
+
+      // Get latest files from database.
+      if (refreshFiles) {
+        await refreshFiles();
+      }
+
+      alert(
+        "File uploaded successfully!"
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Upload error:",
+        error
+      );
+
+      alert(
+        "Failed to upload file."
+      );
+
+    } finally {
+
+      setUploading(false);
+
+      // Allows selecting same file again
+      event.target.value = "";
+    }
   };
 
   return (
@@ -38,11 +132,26 @@ const UploadButton = ({ files, setFiles, selectedFolder }) => {
         id="upload-file"
         multiple
         hidden
+        disabled={uploading}
         onChange={handleUpload}
       />
 
-      <label htmlFor="upload-file" className="upload-btn">
-        + Upload
+      <label
+        htmlFor="upload-file"
+        className="upload-btn"
+        style={{
+          opacity: uploading ? 0.6 : 1,
+          pointerEvents:
+            uploading ? "none" : "auto",
+        }}
+      >
+
+        <FiUpload />
+
+        {uploading
+          ? "Uploading..."
+          : "Upload"}
+
       </label>
     </>
   );

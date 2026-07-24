@@ -3,8 +3,7 @@ import React from "react";
 const Pagination = () => {
   return (
     <div className="pagination">
-
-      <button>{"<"}</button>
+      <button>Previous</button>
 
       <button className="active">1</button>
 
@@ -12,8 +11,7 @@ const Pagination = () => {
 
       <button>3</button>
 
-      <button>{">"}</button>
-
+      <button>Next</button>
     </div>
   );
 };
