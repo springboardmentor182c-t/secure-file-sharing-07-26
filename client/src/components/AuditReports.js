@@ -36,7 +36,7 @@ const AuditTab = () => {
 
         <button className="export-btn" onClick={downloadReport}>
           <Download size={18} />
-          Export All
+          <span>Export All</span>
         </button>
       </div>
 

@@ -33,6 +33,8 @@
     font-size:14px;
     font-weight:600;
     transition:.3s;
+    justify-content: center;
+white-space: nowrap;
 }
 
 .export-btn:hover{

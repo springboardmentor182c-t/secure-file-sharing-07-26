@@ -9,6 +9,7 @@
 
 body{
     background:#FBF7F4;
+    overflow-y: auto;
 }
 
 .dashboard{
@@ -24,6 +25,8 @@ body{
     flex:1;
     padding:32px;
     background:#FBF7F4;
+    height:100vh;
+    overflow-y:auto;
 }
 
 /* Header */
