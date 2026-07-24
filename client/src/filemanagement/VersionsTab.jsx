@@ -21,10 +21,6 @@ const API_URL =
 
 const VersionsTab = ({ file }) => {
 
-  // =====================================================
-  // STATES
-  // =====================================================
-
   const [versions, setVersions] =
     useState([]);
 
@@ -67,6 +63,59 @@ const VersionsTab = ({ file }) => {
 
 
   // =====================================================
+  // GET ERROR MESSAGE
+  // Prevents [object Object]
+  // =====================================================
+
+  const getErrorMessage = (
+    data,
+    fallback
+  ) => {
+
+    if (!data) {
+      return fallback;
+    }
+
+    if (
+      typeof data.detail === "string"
+    ) {
+      return data.detail;
+    }
+
+    if (
+      Array.isArray(data.detail)
+    ) {
+
+      return data.detail
+        .map((item) => {
+
+          if (
+            typeof item === "string"
+          ) {
+            return item;
+          }
+
+          if (item?.msg) {
+            return item.msg;
+          }
+
+          return JSON.stringify(
+            item
+          );
+
+        })
+        .join("\n");
+    }
+
+    if (data.message) {
+      return data.message;
+    }
+
+    return fallback;
+  };
+
+
+  // =====================================================
   // FETCH VERSION HISTORY
   // =====================================================
 
@@ -74,6 +123,7 @@ const VersionsTab = ({ file }) => {
     async () => {
 
       if (!file?.id) {
+        setVersions([]);
         setLoading(false);
         return;
       }
@@ -88,21 +138,20 @@ const VersionsTab = ({ file }) => {
             `${API_URL}/files/${file.id}/versions?owner_id=${OWNER_ID}`
           );
 
+        const data =
+          await response
+            .json()
+            .catch(() => null);
+
         if (!response.ok) {
 
-          const data =
-            await response
-              .json()
-              .catch(() => null);
-
           throw new Error(
-            data?.detail ||
-            "Failed to fetch versions"
+            getErrorMessage(
+              data,
+              "Failed to fetch version history"
+            )
           );
         }
-
-        const data =
-          await response.json();
 
         console.log(
           "VERSION HISTORY:",
@@ -115,15 +164,15 @@ const VersionsTab = ({ file }) => {
             : []
         );
 
-      } catch (error) {
+      } catch (err) {
 
         console.error(
-          "Version fetch error:",
-          error
+          "VERSION FETCH ERROR:",
+          err
         );
 
         setError(
-          error.message ||
+          err.message ||
           "Unable to load version history."
         );
 
@@ -135,13 +184,14 @@ const VersionsTab = ({ file }) => {
 
 
   // =====================================================
-  // LOAD VERSIONS
+  // LOAD VERSIONS WHEN FILE CHANGES
   // =====================================================
 
   useEffect(() => {
 
     fetchVersions();
 
+    // eslint-disable-next-line
   }, [file?.id]);
 
 
@@ -149,124 +199,115 @@ const VersionsTab = ({ file }) => {
   // OPEN FILE PICKER
   // =====================================================
 
-  const handleOpenUpload =
-    () => {
+  const handleUploadClick = () => {
 
-      if (uploading) {
-        return;
-      }
+    if (uploading) {
+      return;
+    }
 
-      fileInputRef.current?.click();
-    };
+    fileInputRef.current?.click();
+  };
 
 
   // =====================================================
   // UPLOAD NEW VERSION
   // =====================================================
+const handleVersionUpload = async (event) => {
+  const selectedFile = event.target.files?.[0];
 
-  const handleVersionUpload =
-    async (event) => {
+  if (!selectedFile) {
+    return;
+  }
 
-      const selectedFile =
-        event.target.files?.[0];
+  if (!file?.id) {
+    alert("File ID is missing.");
+    event.target.value = "";
+    return;
+  }
 
-      if (!selectedFile) {
-        return;
+  try {
+    setUploading(true);
+
+    const formData = new FormData();
+
+    // Backend expects BOTH of these in FormData
+    formData.append("owner_id", OWNER_ID);
+    formData.append(
+      "uploaded_file",
+      selectedFile,
+      selectedFile.name
+    );
+
+    console.log("FILE ID:", file.id);
+    console.log("OWNER ID:", OWNER_ID);
+    console.log("SELECTED FILE:", selectedFile);
+
+    for (const [key, value] of formData.entries()) {
+      console.log("FORM DATA:", key, value);
+    }
+
+    const response = await fetch(
+      `${API_URL}/files/${file.id}/versions`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    const data = await response
+      .json()
+      .catch(() => null);
+
+    console.log("UPLOAD STATUS:", response.status);
+    console.log("UPLOAD RESPONSE:", data);
+
+    if (!response.ok) {
+      let message =
+        "Unable to upload new version.";
+
+      if (typeof data?.detail === "string") {
+        message = data.detail;
       }
 
-      if (!file?.id) {
+      if (Array.isArray(data?.detail)) {
+        message = data.detail
+          .map((item) => {
+            const location =
+              item.loc?.join(" → ") || "";
 
-        alert(
-          "Unable to identify the file."
-        );
-
-        event.target.value = "";
-
-        return;
+            return `${location}: ${item.msg}`;
+          })
+          .join("\n");
       }
 
-      try {
+      throw new Error(message);
+    }
 
-        setUploading(true);
-        setError("");
+    // Reload version history
+    await fetchVersions();
 
-        const formData =
-          new FormData();
+    alert(
+      `Version ${data.version_number} uploaded successfully.`
+    );
 
-        /*
-          IMPORTANT:
+  } catch (error) {
+    console.error(
+      "VERSION UPLOAD ERROR:",
+      error
+    );
 
-          This field name must match the
-          UploadFile parameter expected
-          by the FastAPI controller.
-        */
+    alert(
+      error.message ||
+      "Unable to upload new version."
+    );
 
-        formData.append(
-          "uploaded_file",
-          selectedFile
-        );
+  } finally {
+    setUploading(false);
 
-        const response =
-          await fetch(
-            `${API_URL}/files/${file.id}/versions?owner_id=${OWNER_ID}`,
-            {
-              method: "POST",
-              body: formData,
-            }
-          );
-
-        if (!response.ok) {
-
-          const data =
-            await response
-              .json()
-              .catch(() => null);
-
-          throw new Error(
-            data?.detail ||
-            "Unable to upload new version"
-          );
-        }
-
-        const newVersion =
-          await response.json();
-
-        console.log(
-          "NEW VERSION:",
-          newVersion
-        );
-
-        // Reload version history so
-        // latest version appears first.
-        await fetchVersions();
-
-      } catch (error) {
-
-        console.error(
-          "Upload version error:",
-          error
-        );
-
-        alert(
-          error.message ||
-          "Unable to upload new version"
-        );
-
-      } finally {
-
-        setUploading(false);
-
-        /*
-          Clear input so selecting the
-          same file again still triggers
-          onChange.
-        */
-
-        event.target.value = "";
-      }
-    };
-
-
+    // Allows selecting the same file again
+    event.target.value = "";
+  }
+};
   // =====================================================
   // DOWNLOAD VERSION
   // =====================================================
@@ -274,21 +315,7 @@ const VersionsTab = ({ file }) => {
   const handleDownload =
     async (version) => {
 
-      if (
-        !file?.id ||
-        !version?.id
-      ) {
-        return;
-      }
-
       try {
-
-        /*
-          This expects the backend route:
-
-          GET
-          /files/{file_id}/versions/{version_id}/download
-        */
 
         const response =
           await fetch(
@@ -303,8 +330,10 @@ const VersionsTab = ({ file }) => {
               .catch(() => null);
 
           throw new Error(
-            data?.detail ||
-            "Unable to download version"
+            getErrorMessage(
+              data,
+              "Unable to download version"
+            )
           );
         }
 
@@ -316,49 +345,37 @@ const VersionsTab = ({ file }) => {
             blob
           );
 
-        const anchor =
+        const link =
           document.createElement("a");
 
-        anchor.href =
+        link.href =
           downloadUrl;
 
-        /*
-          Use current file name.
-          You can change this later if
-          backend returns version-specific
-          file names.
-        */
-
-        const currentName =
-          file.file_name ||
-          file.name ||
-          "file";
-
-        anchor.download =
-          `v${version.version_number}_${currentName}`;
+        link.download =
+          `v${version.version_number}_${file.file_name || file.name || "file"}`;
 
         document.body.appendChild(
-          anchor
+          link
         );
 
-        anchor.click();
+        link.click();
 
-        anchor.remove();
+        link.remove();
 
         window.URL.revokeObjectURL(
           downloadUrl
         );
 
-      } catch (error) {
+      } catch (err) {
 
         console.error(
-          "Version download error:",
-          error
+          "VERSION DOWNLOAD ERROR:",
+          err
         );
 
         alert(
-          error.message ||
-          "Unable to download version"
+          err.message ||
+          "Unable to download version."
         );
       }
     };
@@ -372,9 +389,9 @@ const VersionsTab = ({ file }) => {
 
     <div className="versions-container">
 
-      {/* ================================================
-          TITLE + UPLOAD BUTTON
-      ================================================= */}
+      {/* ============================================= */}
+      {/* TITLE */}
+      {/* ============================================= */}
 
       <div className="version-title-row">
 
@@ -392,28 +409,14 @@ const VersionsTab = ({ file }) => {
         </div>
 
 
-        {/* HIDDEN FILE INPUT */}
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          style={{
-            display: "none",
-          }}
-          onChange={
-            handleVersionUpload
-          }
-        />
-
-
-        {/* UPLOAD NEW VERSION */}
+        {/* =========================================== */}
+        {/* UPLOAD BUTTON */}
+        {/* =========================================== */}
 
         <button
           type="button"
           className="upload-version-btn"
-          onClick={
-            handleOpenUpload
-          }
+          onClick={handleUploadClick}
           disabled={uploading}
         >
 
@@ -428,78 +431,67 @@ const VersionsTab = ({ file }) => {
 
         </button>
 
+
+        {/* Hidden file input */}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          style={{
+            display: "none"
+          }}
+          onChange={
+            handleVersionUpload
+          }
+        />
+
       </div>
 
 
-      {/* ================================================
-          LOADING
-      ================================================= */}
+      {/* ============================================= */}
+      {/* LOADING */}
+      {/* ============================================= */}
 
       {loading && (
 
         <div className="version-empty">
-
-          <div className="version-empty-icon">
-            <FiClock />
-          </div>
-
-          <p>
-            Loading version history...
-          </p>
-
+          Loading version history...
         </div>
 
       )}
 
 
-      {/* ================================================
-          ERROR
-      ================================================= */}
+      {/* ============================================= */}
+      {/* ERROR */}
+      {/* ============================================= */}
 
       {!loading && error && (
 
         <div className="version-empty">
-
-          <p>
-            {error}
-          </p>
-
+          {error}
         </div>
 
       )}
 
 
-      {/* ================================================
-          NO VERSIONS
-      ================================================= */}
+      {/* ============================================= */}
+      {/* EMPTY */}
+      {/* ============================================= */}
 
       {!loading &&
         !error &&
         versions.length === 0 && (
 
           <div className="version-empty">
-
-            <div className="version-empty-icon">
-              <FiClock />
-            </div>
-
-            <h4>
-              No version history
-            </h4>
-
-            <p>
-              Upload a new version to
-              start version tracking.
-            </p>
-
+            No version history available.
           </div>
 
         )}
 
 
-      {/* ================================================
-          VERSION LIST
-      ================================================= */}
+      {/* ============================================= */}
+      {/* VERSION LIST */}
+      {/* ============================================= */}
 
       {!loading &&
         !error &&
@@ -508,10 +500,7 @@ const VersionsTab = ({ file }) => {
           <div className="version-card">
 
             {versions.map(
-              (
-                version,
-                index
-              ) => {
+              (version, index) => {
 
                 const isLatest =
                   index === 0;
@@ -523,7 +512,7 @@ const VersionsTab = ({ file }) => {
                     key={version.id}
                   >
 
-                    {/* ================= ICON ================= */}
+                    {/* ICON */}
 
                     <div
                       className={
@@ -547,7 +536,7 @@ const VersionsTab = ({ file }) => {
                     </div>
 
 
-                    {/* ================= DETAILS ================= */}
+                    {/* INFORMATION */}
 
                     <div className="version-content">
 
@@ -583,14 +572,15 @@ const VersionsTab = ({ file }) => {
 
                         <strong>
 
-                          {version.uploaded_by
-                            ? (
-                              version.uploaded_by ===
-                              OWNER_ID
-                                ? "You"
-                                : version.uploaded_by
-                            )
-                            : "Unknown"
+                          {
+                            version.uploaded_by
+                              ? (
+                                version.uploaded_by ===
+                                OWNER_ID
+                                  ? "You"
+                                  : version.uploaded_by
+                              )
+                              : "Unknown"
                           }
 
                         </strong>
@@ -598,7 +588,7 @@ const VersionsTab = ({ file }) => {
                       </p>
 
 
-                      <span className="version-date">
+                      <span>
 
                         {formatDate(
                           version.uploaded_at
@@ -609,7 +599,7 @@ const VersionsTab = ({ file }) => {
                     </div>
 
 
-                    {/* ================= DOWNLOAD ================= */}
+                    {/* DOWNLOAD BUTTON */}
 
                     <button
                       type="button"
@@ -631,6 +621,7 @@ const VersionsTab = ({ file }) => {
                     </button>
 
                   </div>
+
                 );
               }
             )}
