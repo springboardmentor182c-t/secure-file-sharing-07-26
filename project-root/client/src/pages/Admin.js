@@ -162,7 +162,6 @@ export default function Admin() {
                 </div>
                 <span style={{ fontFamily: 'monospace', fontSize: '.75rem', color: 'var(--text-muted)' }}>{s.latency}</span>
               </div>
-          
             ))}
           </div>
         </div>
