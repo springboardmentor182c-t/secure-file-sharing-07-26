@@ -1,9 +1,4 @@
 // client/src/features/analytics/components/charts/FileTypeDonut.js
-/**
- * File Type Distribution — Premium donut chart with legend.
- * Matches TrustShare Apple-grade design system.
- * Uses backend colors + smooth animations + theme-aware.
- */
 
 import React from "react";
 import {
@@ -153,9 +148,7 @@ export default function FileTypeDonut({
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Custom Tooltip — matches the premium design
-   ══════════════════════════════════════════════════════════════════ */
+
 function FileTypeTooltip({ active, payload, totalFiles }) {
   if (!active || !payload || !payload.length) return null;
 

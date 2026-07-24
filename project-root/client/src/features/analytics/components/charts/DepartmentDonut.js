@@ -15,8 +15,8 @@ import EmptyState from "../shared/EmptyState";
 
 export default function DepartmentDonut({
   byDepartment = [],
-  loading      = false,
-  config       = {},
+  loading = false,
+  config = {},
 }) {
   const title = config.title || "Sharing by Department";
   const [activeIndex, setActiveIndex] = useState(null);
@@ -42,25 +42,24 @@ export default function DepartmentDonut({
           transition={{ duration: 0.3 }}
           style={{ display: "flex", alignItems: "center", gap: "24px" }}
         >
-          {/* Donut Chart with dynamic center label */}
           <div
             style={{
-              position:       "relative",
-              width:          140,
-              height:         140,
-              flexShrink:     0,
-              display:        "flex",
-              alignItems:     "center",
+              position: "relative",
+              width: 140,
+              height: 140,
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
               justifyContent: "center",
             }}
           >
             <div
               style={{
                 position: "absolute",
-                top:      0,
-                left:     0,
-                right:    0,
-                bottom:   0,
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
               }}
             >
               <ResponsiveContainer width="100%" height="100%">
@@ -97,24 +96,23 @@ export default function DepartmentDonut({
               </ResponsiveContainer>
             </div>
 
-            {/* Dynamic Center Label */}
             <div
               style={{
-                position:      "relative",
-                zIndex:        1,
-                textAlign:     "center",
+                position: "relative",
+                zIndex: 1,
+                textAlign: "center",
                 pointerEvents: "none",
-                maxWidth:      74,
+                maxWidth: 74,
               }}
             >
               <div
                 style={{
-                  fontSize:           18,
-                  fontWeight:         700,
-                  color:              "var(--an-text-primary)",
-                  lineHeight:         1.1,
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: "var(--an-text-primary)",
+                  lineHeight: 1.1,
                   fontVariantNumeric: "tabular-nums",
-                  letterSpacing:      "-0.5px",
+                  letterSpacing: "-0.5px",
                 }}
               >
                 {activeItem ? `${activeItem.value}%` : `${total}%`}
@@ -122,15 +120,15 @@ export default function DepartmentDonut({
 
               <div
                 style={{
-                  fontSize:      10,
-                  color:         "var(--an-text-tertiary)",
-                  marginTop:     3,
-                  fontWeight:    600,
+                  fontSize: 10,
+                  color: "var(--an-text-tertiary)",
+                  marginTop: 3,
+                  fontWeight: 600,
                   letterSpacing: "0.3px",
                   textTransform: "uppercase",
-                  whiteSpace:    "nowrap",
-                  overflow:      "hidden",
-                  textOverflow:  "ellipsis",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                 }}
               >
                 {activeItem ? activeItem.name : "Total"}
@@ -138,7 +136,6 @@ export default function DepartmentDonut({
             </div>
           </div>
 
-          {/* Interactive Legend */}
           <div className="an-donut-legend" style={{ flex: 1 }}>
             {byDepartment.map((d, index) => {
               const isHovered = activeIndex === index;
@@ -150,8 +147,8 @@ export default function DepartmentDonut({
                   onMouseEnter={() => setActiveIndex(index)}
                   onMouseLeave={() => setActiveIndex(null)}
                   style={{
-                    cursor:     "pointer",
-                    opacity:    activeIndex === null || isHovered ? 1 : 0.45,
+                    cursor: "pointer",
+                    opacity: activeIndex === null || isHovered ? 1 : 0.45,
                     transition: "opacity 0.2s ease",
                   }}
                 >

@@ -1,8 +1,4 @@
 // client/src/features/analytics/components/panels/TopSharedFiles.js
-/**
- * Top Shared Files panel — ranked list with progress bars.
- * Data + labels from backend.
- */
 
 import React from "react";
 import { motion } from "framer-motion";

@@ -4,7 +4,6 @@ import React from "react";
 import KPICard from "./KPICard";
 import { KPIGridSkeleton } from "../shared/Skeleton";
 
-// Map KPI keys to trend keys
 const TREND_KEY_MAP = {
   uploads: "uploads",
   downloads: "downloads",
@@ -21,11 +20,11 @@ export default function KPIGrid({
   skeletonCount = 4,
   loading = false,
 }) {
- if (loading) {
-  return (
-    <KPIGridSkeleton count={skeletonCount || config.length || 4} />
-  );
-}
+  if (loading) {
+    return (
+      <KPIGridSkeleton count={skeletonCount || config.length || 4} />
+    );
+  }
 
   return (
     <div className="an-kpi-grid">

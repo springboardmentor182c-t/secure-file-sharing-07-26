@@ -1,57 +1,12 @@
 // client/src/features/analytics/components/shared/Skeleton.js
-/**
- * ═══════════════════════════════════════════════════════════════════════════
- * TrustShare Analytics — Premium Apple-Grade Skeleton System
- * ═══════════════════════════════════════════════════════════════════════════
- *
- * Design principles:
- *  • Anatomically exact   — every skeleton mirrors the real component's
- *    exact px dimensions, gaps, and structure. Zero layout shift.
- *  • Diagonal wave entry  — elements animate in on a diagonal cascade
- *    (same technique Apple uses in iOS Photos / App Store skeletons).
- *  • Breathing pulse      — each container has a gentle scale+opacity breath.
- *  • Animated SVG paths   — charts draw themselves in with pathLength.
- *  • Spinning arc donuts  — rotating strokeDashoffset instead of flat circle.
- *  • Spring exit          — content fades in over the skeleton with a spring.
- *  • Theme-aware          — uses --an-skeleton-{from|via|to} CSS vars.
- *  • Framer Motion        — all easing uses [0.32, 0.72, 0, 1] (Apple spring).
- *
- * Exports (default + named):
- *  Skeleton                 — raw shimmer block (base primitive)
- *  ChartSkeleton            — animated bar chart (used by existing charts)
- *  AreaChartSkeleton        — SVG wave line + gradient fill (StorageAreaChart)
- *  LineChartSkeleton        — dual animated SVG paths (LoginLineChart)
- *  BarChartSkeleton         — staggered paired bars growing from baseline
- *  KPICardSkeleton          — single KPI card with icon + value + label + sub
- *  KPIGridSkeleton          — responsive grid of KPI cards
- *  TopFilesSkeleton         — ranked file rows with animated progress bars
- *  TopUsersSkeleton         — ranked user rows with avatar + progress bars
- *  RecentActivitySkeleton   — activity feed rows with icon + text + timestamp
- *  TimelineSkeleton         — security timeline rows with dot + badge + text
- *  UnauthorizedSkeleton     — 6-column access attempt rows
- *  SystemHealthSkeleton     — sectioned stat tile grid
- *  SecurityScoreSkeleton    — animated gauge arc + breakdown rows + stat tiles
- *  MFAAdoptionSkeleton      — spinning donut + stat tiles + total + banner
- *  HeatmapSkeleton          — 7×24 diagonal-wave cell grid + legend
- *  DonutSkeleton            — spinning arc + staggered legend rows
- * ═══════════════════════════════════════════════════════════════════════════
- */
 
 import React from "react";
 import { motion } from "framer-motion";
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   CONSTANTS
-   ═══════════════════════════════════════════════════════════════════════════ */
-const EASE        = [0.32, 0.72, 0, 1];   // Apple spring — used everywhere
-const PULSE_DUR   = 3.2;                  // container breath cycle (seconds)
-const SHIMMER_DUR = 1.8;                  // shimmer sweep (seconds, via CSS)
+const EASE        = [0.32, 0.72, 0, 1];   
+const PULSE_DUR   = 3.2;                  
+const SHIMMER_DUR = 1.8;                  
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   INTERNAL: SkeletonBreath
-   Wraps any skeleton in a gentle scale+opacity pulse — identical to the
-   breathing effect Apple uses on iOS skeleton cells.
-   ═══════════════════════════════════════════════════════════════════════════ */
 function SkeletonBreath({ children, delay = 0, style = {}, className = "" }) {
   return (
     <motion.div
@@ -73,11 +28,6 @@ function SkeletonBreath({ children, delay = 0, style = {}, className = "" }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   BASE — Skeleton
-   Raw shimmer block. Every other skeleton is built from this.
-   Accepts className (for .an-skeleton--* modifiers) + inline style + delay.
-   ═══════════════════════════════════════════════════════════════════════════ */
 export default function Skeleton({ className = "", style = {}, delay = 0 }) {
   return (
     <motion.div
@@ -91,11 +41,6 @@ export default function Skeleton({ className = "", style = {}, delay = 0 }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   ChartSkeleton — animated bar chart
-   Used by: StorageAreaChart, LoginLineChart, VolumeBarChart (legacy fallback)
-   and any chart that imports { ChartSkeleton }.
-   ═══════════════════════════════════════════════════════════════════════════ */
 export function ChartSkeleton({ height = 200 }) {
   const bars = [55, 72, 48, 85, 63, 90, 77];
 
@@ -142,11 +87,6 @@ export function ChartSkeleton({ height = 200 }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   AreaChartSkeleton — StorageAreaChart
-   SVG animated wave: the fill area + stroke line + data-point dots all
-   draw themselves in using pathLength / strokeDasharray animation.
-   ═══════════════════════════════════════════════════════════════════════════ */
 export function AreaChartSkeleton({ height = 200 }) {
   /* Six x-axis label widths that look natural */
   const xLabelWidths = [38, 32, 36, 28, 34, 30];
@@ -263,11 +203,6 @@ export function AreaChartSkeleton({ height = 200 }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   LineChartSkeleton — LoginLineChart (success + failed dual lines)
-   Two SVG paths draw themselves in at different speeds; a dashed style
-   on the failed line mirrors the real chart's visual language.
-   ═══════════════════════════════════════════════════════════════════════════ */
 export function LineChartSkeleton({ height = 200 }) {
   return (
     <SkeletonBreath delay={0.05}>
@@ -350,11 +285,6 @@ export function LineChartSkeleton({ height = 200 }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   BarChartSkeleton — VolumeBarChart (paired upload + download bars)
-   Each group of two bars grows from baseline with a stagger. The second
-   bar in each pair is visually lighter to mirror upload vs download.
-   ═══════════════════════════════════════════════════════════════════════════ */
 export function BarChartSkeleton({ height = 200 }) {
   /* [upload%, download%] pairs — proportional to realistic data */
   const groups = [
@@ -456,11 +386,7 @@ export function BarChartSkeleton({ height = 200 }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   KPICardSkeleton — single KPI card
-   Mirrors .an-kpi-card exactly: icon tile → value row → label → sub text.
-   The icon scales in first (like a reveal), then the text rows cascade down.
-   ═══════════════════════════════════════════════════════════════════════════ */
+
 export function KPICardSkeleton({ index = 0 }) {
   const base = index * 0.07;
 
@@ -493,10 +419,6 @@ export function KPICardSkeleton({ index = 0 }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   KPIGridSkeleton — grid of KPI card skeletons
-   Drops straight in as a replacement for the inline skeleton in KPIGrid.js.
-   ═══════════════════════════════════════════════════════════════════════════ */
 export function KPIGridSkeleton({ count = 4 }) {
   return (
     <div className="an-kpi-grid" aria-hidden="true">
@@ -507,11 +429,6 @@ export function KPIGridSkeleton({ count = 4 }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   TopFilesSkeleton — ranked file list with animated progress bars
-   Each row slides in from the left; the progress bar extends from the left
-   edge (transformOrigin: "left center") after the text row appears.
-   ═══════════════════════════════════════════════════════════════════════════ */
 export function TopFilesSkeleton({ rows = 5 }) {
   /* Widths mirror the real ranked progress-bar proportions */
   const barWidths = [100, 72, 54, 38, 27];
@@ -567,11 +484,6 @@ export function TopFilesSkeleton({ rows = 5 }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   TopUsersSkeleton — ranked user list with avatar + progress bar
-   Mirrors .an-topuser-skeleton: rank dot | avatar square |
-   name+email+progress body | count number.
-   ═══════════════════════════════════════════════════════════════════════════ */
 export function TopUsersSkeleton({ rows = 5 }) {
   /* Name widths vary per row to look natural */
   const nameWidths  = ["58%", "50%", "62%", "46%", "54%"];
@@ -653,10 +565,6 @@ export function TopUsersSkeleton({ rows = 5 }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   RecentActivitySkeleton — activity feed rows
-   Mirrors .an-recent-skeleton: icon | event type + meta | timestamp.
-   ═══════════════════════════════════════════════════════════════════════════ */
 export function RecentActivitySkeleton({ rows = 5 }) {
   const nameWidths = ["44%", "36%", "50%", "40%", "46%"];
   const metaWidths = ["28%", "22%", "32%", "26%", "20%"];
@@ -706,11 +614,6 @@ export function RecentActivitySkeleton({ rows = 5 }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   TimelineSkeleton — security event timeline
-   Mirrors .an-timeline-skeleton: severity dot | label + badge + detail + time.
-   Rows slide up instead of left (matching the real item's y-axis animation).
-   ═══════════════════════════════════════════════════════════════════════════ */
 export function TimelineSkeleton({ rows = 5 }) {
   const labelWidths  = ["72%", "60%", "78%", "54%", "66%"];
   const detailWidths = ["92%", "84%", "96%", "78%", "88%"];
@@ -769,11 +672,6 @@ export function TimelineSkeleton({ rows = 5 }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   UnauthorizedSkeleton — unauthorized access attempt rows
-   Mirrors the 6-column .an-unauth-skeleton layout:
-   icon | IP+location | target | attempts | time | status pill
-   ═══════════════════════════════════════════════════════════════════════════ */
 export function UnauthorizedSkeleton({ rows = 4 }) {
   return (
     <SkeletonBreath delay={0.06}>
@@ -834,11 +732,6 @@ export function UnauthorizedSkeleton({ rows = 4 }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   SystemHealthSkeleton — sectioned stat tile grid
-   4 sections matching SECTIONS in SystemHealthPanel.js.
-   Tile counts per section: activity=4, users=2, storage=4, performance=2.
-   ═══════════════════════════════════════════════════════════════════════════ */
 export function SystemHealthSkeleton({ sections = 4 }) {
   const tileCounts = [4, 2, 4, 2]; // mirrors SECTIONS
 
@@ -883,10 +776,6 @@ export function SystemHealthSkeleton({ sections = 4 }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   SecurityScoreSkeleton — animated gauge + breakdown rows + stat tiles
-   The gauge arc animates like it's scanning; breakdown bars extend from left.
-   ═══════════════════════════════════════════════════════════════════════════ */
 export function SecurityScoreSkeleton() {
   const r    = 70;
   const circ = 2 * Math.PI * r;       // ≈ 440
@@ -1047,11 +936,6 @@ export function SecurityScoreSkeleton() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   MFAAdoptionSkeleton — spinning donut + stat tiles + total row + banner
-   The donut arc spins continuously (like a loading indicator); the right
-   side tiles cascade in from the right.
-   ═══════════════════════════════════════════════════════════════════════════ */
 export function MFAAdoptionSkeleton() {
   const r    = 55;
   const circ = 2 * Math.PI * r; // ≈ 346
@@ -1169,12 +1053,6 @@ export function MFAAdoptionSkeleton() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   HeatmapSkeleton — 7 × 24 cell grid (FailedLoginHeatmap)
-   Cells appear on a diagonal wave — the same technique Apple uses in the
-   iOS Photos grid skeleton: delay = (row + col) × constant so the shimmer
-   travels from top-left to bottom-right.
-   ═══════════════════════════════════════════════════════════════════════════ */
 export function HeatmapSkeleton({ rows = 7, cols = 24 }) {
   return (
     <SkeletonBreath delay={0.08}>
@@ -1242,12 +1120,6 @@ export function HeatmapSkeleton({ rows = 7, cols = 24 }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   DonutSkeleton — DepartmentDonut + FileTypeDonut
-   A continuously rotating arc replaces the flat shimmer circle.
-   Legend rows slide in from the right with a cascade.
-   Pass showCenter=true for FileTypeDonut (adds the center total label).
-   ═══════════════════════════════════════════════════════════════════════════ */
 export function DonutSkeleton({
   legendRows  = 5,
   size        = 120,
@@ -1365,9 +1237,6 @@ export function DonutSkeleton({
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   HEADER SKELETON — tabs + date dropdown + action buttons
-   ═══════════════════════════════════════════════════════════════════════════ */
 export function HeaderSkeleton() {
   return (
     <SkeletonBreath delay={0}>

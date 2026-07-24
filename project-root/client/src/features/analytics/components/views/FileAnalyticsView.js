@@ -1,10 +1,4 @@
 // client/src/features/analytics/components/views/FileAnalyticsView.js
-/**
- * File Analytics tab content.
- * Composes: KPI grid + Storage chart + Top files + Volume chart + Donut 
- *         + File Types + Top Active Users.
- * All UI text/config passed down from ui_config.
- */
 
 import React from "react";
 import { motion } from "framer-motion";
@@ -14,9 +8,9 @@ import VolumeBarChart from "../charts/VolumeBarChart";
 import DepartmentDonut from "../charts/DepartmentDonut";
 import TopSharedFiles from "../panels/TopSharedFiles";
 
-// ═══ ✅ NEW IMPORTS ═══
 import FileTypeDonut from "../charts/FileTypeDonut";
 import TopActiveUsers from "../panels/TopActiveUsers";
+import PerformancePanel from "../panels/PerformancePanel";
 
 const FILE_KPI_SKELETON_COUNT = 5;
 
@@ -69,7 +63,6 @@ export default function FileAnalyticsView({ data, loading, uiConfig }) {
         />
       </div>
 
-      {/* ═══ ✅ NEW: File Type Distribution + Top Active Users ═══ */}
       <div className="an-row an-row--3-2">
         <FileTypeDonut
           fileTypes={data?.file_types}
@@ -80,6 +73,12 @@ export default function FileAnalyticsView({ data, loading, uiConfig }) {
           users={data?.top_active_users}
           loading={loading}
           config={panelsCfg.top_active_users}
+        />
+      </div>
+      <div className="an-row an-row--1">
+        <PerformancePanel
+          performanceData={data?.performance_metrics}
+          loading={loading}
         />
       </div>
     </motion.div>

@@ -1,9 +1,4 @@
 // client/src/features/analytics/components/panels/SecurityScoreGauge.js
-/**
- * Security Score Gauge — Circular 0-100 score.
- * Shows overall security health with beautiful animated ring.
- * All labels + data from DB.
- */
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -237,9 +232,6 @@ export default function SecurityScoreGauge({
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Breakdown Row — mini progress bar
-   ══════════════════════════════════════════════════════════════════ */
 function BreakdownRow({ label, value, delay }) {
   // Color based on score
   const getColor = (v) => {

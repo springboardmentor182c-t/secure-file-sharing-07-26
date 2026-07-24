@@ -1,8 +1,4 @@
 // client/src/features/analytics/components/panels/SecurityTimeline.js
-/**
- * Security Event Timeline — vertical timeline with severity dots + badges.
- * Severity labels + colors come from backend ui_config.severity.
- */
 
 import React from "react";
 import { motion } from "framer-motion";

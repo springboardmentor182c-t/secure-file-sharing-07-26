@@ -26,38 +26,43 @@ function getCacheKey(days, userId) {
   return `${days}-${userId || "all"}`;
 }
 
-// ═══ ✅ NEW: Auto-refresh interval (30 seconds) ═══
+// ═══ Auto-refresh interval (30 seconds) ═══
 const AUTO_REFRESH_INTERVAL = 30000;
 
 export default function useAnalytics(days = 30, userId = null) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const lastFetchRef = useRef(null);
 
-  // ═══ ✅ NEW: Auto-refresh state ═══
+  // ═══ Auto-refresh state ═══
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
   const [lastRefreshedAt, setLastRefreshedAt] = useState(null);
   const [nextRefreshIn, setNextRefreshIn] = useState(AUTO_REFRESH_INTERVAL / 1000);
+
   const intervalRef = useRef(null);
   const countdownRef = useRef(null);
+  const isMountedRef = useRef(true);   
 
-  const fetchData = useCallback(async (forceRefresh = false) => {
+  const fetchData = useCallback(async (forceRefresh = false, silent = false) => {
     const key = getCacheKey(days, userId);
 
     // Use cache if available and not force refreshing (within 60 seconds)
     if (!forceRefresh && cache[key] && Date.now() - cache[key].time < 60000) {
-      setData(cache[key].data);
-      setLoading(false);
+      if (isMountedRef.current) {
+        setData(cache[key].data);
+        setLoading(false);
+        setLastRefreshedAt(cache[key].time);
+      }
       return;
     }
 
     try {
-      // Only show loading on first load, not on auto-refresh
-      if (!lastFetchRef.current) {
+      if (!silent && isMountedRef.current) {
         setLoading(true);
       }
-      setError(null);
+      if (isMountedRef.current) {
+        setError(null);
+      }
 
       const result = await getAnalyticsSummary(days, userId);
 
@@ -94,7 +99,6 @@ export default function useAnalytics(days = 30, userId = null) {
         ? `${del.this_week_deletes} this week`
         : `${del?.this_month_deletes ?? 0} this month`;
 
-      // Trend indicators from DB
       const trendData = trends?.trends || {};
 
       const enriched = {
@@ -113,7 +117,6 @@ export default function useAnalytics(days = 30, userId = null) {
           shares_subtitle: sharesSub,
           deletes_subtitle: deletesSub,
         },
-        // Trend arrows for KPI cards (from DB)
         kpiTrends: {
           uploads: trendData.uploads || null,
           downloads: trendData.downloads || null,
@@ -121,23 +124,36 @@ export default function useAnalytics(days = 30, userId = null) {
           logins: trendData.logins || null,
           failed: trendData.failed || null,
         },
-        // File access history (from DB)
         fileAccessHistory: trends?.file_access_history || [],
       };
 
       // Cache the result
-      cache[key] = { data: enriched, time: Date.now() };
-      lastFetchRef.current = Date.now();
-      setLastRefreshedAt(Date.now()); // ═══ ✅ NEW ═══
+      const fetchTime = Date.now();
+      cache[key] = { data: enriched, time: fetchTime };
 
-      setData(enriched);
+      if (isMountedRef.current) {
+        setLastRefreshedAt(fetchTime);
+        setNextRefreshIn(AUTO_REFRESH_INTERVAL / 1000);  // ✅ Reset countdown
+        setData(enriched);
+      }
     } catch (err) {
       console.error("[useAnalytics] error:", err);
-      setError(err);
+      if (isMountedRef.current) {
+        setError(err);
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }, [days, userId]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -147,45 +163,56 @@ export default function useAnalytics(days = 30, userId = null) {
   const refresh = useCallback(() => {
     const key = getCacheKey(days, userId);
     delete cache[key];
-    setNextRefreshIn(AUTO_REFRESH_INTERVAL / 1000); // ═══ ✅ Reset countdown ═══
-    return fetchData(true);
+    setNextRefreshIn(AUTO_REFRESH_INTERVAL / 1000);
+    return fetchData(true, false);   // Not silent - show loading
   }, [fetchData, days, userId]);
 
-  // ═══════════════════════════════════════════════════════════
-  // ✅ NEW: Auto-refresh logic
-  // ═══════════════════════════════════════════════════════════
   useEffect(() => {
     // Clean up existing intervals
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    if (countdownRef.current) clearInterval(countdownRef.current);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
 
     if (!autoRefreshEnabled) {
       setNextRefreshIn(AUTO_REFRESH_INTERVAL / 1000);
       return;
     }
 
-    // Countdown timer (updates every second)
     countdownRef.current = setInterval(() => {
+      if (!isMountedRef.current) return;
       setNextRefreshIn((prev) => {
         if (prev <= 1) return AUTO_REFRESH_INTERVAL / 1000;
         return prev - 1;
       });
     }, 1000);
 
-    // Auto-refresh timer (fires every 30s)
     intervalRef.current = setInterval(() => {
-      // Silent refresh - no loading spinner
+      if (!isMountedRef.current) return;
+
       const key = getCacheKey(days, userId);
       delete cache[key];
-      fetchData(true);
+      fetchData(true, true);  
     }, AUTO_REFRESH_INTERVAL);
 
+    // Cleanup on unmount or dependency change
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      if (countdownRef.current) clearInterval(countdownRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+        countdownRef.current = null;
+      }
     };
   }, [autoRefreshEnabled, days, userId, fetchData]);
 
+  // ═══ Toggle auto-refresh ═══
   const toggleAutoRefresh = useCallback(() => {
     setAutoRefreshEnabled((prev) => !prev);
   }, []);

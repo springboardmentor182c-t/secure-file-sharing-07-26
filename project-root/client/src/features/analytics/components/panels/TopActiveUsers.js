@@ -1,9 +1,4 @@
 // client/src/features/analytics/components/panels/TopActiveUsers.js
-/**
- * Top Active Users — Ranked list panel.
- * Shows top users by activity (uploads + downloads + shares).
- * Premium design with avatar initials, ranking, and progress bars.
- */
 
 import React from "react";
 import { motion } from "framer-motion";
@@ -12,14 +7,12 @@ import Card from "../shared/Card";
 import { TopUsersSkeleton } from "../shared/Skeleton";
 import EmptyState from "../shared/EmptyState";
 
-// Rank medal colors
 const RANK_COLORS = {
-  1: { color: "#F59E0B", bg: "rgba(245, 158, 11, 0.12)", icon: Trophy },  // gold
-  2: { color: "#94A3B8", bg: "rgba(148, 163, 184, 0.15)", icon: Medal },  // silver
-  3: { color: "#D97706", bg: "rgba(217, 119, 6, 0.12)", icon: Award },   // bronze
+  1: { color: "#F59E0B", bg: "rgba(245, 158, 11, 0.12)", icon: Trophy },  
+  2: { color: "#94A3B8", bg: "rgba(148, 163, 184, 0.15)", icon: Medal },  
+  3: { color: "#D97706", bg: "rgba(217, 119, 6, 0.12)", icon: Award },   
 };
 
-// Avatar background colors (rotated by rank)
 const AVATAR_COLORS = [
   "linear-gradient(135deg, #3B82F6, #6366F1)",
   "linear-gradient(135deg, #EC4899, #8B5CF6)",
@@ -38,7 +31,6 @@ export default function TopActiveUsers({
 
   return (
     <Card delay={0.35} noPadding>
-      {/* Header */}
       <div className="an-card-header an-card-header--border">
         <div>
           <h3 className="an-card-title">{title}</h3>
@@ -58,7 +50,6 @@ export default function TopActiveUsers({
         )}
       </div>
 
-      {/* Body */}
       {loading ? (
         <TopUsersSkeleton rows={5} />
       ) : !users.length ? (
@@ -85,7 +76,6 @@ export default function TopActiveUsers({
                 }}
                 whileHover={{ x: 2, transition: { duration: 0.15 } }}
               >
-                {/* Rank indicator */}
                 <div className="an-topuser-rank">
                   {rankInfo ? (
                     <div
@@ -104,7 +94,6 @@ export default function TopActiveUsers({
                   )}
                 </div>
 
-                {/* Avatar with initials */}
                 <div
                   className="an-topuser-avatar"
                   style={{ background: avatarBg }}
@@ -112,7 +101,6 @@ export default function TopActiveUsers({
                   <span>{user.initials}</span>
                 </div>
 
-                {/* Name + email + progress bar */}
                 <div className="an-topuser-info">
                   <div className="an-topuser-top">
                     <span className="an-topuser-name">{user.name}</span>
@@ -126,7 +114,7 @@ export default function TopActiveUsers({
                       {user.activity === 1 ? "event" : "events"}
                     </span>
                   </div>
-                  {/* Progress bar */}
+
                   <div className="an-topuser-track">
                     <motion.div
                       className="an-topuser-fill"

@@ -1,7 +1,6 @@
 // client/src/features/analytics/components/charts/LoginLineChart.js
 /**
  * Login Activity — dual line chart (Success + Failed).
- * Title + legend labels from backend ui_config.charts.login.
  */
 
 import React from "react";
@@ -27,13 +26,11 @@ export default function LoginLineChart({
   const successLabel = config.success_label || "Success";
   const failedLabel  = config.failed_label  || "Failed";
 
-  // ✅ NEW: Calculate success rate from real data
   const totalSuccess = loginActivity.reduce((s, d) => s + (d.success || 0), 0);
   const totalFailed  = loginActivity.reduce((s, d) => s + (d.failed  || 0), 0);
   const total        = totalSuccess + totalFailed;
   const successRate  = total > 0 ? Math.round((totalSuccess / total) * 100) : 0;
 
-  // ✅ NEW: Color based on rate threshold
   const rateColor =
     successRate >= 90 ? "var(--an-kpi-emerald)"
     : successRate >= 75 ? "var(--an-kpi-amber)"

@@ -1,8 +1,4 @@
 // client/src/features/analytics/components/charts/VolumeBarChart.js
-/**
- * Upload / Download Volume — dual bar chart.
- * Title + legend labels from backend ui_config.charts.volume.
- */
 
 import React from "react";
 import {

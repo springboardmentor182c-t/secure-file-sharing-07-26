@@ -16,6 +16,7 @@ ANALYTICS_UI_CONFIG = {
         {"value": "7days", "label": "Last 7 days"},
         {"value": "30days", "label": "Last 30 days"},
         {"value": "90days", "label": "Last 90 days"},
+        {"value": "all", "label": "All Time"},
     ],
 
     "file_kpis": [
@@ -136,7 +137,6 @@ ANALYTICS_UI_CONFIG = {
             "empty": "No sharing data yet.",
         },
 
-        # ═══ ✅ NEW: File Type Distribution ═══
         "file_types": {
             "title": "File Type Distribution",
             "subtitle": "Breakdown by file format",
@@ -146,7 +146,6 @@ ANALYTICS_UI_CONFIG = {
             "total_label_plural": "Files",
         },
 
-        # ═══ ✅ NEW: Failed Login Heatmap ═══
         "login_heatmap": {
             "title": "Failed Login Heatmap",
             "subtitle": "Attack patterns by day and hour",
@@ -210,7 +209,6 @@ ANALYTICS_UI_CONFIG = {
             }
         },
 
-        # ═══ ✅ NEW: Top Active Users ═══
         "top_active_users": {
             "title": "Top Active Users",
             "subtitle": "Most active workspace members",
@@ -221,7 +219,6 @@ ANALYTICS_UI_CONFIG = {
             "badge_prefix": "Top",
         },
 
-        # ═══ ✅ NEW: Security Score ═══
         "security_score": {
             "title": "Security Score",
             "subtitle": "Overall security health",
@@ -233,7 +230,6 @@ ANALYTICS_UI_CONFIG = {
             "failed_score_label": "Failed Login Score",
         },
 
-        # ═══ ✅ NEW: MFA Adoption ═══
         "mfa_adoption": {
             "title": "MFA Adoption",
             "subtitle": "Multi-factor authentication usage",

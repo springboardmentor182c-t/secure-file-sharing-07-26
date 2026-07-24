@@ -1,9 +1,4 @@
 // client/src/features/analytics/components/panels/MFAAdoptionCard.js
-/**
- * MFA Adoption Rate — Donut chart with adoption stats.
- * Shows how many users have MFA enabled/disabled.
- * All labels + data from DB.
- */
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -31,7 +26,6 @@ export default function MFAAdoptionCard({
 
   const [displayPct, setDisplayPct] = useState(0);
 
-  // Animate percentage counter
   useEffect(() => {
     if (!mfaData?.adoption_pct && mfaData?.adoption_pct !== 0) return;
     const target = mfaData.adoption_pct;

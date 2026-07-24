@@ -1,8 +1,4 @@
 // client/src/features/analytics/components/panels/UnauthorizedTable.js
-/**
- * Unauthorized Access Attempts — Figma-exact list with left color border.
- * All labels come from backend ui_config.panels.unauthorized.
- */
 
 import React from "react";
 import { motion } from "framer-motion";

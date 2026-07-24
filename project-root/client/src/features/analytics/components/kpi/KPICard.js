@@ -27,18 +27,17 @@ export default function KPICard({
       ? displayed.toFixed(decimals)
       : Math.round(displayed).toLocaleString();
 
-  // Trend indicator from DB
   const TrendIcon = trend?.direction === "up"
     ? TrendingUp
     : trend?.direction === "down"
-    ? TrendingDown
-    : Minus;
+      ? TrendingDown
+      : Minus;
 
   const trendColor = trend?.direction === "up"
     ? "var(--an-kpi-emerald)"
     : trend?.direction === "down"
-    ? "var(--an-kpi-red)"
-    : "var(--an-text-tertiary)";
+      ? "var(--an-kpi-red)"
+      : "var(--an-text-tertiary)";
 
   return (
     <motion.div

@@ -1,8 +1,4 @@
 // client/src/features/analytics/components/panels/SystemHealthPanel.js
-/**
- * System health widget — comprehensive DB stats + service status.
- * Fulfills spec: Admin Dashboard → System monitoring.
- */
 
 import React from "react";
 import { motion } from "framer-motion";

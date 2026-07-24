@@ -13,9 +13,9 @@ const DATE_RANGE_TO_DAYS = {
   "7days": 7,
   "30days": 30,
   "90days": 90,
+  "all":    365,
 };
 
-// ═══ ✅ NEW: Parse custom date range to days ═══
 function parseCustomRange(value) {
   if (!value?.startsWith("custom-")) return null;
   const parts = value.replace("custom-", "").split("-to-");
@@ -30,7 +30,6 @@ export default function Analytics() {
   const [dateRange, setDateRange] = useState("30days");
   const [selectedUser, setSelectedUser] = useState("");
 
-  // ═══ ✅ NEW: Calculate days from custom OR preset ═══
   const days = parseCustomRange(dateRange) || DATE_RANGE_TO_DAYS[dateRange] || 30;
 
   const {

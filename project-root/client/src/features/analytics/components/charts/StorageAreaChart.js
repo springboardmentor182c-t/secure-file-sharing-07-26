@@ -26,7 +26,6 @@ export default function StorageAreaChart({
   const dataKey = config.data_key || "gb";
   const valLabel = config.value_label || "Storage";
 
-  // Auto-scale to MB if all values are < 1 GB
   const maxGb = Math.max(...trend.map((d) => d[dataKey] || 0), 0);
   const useMB = maxGb < 1 && maxGb > 0;
 

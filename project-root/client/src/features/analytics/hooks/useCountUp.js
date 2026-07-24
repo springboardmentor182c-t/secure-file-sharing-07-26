@@ -1,11 +1,9 @@
 // client/src/features/analytics/hooks/useCountUp.js
 /**
- * Smooth count-up hook — easeOutCubic (Apple-like snappy feel).
- * Matches the Figma reference implementation.
- *
- * @param {number} target   - final value
- * @param {number} duration - milliseconds (default 1400)
- * @param {number} decimals - decimal places (default 0)
+ * 
+ * @param {number} target   
+ * @param {number} duration 
+ * @param {number} decimals 
  */
 
 import { useEffect, useRef, useState } from "react";

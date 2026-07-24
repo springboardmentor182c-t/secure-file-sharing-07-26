@@ -17,7 +17,6 @@ export default function Header({
   dateRange,
   setDateRange,
   onRefresh,
-  // ═══ ✅ NEW: Auto-refresh props ═══
   autoRefreshEnabled = true,
   toggleAutoRefresh,
   lastRefreshedAt,
@@ -32,7 +31,6 @@ export default function Header({
   const tabs = uiConfig?.tabs || [];
   const dateRanges = uiConfig?.date_ranges || [];
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
@@ -48,13 +46,11 @@ export default function Header({
 
     setShowExportMenu(false);
 
-    // ═══ ✅ Calculate days (supports custom range) ═══
     const daysMap = { "7days": 7, "30days": 30, "90days": 90 };
     let days = daysMap[dateRange] || 30;
     let customStart = null;
     let customEnd = null;
 
-    // Parse custom range if present
     if (dateRange?.startsWith("custom-")) {
       const parts = dateRange.replace("custom-", "").split("-to-");
       if (parts.length === 2) {
@@ -62,7 +58,7 @@ export default function Header({
         customEnd = parts[1];
         const start = new Date(customStart);
         const end = new Date(customEnd);
-        days = Math.max(1, Math.min(365, 
+        days = Math.max(1, Math.min(365,
           Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1
         ));
       }
@@ -93,7 +89,6 @@ export default function Header({
     setTimeout(() => setRefreshing(false), 600);
   };
 
-  // ═══ ✅ NEW: Format last refreshed time ═══
   const getLastRefreshedText = () => {
     if (!lastRefreshedAt) return "";
     const seconds = Math.floor((Date.now() - lastRefreshedAt) / 1000);
@@ -103,7 +98,6 @@ export default function Header({
     return `${mins}m ago`;
   };
 
-  // Force re-render every second to update "X seconds ago"
   const [, setTick] = useState(0);
   useEffect(() => {
     const interval = setInterval(() => setTick((t) => t + 1), 1000);
@@ -117,7 +111,7 @@ export default function Header({
         <p className="an-header-sub">
           Workspace performance and security insights.
         </p>
-        {/* ═══ ✅ NEW: Live indicator ═══ */}
+
         {lastRefreshedAt && (
           <motion.div
             className="an-live-indicator"
@@ -162,14 +156,12 @@ export default function Header({
           </div>
         )}
 
-        {/* Date range dropdown */}
         <DateRangeDropdown
           options={dateRanges}
           value={dateRange}
           onChange={setDateRange}
         />
 
-        {/* ═══ ✅ NEW: Auto-refresh toggle ═══ */}
         {toggleAutoRefresh && (
           <motion.button
             className={`an-autorefresh-btn ${autoRefreshEnabled ? "an-autorefresh-btn--active" : ""}`}

@@ -1,10 +1,6 @@
 // client/src/features/analytics/components/panels/RecentActivityPanel.js
-/**
- * Recent Activity feed with user + event type filter — audit monitoring.
- * Powered by data.recent_activity.activities.
- */
 
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import { motion } from "framer-motion";
 import {
   LogIn, Upload, Download, Share2, Trash2, ShieldAlert, Activity,
@@ -53,7 +49,7 @@ function timeAgo(iso) {
   return then.toLocaleDateString();
 }
 
-export default function RecentActivityPanel({
+function RecentActivityPanel({
   activities   = [],
   loading      = false,
   config       = {},
@@ -65,10 +61,10 @@ export default function RecentActivityPanel({
   const empty    = config.empty      || "No recent activity.";
   const allLabel = config.filter_all || "All users";
 
-  // ✅ NEW: Event type filter state
+  // Event type filter state
   const [eventFilter, setEventFilter] = useState("");
 
-  // User dropdown options — unchanged
+  // User dropdown options
   const userOptions = [
     { value: "", label: allLabel },
     ...users.map((u) => ({
@@ -77,7 +73,7 @@ export default function RecentActivityPanel({
     })),
   ];
 
-  // ✅ NEW: Event type dropdown options
+  // Event type dropdown options
   const eventOptions = [
     { value: "",         label: "All events" },
     { value: "LOGIN",    label: "Logins"     },
@@ -88,12 +84,12 @@ export default function RecentActivityPanel({
     { value: "SECURITY", label: "Security"   },
   ];
 
-  // ✅ NEW: Filter activities by event type
+  // Filter activities by event type
   const filteredActivities = activities.filter((a) =>
     eventFilter ? a.event_type === eventFilter : true
   );
 
-  // ✅ NEW: Combined filters in header right
+  // Combined filters in header right
   const Filters = () => (
     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
       {/* Event type filter */}
@@ -188,3 +184,12 @@ export default function RecentActivityPanel({
     </Card>
   );
 }
+
+export default memo(RecentActivityPanel, (prevProps, nextProps) => {
+  return (
+    prevProps.loading === nextProps.loading &&
+    prevProps.selectedUser === nextProps.selectedUser &&
+    prevProps.activities === nextProps.activities &&
+    prevProps.users === nextProps.users
+  );
+});

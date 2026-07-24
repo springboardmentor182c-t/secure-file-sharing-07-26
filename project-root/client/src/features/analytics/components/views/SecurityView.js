@@ -10,10 +10,10 @@ import RecentActivityPanel from "../panels/RecentActivityPanel";
 import SystemHealthPanel from "../panels/SystemHealthPanel";
 import { analyticsAPI } from "../../../../utils/api";
 
-// ═══ ✅ NEW IMPORTS ═══
 import SecurityScoreGauge from "../panels/SecurityScoreGauge";
 import FailedLoginHeatmap from "../charts/FailedLoginHeatmap";
 import MFAAdoptionCard from "../panels/MFAAdoptionCard";
+import PerformancePanel from "../panels/PerformancePanel";
 
 const SECURITY_KPI_SKELETON_COUNT = 4;
 
@@ -62,7 +62,6 @@ export default function SecurityView({
         loading={loading}
       />
 
-      {/* ═══ ✅ Security Score + MFA Adoption (side by side) ═══ */}
       <div className="an-row an-row--3-2">
         <SecurityScoreGauge
           scoreData={data?.security_score}
@@ -90,7 +89,6 @@ export default function SecurityView({
         />
       </div>
 
-      {/* ═══ ✅ Failed Login Heatmap (full width) ═══ */}
       <div className="an-row an-row--1">
         <FailedLoginHeatmap
           heatmapData={data?.failed_login_heatmap}
@@ -118,6 +116,12 @@ export default function SecurityView({
           stats={data?.system_stats}
           loading={loading}
           config={panelsCfg.system_stats}
+        />
+      </div>
+      <div className="an-row an-row--1">
+        <PerformancePanel
+          performanceData={data?.performance_metrics}
+          loading={loading}
         />
       </div>
     </motion.div>
