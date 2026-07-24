@@ -1,7 +1,8 @@
-import { defineConfig, transformWithEsbuild } from 'vite'
+import { defineConfig } from 'vite'
 import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+
 
 function figmaAssetResolver() {
   return {
@@ -15,43 +16,21 @@ function figmaAssetResolver() {
   }
 }
 
-// This project's components use JSX inside plain .js files (App.js,
-// Sidebar.js, every features/pages file, etc.) rather than .jsx. Vite's
-// default esbuild loader for .js is plain JS, not JSX, so without this
-// the dev server/build fails to parse any of them ("Expression expected").
-// Scoped to src/**/*.js only, so .ts/.tsx (e.g. main.tsx) keep using
-// Vite's normal TypeScript transform untouched.
-function jsxInJsFiles() {
-  return {
-    name: 'jsx-in-js-files',
-    async transform(code, id) {
-      if (!id.includes('/src/') || !id.endsWith('.js')) return null
-      return transformWithEsbuild(code, id, { loader: 'jsx', jsx: 'automatic' })
-    },
-  }
-}
-
 export default defineConfig({
   plugins: [
     figmaAssetResolver(),
-    jsxInJsFiles(),
+    // The React and Tailwind plugins are both required for Make, even if
+    // Tailwind is not being actively used – do not remove them
     react(),
     tailwindcss(),
   ],
-
-  optimizeDeps: {
-    esbuildOptions: {
-      loader: {
-        ".js": "jsx",
-      },
-    },
-  },
-
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      // Alias @ to the src directory
+      '@': path.resolve(__dirname, './src'),
     },
   },
 
-  assetsInclude: ["**/*.svg", "**/*.csv"],
+  // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
+  assetsInclude: ['**/*.svg', '**/*.csv'],
 })

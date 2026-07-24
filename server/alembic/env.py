@@ -1,21 +1,14 @@
-"""
-Alembic environment script (synchronous — matches this project's SQLAlchemy
-engine). The DB URL comes from src.database.core.DATABASE_URL (i.e. from
-.env), not from alembic.ini, so there's one source of truth.
-"""
 from logging.config import fileConfig
 
+from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from alembic import context
-
-# Ensure every entity is imported so Base.metadata is fully populated.
-import src.entities  # noqa: F401
-from src.database.core import DATABASE_URL
-from src.entities.base import Base
+from app.config import settings
+from app.database import Base
+from app import models  # noqa: F401  (ensures models are registered on Base.metadata)
 
 config = context.config
-config.set_main_option("sqlalchemy.url", DATABASE_URL)
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -24,8 +17,9 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
+    url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=DATABASE_URL,
+        url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
