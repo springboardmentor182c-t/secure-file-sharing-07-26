@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+# Add project-root/server to Python path so `src` imports resolve cleanly
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from dotenv import load_dotenv
 load_dotenv()  # Load .env file before anything else reads os.getenv()
 
