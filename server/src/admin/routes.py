@@ -45,7 +45,7 @@ def dashboard(db: Session = Depends(get_db)):
         "active_users": active_users,
         "suspended_users": suspended_users,
         "storage_used": f"{total_size} KB",
-        "storage_limit": "50 GB",
+        "storage_limit": health.storage_limit if health else "0 GB",
         "system_health": health.system_health if health else "0%",
         "open_issues": open_issues,
         "total_files": total_files

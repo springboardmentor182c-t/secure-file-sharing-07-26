@@ -1,5 +1,8 @@
+from sqlalchemy import Column, Integer, String, DateTime
+from src.database.core import Base
+
 class SystemHealth(Base):
-    __tablename__="system_health"
+    __tablename__ = "system_health"
 
     id = Column(Integer, primary_key=True, index=True)
     api_response_time = Column(String)
@@ -10,3 +13,4 @@ class SystemHealth(Base):
     error_rate = Column(String)
     system_health = Column(String)
     storage_limit = Column(String)
+    updated_at = Column(DateTime)

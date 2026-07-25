@@ -16,7 +16,6 @@ from src.api import api_router
 from src.database.core import Base, engine
 from src.activity_monitor import models  # noqa: F401
 
-# Feature-specific module imports for secure sharing
 from src.sharing.controller import router as sharing_router
 from src.sharing import model  # noqa: F401
 
@@ -27,6 +26,16 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 app = FastAPI(title="TrustShare API", version="1.0.0")
 
 # Configure CORS
+from app.api.v1.notifications.routes import router as notification_router
+
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
+app = FastAPI(
+    title="TrustShare API",
+    version="1.0.0"
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -40,6 +49,7 @@ app.add_middleware(
 )
 
 # Startup event
+
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
@@ -60,8 +70,11 @@ def on_startup():
 
 # Register Routers
 app.include_router(admin_router)
+
 app.include_router(api_router)
 app.include_router(sharing_router)
+app.include_router(notification_router)
+
 
 # Health Check
 @app.get("/")
