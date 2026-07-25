@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean
-from src.core import Base
+from src.entities.base import Base
 
 class SecurityEvent(Base):
     __tablename__ = "security_events"

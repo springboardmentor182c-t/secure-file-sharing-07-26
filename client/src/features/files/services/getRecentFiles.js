@@ -3,7 +3,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL;
 export async function getRecentFiles() {
   const token = localStorage.getItem("access_token");
 
-  const response = await fetch(`${API_BASE_URL}/api/files/recent`, {
+  const response = await fetch(`${API_BASE_URL}/files/recent`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",

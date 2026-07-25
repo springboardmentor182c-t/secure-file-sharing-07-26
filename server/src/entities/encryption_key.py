@@ -1,6 +1,5 @@
 from sqlalchemy import Column, Integer, String
-from src.core import Base
-
+from src.entities.base import Base
 class EncryptionKey(Base):
     __tablename__ = "encryption_keys"
 

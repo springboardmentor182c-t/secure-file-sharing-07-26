@@ -5,9 +5,10 @@ from src.entities.file import File
 from src.entities.shared_link import SharedLink
 from src.entities.access_log import AccessLog
 from src.entities.notification import Notification
-from src.entities.file_share import FileShare
+
 from src.entities.file_category import FileCategory
 
+from src.entities.role import Role
 
 __all__ = [
     "Base",

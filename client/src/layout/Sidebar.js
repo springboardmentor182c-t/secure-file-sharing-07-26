@@ -1,274 +1,109 @@
-import { NavLink } from "react-router-dom";
-import { HardDrive, LogOut, X } from "lucide-react";
+import { LayoutDashboard, Folder, Link2, Trash2, Shield, ClipboardList, ShieldAlert, Settings, User, HardDrive, LogOut,Clock  } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
-import { sidebarMenu } from "../data/sidebarMenu";
-import appConfig from "../data/appConfig";
+export default function Sidebar({ users, stats }) {
+  const admin = users?.find((u) => u.role === "Admin");
+  const location = useLocation();
 
-function Sidebar({ sidebarOpen, setSidebarOpen }) {
+  const mainLinks = [
+    { name: "Dashboard", path: "/", icon: LayoutDashboard },
+    { name: "My Files", path: "/files", icon: Folder },
+    { name: "Shared Files", path: "/shared-files", icon: Link2 },
+    { name: "Recent", path: "/recent", icon: Clock },
+
+    { name: "Trash", path: "/trash", icon: Trash2 },
+  ];
+
+  const securityLinks = [
+    { name: "Monitoring", path: "/monitoring", icon: Shield },
+    { name: "Audit Logs", path: "/audit", icon: ClipboardList },
+    { name: "Security", path: "/security", icon: ShieldAlert },
+  ];
+
+  const accountLinks = [
+    { name: "Settings", path: "/settings", icon: Settings },
+    { name: "Profile", path: "/profile", icon: User },
+  ];
+
+  const NavItem = ({ name, path, icon: Icon }) => {
+    const isActive = location.pathname === path;
+    return (
+      <Link
+        to={path}
+        className={`flex items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer transition-colors ${
+          isActive
+            ? "bg-purple-600/20 text-white border-l-2 border-purple-500"
+            : "text-gray-400 hover:text-white hover:bg-white/5"
+        }`}
+      >
+        <Icon size={18} />
+        <span className="text-sm">{name}</span>
+      </Link>
+    );
+  };
+
+  const storagePercent = stats
+    ? Math.min((stats.total_storage_gb / stats.total_storage_limit_gb) * 100, 100)
+    : 0;
+
   return (
-    <aside
-      className={`
-        fixed
-        lg:static
-        top-0
-        left-0
-        z-50
-        h-screen
-        w-72
-        shrink-0
-        flex
-        flex-col
-        bg-[#1B1C28]
-        border-r
-        border-[#34364A]
-        transition-transform
-        duration-300
-
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-
-      `}
-    >
-      {/* Logo Section */}
-
-      <div
-        className="
-          h-20
-          flex
-          items-center
-          px-6
-          border-b
-          border-[#34364A]
-        "
-      >
-        <div
-          className="
-            h-11
-            w-11
-            rounded-xl
-            bg-[#7C5CFC]
-            flex
-            items-center
-            justify-center
-            text-white
-            font-bold
-            text-xl
-          "
-        >
-          T
-        </div>
-
-        <div className="ml-4">
-          <h1
-            className="
-              text-xl
-              font-bold
-              text-white
-            "
-          >
-            {appConfig.appName}
-          </h1>
-
-          <p
-            className="
-              text-xs
-              text-gray-400
-            "
-          >
-            {appConfig.tagline}
-          </p>
-        </div>
-
-        {/* Mobile Close */}
-
-        <button
-          onClick={() => setSidebarOpen(false)}
-          className="
-            lg:hidden
-            ml-auto
-            text-gray-400
-            hover:text-white
-          "
-        >
-          <X size={22} />
-        </button>
-      </div>
-
-      {/* Navigation */}
-
-      <div
-        className="
-          flex-1
-          overflow-y-auto
-          px-4
-          py-6
-        "
-      >
-        {sidebarMenu.map((section) => (
-          <div key={section.title} className="mb-8">
-            <p
-              className="
-                  px-2
-                  mb-3
-                  text-xs
-                  uppercase
-                  tracking-widest
-                  text-gray-500
-                "
-            >
-              {section.title}
-            </p>
-
-            <div className="space-y-1">
-              {section.items.map((item) => {
-                const Icon = item.icon;
-
-                return (
-                  <NavLink
-                    key={item.name}
-                    to={item.path}
-                    onClick={() => setSidebarOpen(false)}
-                    className={({ isActive }) =>
-                      `
-
-                          relative
-                          flex
-                          items-center
-                          gap-3
-                          px-4
-                          py-3
-                          rounded-xl
-                          transition-all
-                          duration-200
-
-                          ${
-                            isActive
-                              ? "bg-[#272938] text-white"
-                              : "text-gray-400 hover:bg-[#272938] hover:text-white"
-                          }
-
-                          `
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        {isActive && (
-                          <span
-                            className="
-                                  absolute
-                                  left-0
-                                  top-2
-                                  h-8
-                                  w-1
-                                  rounded-r-full
-                                  bg-[#7C5CFC]
-                                "
-                          />
-                        )}
-
-                        <Icon size={20} />
-
-                        <span
-                          className="
-                                font-medium
-                              "
-                        >
-                          {item.name}
-                        </span>
-                      </>
-                    )}
-                  </NavLink>
-                );
-              })}
-            </div>
+    <div className="w-64 bg-[#13131a] h-screen sticky top-0 flex flex-col justify-between border-r border-gray-800">
+      <div className="overflow-y-auto flex-1 px-3 py-4">
+        <div className="flex items-center gap-3 px-2 mb-6">
+          <div className="w-9 h-9 bg-purple-600 rounded-lg flex items-center justify-center font-bold text-white">
+            T
           </div>
-        ))}
+          <div>
+            <p className="text-white font-semibold text-sm">TrustShare</p>
+            <p className="text-gray-500 text-xs">Secure File Sharing</p>
+          </div>
+        </div>
+
+        <p className="text-gray-500 text-xs px-4 mb-2 mt-4">MAIN</p>
+        <div className="space-y-1">
+          {mainLinks.map((link) => (
+            <NavItem key={link.name} {...link} />
+          ))}
+        </div>
+
+        <p className="text-gray-500 text-xs px-4 mb-2 mt-6">SECURITY</p>
+        <div className="space-y-1">
+          {securityLinks.map((link) => (
+            <NavItem key={link.name} {...link} />
+          ))}
+        </div>
+
+        <p className="text-gray-500 text-xs px-4 mb-2 mt-6">ACCOUNT</p>
+        <div className="space-y-1">
+          {accountLinks.map((link) => (
+            <NavItem key={link.name} {...link} />
+          ))}
+        </div>
       </div>
 
-      {/* Storage */}
-
-      <div
-        className="
-          px-5
-        "
-      >
-        <div
-          className="
-            rounded-2xl
-            bg-[#272938]
-            p-4
-          "
-        >
-          <div
-            className="
-              flex
-              items-center
-              justify-between
-            "
-          >
-            <div
-              className="
-                flex
-                items-center
-                gap-2
-              "
-            >
-              <HardDrive
-                size={18}
-                className="
-                  text-[#7C5CFC]
-                "
-              />
-
-              <span
-                className="
-                  text-sm
-                  text-white
-                "
-              >
-                Storage
-              </span>
+      <div className="px-4 pb-4">
+        <div className="bg-[#1a1a22] rounded-xl p-4 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-white text-sm">
+              <HardDrive size={16} className="text-purple-400" />
+              Storage
             </div>
-
-            <span
-              className="
-                text-xs
-                text-gray-400
-              "
-            >
-              XX%
+            <span className="text-gray-400 text-xs">
+              {stats ? `${Math.round(storagePercent)}%` : "..."}
             </span>
           </div>
-
-          <div
-            className="
-              mt-3
-              h-2
-              rounded-full
-              bg-[#1B1C28]
-              overflow-hidden
-            "
-          >
+          <div className="w-full bg-gray-800 rounded-full h-2 mb-2">
             <div
-              className="
-                h-full
-                w-2/5
-                rounded-full
-                bg-[#7C5CFC]
-              "
+              className="bg-purple-500 h-2 rounded-full"
+              style={{ width: `${storagePercent}%` }}
             />
           </div>
-
-          <p
-            className="
-              mt-3
-              text-xs
-              text-gray-400
-            "
-          >
-            XYZ GB / PQR GB Used
+          <p className="text-gray-500 text-xs">
+            {stats
+              ? `${stats.total_storage_gb.toFixed(0)} GB / ${stats.total_storage_limit_gb} GB Used`
+              : "Loading..."}
           </p>
         </div>
-      </div>
 
       {/* User Section */}
 
@@ -309,7 +144,6 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
             >
               X
             </div>
-
             <div>
               <h3
                 className="
@@ -331,20 +165,11 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
               </p>
             </div>
           </div>
-
-          <button
-            className="
-              text-gray-400
-              hover:text-red-400
-              transition
-            "
-          >
-            <LogOut size={20} />
-          </button>
+          <LogOut size={16} className="text-gray-500 cursor-pointer hover:text-white" />
         </div>
       </div>
-    </aside>
+    </div>
+    </div>
   );
 }
 
-export default Sidebar;
