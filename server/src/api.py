@@ -1,16 +1,63 @@
 from fastapi import APIRouter
 
 from src.todos.controller import router as file_router
+from src.activity_monitor.controller import router as activity_router
 
 
-router = APIRouter()
+# =====================================================
+# MAIN API ROUTER
+# =====================================================
+
+api_router = APIRouter()
 
 
-@router.get("/health", tags=["Health"])
+# =====================================================
+# HEALTH CHECK
+# =====================================================
+
+@api_router.get(
+    "/health",
+    tags=["Health"]
+)
 def health_check():
     return {
         "status": "healthy"
     }
 
 
-router.include_router(file_router)
+# =====================================================
+# FILE MANAGEMENT
+# =====================================================
+
+api_router.include_router(
+    file_router
+)
+
+
+# =====================================================
+# ACTIVITY MONITOR
+# =====================================================
+
+api_router.include_router(
+    activity_router,
+    prefix="/activity",
+    tags=["Activity Monitor"]
+)
+
+
+# =====================================================
+# BACKWARD COMPATIBILITY
+# =====================================================
+# Some existing code may import:
+#
+# from src.api import router
+#
+# while the latest main-group-C may use:
+#
+# from src.api import api_router
+#
+# Keeping this alias prevents either import style
+# from breaking while resolving the integration.
+# =====================================================
+
+router = api_router

@@ -1,40 +1,108 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
-from dotenv import load_dotenv
 import os
 
-# Load environment variables
-load_dotenv()
-
-# Read database credentials
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT")
-DB_NAME = os.getenv("DB_NAME")
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
-
-DATABASE_URL = (
-    f"postgresql://{DB_USER}:{DB_PASSWORD}"
-    f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from sqlalchemy.orm import (
+    declarative_base,
+    sessionmaker,
 )
 
-# Create SQLAlchemy engine
-engine = create_engine(DATABASE_URL)
 
-# Session
+# =====================================================
+# LOAD ENVIRONMENT VARIABLES
+# =====================================================
+
+load_dotenv()
+
+
+# =====================================================
+# DATABASE CONFIGURATION
+# =====================================================
+
+# First try the DATABASE_URL format used by
+# the latest main-group-C configuration.
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+
+# =====================================================
+# FALLBACK DATABASE CONFIGURATION
+# =====================================================
+
+# If DATABASE_URL is not available, build the
+# connection URL using the individual variables
+# previously used by File Management.
+
+if not DATABASE_URL:
+
+    DB_HOST = os.getenv("DB_HOST")
+    DB_PORT = os.getenv("DB_PORT")
+    DB_NAME = os.getenv("DB_NAME")
+    DB_USER = os.getenv("DB_USER")
+    DB_PASSWORD = os.getenv("DB_PASSWORD")
+
+    if not all([
+        DB_HOST,
+        DB_PORT,
+        DB_NAME,
+        DB_USER,
+        DB_PASSWORD,
+    ]):
+        raise RuntimeError(
+            "Database configuration is missing. "
+            "Set DATABASE_URL or provide "
+            "DB_HOST, DB_PORT, DB_NAME, "
+            "DB_USER and DB_PASSWORD."
+        )
+
+    DATABASE_URL = (
+        f"postgresql://"
+        f"{DB_USER}:{DB_PASSWORD}"
+        f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    )
+
+
+# =====================================================
+# DATABASE ENGINE
+# =====================================================
+
+engine = create_engine(
+    DATABASE_URL
+)
+
+
+# =====================================================
+# SESSION FACTORY
+# =====================================================
+
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine
 )
 
-# Base class for models
+
+# =====================================================
+# SQLALCHEMY BASE
+# =====================================================
+
 Base = declarative_base()
 
 
+# =====================================================
+# DATABASE DEPENDENCY
+# =====================================================
+
 def get_db():
+    """
+    Create a database session for a request
+    and safely close it afterwards.
+    """
+
     db = SessionLocal()
+
     try:
         yield db
+
     finally:
         db.close()
