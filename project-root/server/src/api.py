@@ -16,6 +16,7 @@ from src.files.controller import router as files_router
 from src.folders.controller import router as folders_router
 from src.notifications.controller import router as notifications_router
 from src.search.controller import router as search_router
+from src.settings.controller import router as settings_router
 from src.shared_with_me.controller import router as shared_with_me_router
 from src.shares.controller import router as shares_router
 from src.todos.controller import router as todos_router
@@ -66,6 +67,7 @@ def create_app() -> FastAPI:
     app.include_router(shared_with_me_router, prefix="/api/shared-with-me", tags=["Shared with me"])
     app.include_router(admin_router,          prefix="/api/admin",          tags=["Admin"])
     app.include_router(activity_router,       prefix="/api/activity",       tags=["Activity"])
+    app.include_router(settings_router,       prefix="/api/settings",       tags=["Settings"])
     app.include_router(todos_router,          prefix="/api/todos",          tags=["Todos"])
 
     # ── Health check ──────────────────────────────────────────────────────────

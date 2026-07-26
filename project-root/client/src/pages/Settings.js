@@ -225,7 +225,10 @@ const Settings = () => {
         digest_frequency: digestFrequency
       };
       const { data: res } = await settingsAPI.updateNotificationPreferences(data);
-      setSuccessMsg(res.message || 'Notification preferences saved successfully!');
+      const { digest_frequency, ...savedPreferences } = res;
+      setNotifPrefs(savedPreferences);
+      setDigestFrequency(digest_frequency);
+      setSuccessMsg('Notification preferences saved successfully!');
     } catch (err) {
       setErrorMsg('Failed to update notification preferences.');
     }
