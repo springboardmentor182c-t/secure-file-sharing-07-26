@@ -1,4 +1,5 @@
 import React from "react";
+
 import {
   BrowserRouter,
   Routes,
@@ -15,28 +16,38 @@ import OTPVerification from "./pages/OTPVerification";
 import EmailVerification from "./pages/EmailVerification";
 import TwoFactorAuth from "./pages/TwoFactorAuth";
 import SessionExpired from "./pages/SessionExpired";
-import AdminHome from "./pages/AdminHome";
 
-import AdminRoute from "./features/authentication/components/AdminRoute";
-
-// Dashboard Page
+// Dashboard Pages
 import Home from "./pages/Home";
+import AdminHome from "./pages/AdminHome";
+import Settings from "./pages/Settings";
+import Securesharing from "./pages/Securesharing";
+import ActivityMonitorPage from "./pages/ActivityMonitorPage";
 
-// Protected Route
+// Features
+import Dashboard from "./features/dashboard/Dashboard";
+import NotificationFeature from "./features/notifications/NotificationFeature";
+
+// Layout
+import PageContainer from "./layout/PageContainer";
+
+// Route Guards
 import ProtectedRoute from "./features/authentication/components/ProtectedRoute";
+import AdminRoute from "./features/authentication/components/AdminRoute";
 
 function App() {
   return (
     <BrowserRouter>
+
       <Routes>
 
-        {/* Default Route */}
+        {/* Default */}
         <Route
           path="/"
           element={<Navigate to="/login" replace />}
         />
 
-        {/* Authentication Routes */}
+        {/* Authentication */}
         <Route
           path="/login"
           element={<Login />}
@@ -77,7 +88,7 @@ function App() {
           element={<SessionExpired />}
         />
 
-        {/* Dashboard Route */}
+        {/* Home */}
         <Route
           path="/home"
           element={
@@ -87,21 +98,84 @@ function App() {
           }
         />
 
-        {/* Invalid Route */}
+        {/* Dashboard */}
         <Route
-          path="*"
-          element={<Navigate to="/login" replace />}
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <PageContainer>
+                <Dashboard />
+              </PageContainer>
+            </ProtectedRoute>
+          }
         />
+
+        {/* Secure Sharing */}
+        <Route
+          path="/sharing"
+          element={
+            <ProtectedRoute>
+              <PageContainer>
+                <Securesharing />
+              </PageContainer>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Settings */}
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <PageContainer>
+                <Settings />
+              </PageContainer>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Notifications */}
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <PageContainer>
+                <NotificationFeature />
+              </PageContainer>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Activity */}
+        <Route
+          path="/activity"
+          element={
+            <ProtectedRoute>
+              <PageContainer>
+                <ActivityMonitorPage />
+              </PageContainer>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin */}
         <Route
           path="/admin"
           element={
             <AdminRoute>
-                <AdminHome />
+              <AdminHome />
             </AdminRoute>
           }
         />
 
+        {/* Invalid */}
+        <Route
+          path="*"
+          element={<Navigate to="/login" replace />}
+        />
+
       </Routes>
+
     </BrowserRouter>
   );
 }
