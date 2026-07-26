@@ -350,7 +350,7 @@ def reset_password_in_db(
         event_metadata={
             "severity_key": "admin_role",
             "label": "Password reset completed",
-            "detail": f"Password reset for {user.email}",
+            "detail":"Password reset for {user.email}",
             "target": user.email,
             "attempts": 1,
         },

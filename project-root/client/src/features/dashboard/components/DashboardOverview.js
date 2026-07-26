@@ -74,15 +74,45 @@ function PanelHeader({ action, onAction, title }) {
 
 export default function DashboardOverview({ dashboardData, user }) {
   const navigate = useNavigate();
-  const { analytics, files, notifications } = dashboardData;
-  const recentFiles = files.slice(0, 6);
-  const recentNotifications = notifications.slice(0, 4);
-  const uploadTrend = analytics.upload_trend || [];
-  const fileTypes = Object.entries(analytics.top_file_types || {}).sort(
-    (left, right) => right[1] - left[1],
-  );
-  const fileTypeTotal = fileTypes.reduce((total, [, count]) => total + count, 0);
-  const maxUploads = Math.max(...uploadTrend.map((item) => item.count), 1);
+const {
+  analytics = {},
+  files = [],
+  notifications = [],
+} = dashboardData || {};
+
+analytics.storage = analytics.storage || {
+  used_gb: 0,
+  quota_gb: 0,
+  percent: 0,
+};
+
+analytics.top_file_types = analytics.top_file_types || {};
+analytics.upload_trend = analytics.upload_trend || [];
+analytics.storage = analytics.storage || {
+  used_gb: 0,
+  quota_gb: 0,
+  percent: 0,
+};
+
+analytics.top_file_types = analytics.top_file_types || {};
+analytics.upload_trend = analytics.upload_trend || [];
+
+// Add these 4 lines here
+const fileTypes = Object.entries(analytics.top_file_types || {});
+const uploadTrend = analytics.upload_trend || [];
+const recentFiles = files.slice(0, 5);
+const recentNotifications = notifications.slice(0, 5);
+
+const fileTypeTotal = Math.max(
+  fileTypes.reduce((total, [, count]) => total + count, 0),
+  1
+);
+
+const maxUploads = Math.max(
+  ...uploadTrend.map((item) => item.count),
+  1
+);
+  
   const firstName = user?.name?.split(' ')[0] || 'there';
   const greetingHour = new Date().getHours();
   const greeting =
@@ -98,28 +128,29 @@ export default function DashboardOverview({ dashboardData, user }) {
       label: 'Total files',
       meta: 'Stored in your workspace',
       tone: 'blue',
-      value: analytics.total_files,
+      value: analytics.total_files ?? 0,
     },
+  
     {
       icon: Link2,
       label: 'Active links',
       meta: `${analytics.total_share_links} total share links`,
       tone: 'purple',
-      value: analytics.active_share_links,
+      value: analytics.active_share_links ?? 0,
     },
     {
       icon: Download,
       label: 'Share views',
       meta: 'All-time link access',
       tone: 'green',
-      value: analytics.total_share_views,
+      value: analytics.total_share_views ?? 0,
     },
     {
       icon: Bell,
       label: 'Unread alerts',
       meta: `${analytics.total_notifications} total notifications`,
       tone: 'amber',
-      value: analytics.unread_notifications,
+      value: analytics.unread_notifications ?? 0,
     },
   ];
 

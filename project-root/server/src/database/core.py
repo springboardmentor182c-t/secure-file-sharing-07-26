@@ -11,7 +11,7 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:12345@localhost:5432/trustshare",
+    "postgresql://postgres:Mahi@localhost:5432/trustshare",
 )
 
 # Configure engine based on dialect
