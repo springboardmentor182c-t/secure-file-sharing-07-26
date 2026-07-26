@@ -1,20 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 html,
 body,
 #root {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  min-height: 100%;
-  overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
 }
-
-* {
-  box-sizing: border-box;
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 * {
     margin: 0;
@@ -24,11 +20,12 @@ body,
 }
 
 body {
-    margin: 0;
     overflow: hidden;
 }
 
-
+/* =========================
+   MAIN LAYOUT
+========================= */
 .layout {
     display: flex;
     height: 100vh;
@@ -50,7 +47,7 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    overflow: hidden;   /* IMPORTANT - no sidebar scroll */
+    overflow: hidden;
     z-index: 1000;
 }
 
@@ -74,14 +71,13 @@ body {
     font-weight: bold;
 }
 
-/* Menu container */
+/* Menu */
 .sidebar-menu {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-/* Menu items */
 .menu {
     height: 40px;
     display: flex;
@@ -107,7 +103,6 @@ body {
     color: white;
 }
 
-/* Bottom buttons */
 .bottom-menu {
     padding-top: 10px;
     border-top: 1px solid #444;
@@ -129,7 +124,7 @@ body {
 }
 
 /* =========================
-   FIXED NAVBAR
+   NAVBAR
 ========================= */
 .navbar {
     position: fixed;
@@ -177,7 +172,6 @@ body {
     width: 100%;
 }
 
-/* Navbar right */
 .nav-icon {
     cursor: pointer;
 }
@@ -202,7 +196,6 @@ body {
     justify-content: center;
 }
 
-/* Profile */
 .profile {
     display: flex;
     align-items: center;
@@ -231,7 +224,7 @@ body {
 }
 
 /* =========================
-   PAGE CONTENT SCROLL ONLY
+   PAGE CONTENT
 ========================= */
 .pageContainer {
     margin-top: 70px;
@@ -243,7 +236,7 @@ body {
     min-height: 0;
 }
 
-/* Scrollbar styling */
+/* Scrollbars */
 .sidebar::-webkit-scrollbar,
 .pageContainer::-webkit-scrollbar {
     width: 6px;
@@ -253,5 +246,4 @@ body {
 .pageContainer::-webkit-scrollbar-thumb {
     background: #66504b;
     border-radius: 10px;
-
 }
