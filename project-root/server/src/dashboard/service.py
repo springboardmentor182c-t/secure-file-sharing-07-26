@@ -15,6 +15,23 @@ RECENT_FILE_LIMIT = 6
 RECENT_NOTIFICATION_LIMIT = 4
 
 
+def _is_share_active(share: ShareLink, now: datetime) -> bool:
+    if not share.is_active:
+        return False
+
+    if share.expires_at:
+        expires_at = share.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at <= now:
+            return False
+
+    if share.max_views is not None and (share.access_count or 0) >= share.max_views:
+        return False
+
+    return True
+
+
 def _get_upload_trend(
     db: Session,
     user_id: int,
@@ -61,6 +78,11 @@ def get_dashboard_data(
     file_filter = (File.owner_id == user_id, File.is_deleted.is_(False))
 
     total_files = db.query(File).filter(*file_filter).count()
+    encrypted_files = (
+        db.query(File)
+        .filter(*file_filter, File.encrypted.is_(True))
+        .count()
+    )
     recent_files = (
         db.query(File)
         .filter(*file_filter)
@@ -70,7 +92,8 @@ def get_dashboard_data(
     )
 
     shares = db.query(ShareLink).filter(ShareLink.created_by == user_id).all()
-    active_share_links = sum(1 for share in shares if share.is_active)
+    now = datetime.now(timezone.utc)
+    active_share_links = sum(1 for share in shares if _is_share_active(share, now))
     total_share_views = sum(share.access_count or 0 for share in shares)
 
     notification_query = db.query(Notification).filter(Notification.user_id == user_id)
@@ -101,13 +124,14 @@ def get_dashboard_data(
 
     analytics = models.DashboardAnalytics(
         total_files=total_files,
+        encrypted_files=encrypted_files,
         total_share_links=len(shares),
         active_share_links=active_share_links,
         total_share_views=total_share_views,
         total_notifications=total_notifications,
         unread_notifications=unread_notifications,
         storage=storage,
-        upload_trend=_get_upload_trend(db, user_id, datetime.now(timezone.utc)),
+        upload_trend=_get_upload_trend(db, user_id, now),
         top_file_types=_get_file_type_counts(db, user_id),
     )
 
