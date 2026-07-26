@@ -1,14 +1,6 @@
-<<<<<<< HEAD
 """
-File entity - the real My Files module schema (this used to be a
-temporary, minimal placeholder table owned by "whoever builds Files
-first" - that's this module now).
+File entity - the real My Files module schema.
 """
-=======
-
-
-
->>>>>>> origin/main-group-B
 import uuid
 from datetime import datetime
 
@@ -17,7 +9,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.entities.base import Base
 from src.entities.guid import GUID
-
 
 
 class File(Base):
@@ -35,7 +26,7 @@ class File(Base):
     extension: Mapped[str] = mapped_column(String(20), nullable=False, default="")
     mime_type: Mapped[str] = mapped_column(String(255), nullable=False, default="application/octet-stream")
 
-    # Storage (abstracted so this can move to S3/Azure later - see src/files/storage.py)
+    # Storage (abstracted so this can move to S3/Azure later)
     storage_provider: Mapped[str] = mapped_column(String(20), nullable=False, default="local")
     file_path: Mapped[str] = mapped_column(String(1000), nullable=False)
     size: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
@@ -62,12 +53,6 @@ class File(Base):
     folder = relationship("Folder", back_populates="files")
     shared_links = relationship("SharedLink", back_populates="file", cascade="all, delete-orphan")
 
-    # --- Backward-compatible read-only aliases -----------------------------
-    # The Shared Links module (owned by a different teammate) was written
-    # against this entity's original, minimal placeholder columns
-    # (`file_name`, `file_type`). Rather than touch every one of its
-    # references, these two properties keep that code working unchanged
-    # against the real columns above.
     @property
     def file_name(self) -> str:
         return self.original_filename

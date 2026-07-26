@@ -7,9 +7,10 @@ shared, so please only ADD to it, don't remove other modules' lines.
 """
 from fastapi import FastAPI
 
+from src.dashboard.controller import router as dashboard_router
 from src.files.controller import folders_router, router as files_router
 from src.shared_links.controller import (
-    
+    analytics_router as shared_links_analytics_router,
     dev_router as shared_links_dev_router,
     notifications_router as shared_links_notifications_router,
     public_router as shared_links_public_router,
@@ -26,9 +27,11 @@ from src.shared_links.controller import (
 def register_routes(app: FastAPI) -> None:
     app.include_router(files_router)
     app.include_router(folders_router)
+    app.include_router(dashboard_router)
 
     app.include_router(shared_links_router)
     app.include_router(shared_links_public_router)
+    app.include_router(shared_links_analytics_router)
     app.include_router(shared_links_notifications_router)
     app.include_router(shared_links_dev_router)
 

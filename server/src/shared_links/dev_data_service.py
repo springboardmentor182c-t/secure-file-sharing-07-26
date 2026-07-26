@@ -13,7 +13,8 @@ def create_user(db: Session, data: UserCreate) -> User:
     existing = db.query(User).filter(User.email == data.email).first()
     if existing:
         raise ConflictError(f"A user with email {data.email} already exists")
-    user = User(email=data.email, full_name=data.full_name)
+    username = data.email.split("@")[0]
+    user = User(username=username, email=data.email, full_name=data.full_name)
     db.add(user)
     db.commit()
     db.refresh(user)

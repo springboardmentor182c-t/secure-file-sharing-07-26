@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Numeric
 
-from ..database.core import Base
+from src.entities.base import Base
 
 
 class SystemService(Base):

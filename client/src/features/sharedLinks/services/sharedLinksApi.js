@@ -124,29 +124,57 @@ export async function deleteSharedLink(id) {
 // ---------------------------------------------------------------------------
 
 export async function getStats() {
-  const res = await request("/analytics/stats");
-  return {
-    activeLinks: res.data.active_links,
-    totalViews: res.data.total_views,
-    totalDownloads: res.data.total_downloads,
-    expiringSoon: res.data.expiring_soon,
-    totalFiles: res.data.total_files || 0,
-    totalStorageBytes: res.data.total_storage_bytes || 0,
-  };
+  try {
+    const res = await request("/analytics/stats");
+    return {
+      activeLinks: res.data?.active_links || 0,
+      totalViews: res.data?.total_views || 0,
+      totalDownloads: res.data?.total_downloads || 0,
+      expiringSoon: res.data?.expiring_soon || 0,
+      totalFiles: res.data?.total_files || 0,
+      totalStorageBytes: res.data?.total_storage_bytes || 0,
+    };
+  } catch (err) {
+    console.error("Error fetching stats:", err);
+    return {
+      activeLinks: 0,
+      totalViews: 0,
+      totalDownloads: 0,
+      expiringSoon: 0,
+      totalFiles: 0,
+      totalStorageBytes: 0,
+    };
+  }
 }
 
 export async function getMonthlyActivity() {
-  const res = await request("/analytics/monthly-activity");
-  return res.data.map((point) => ({
-    label: point.label,
-    created: point.created,
-    access: point.access_events,
-  }));
+  try {
+    const res = await request("/analytics/monthly-activity");
+    return (res.data || []).map((point) => ({
+      label: point.label || '',
+      created: point.created || 0,
+      access: point.access_events || 0,
+    }));
+  } catch (err) {
+    console.error("Error fetching monthly activity:", err);
+    return [];
+  }
 }
 
 export async function fetchAnalyticsOverview() {
-  const res = await request("/analytics/overview");
-  return res.data;
+  try {
+    const res = await request("/analytics/overview");
+    return res.data || {};
+  } catch (err) {
+    console.error("Error fetching analytics overview:", err);
+    return {
+      stats: { active_links: 0, total_views: 0, total_downloads: 0, expiring_soon: 0 },
+      monthly_activity: [],
+      most_viewed_files: [],
+      most_downloaded_files: [],
+      recent_activity: [],
+    };
+  }
 }
 
 export { ApiError };

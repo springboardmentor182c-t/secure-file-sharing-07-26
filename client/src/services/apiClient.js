@@ -17,6 +17,7 @@ async function parseErrorMessage(res) {
   try {
     const body = await res.json();
     if (body?.message) return body.message;
+    if (body?.detail) return body.detail;
   } catch {
     // not JSON - fall through to the generic message below
   }
@@ -44,12 +45,15 @@ export function createApiRequest(apiBaseUrl) {
     let res;
     try {
       res = await fetch(`${apiBaseUrl}${path}`, init);
-    } catch {
-      throw new ApiError(`Couldn't reach the backend. Is it running on ${apiBaseUrl}?`, 0);
+    } catch (err) {
+      console.error(`Network error: ${method} ${apiBaseUrl}${path}`, err);
+      throw new ApiError(`Couldn't reach the backend. Is it running on ${apiBaseUrl}? Error: ${err.message}`, 0);
     }
 
     if (!res.ok) {
-      throw new ApiError(await parseErrorMessage(res), res.status);
+      const errorMsg = await parseErrorMessage(res);
+      console.error(`API error: ${method} ${apiBaseUrl}${path} - Status ${res.status}: ${errorMsg}`);
+      throw new ApiError(errorMsg, res.status);
     }
     if (res.status === 204) return null;
     return res.json();

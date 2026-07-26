@@ -1,8 +1,4 @@
 import { Menu, Search, Bell, ChevronDown } from "lucide-react";
-<<<<<<< HEAD
-=======
-import { useLocation } from "react-router-dom";
->>>>>>> origin/main-group-B
 
 import { useLocation } from "react-router-dom";
 import pageTitles from "../data/pageTitles";

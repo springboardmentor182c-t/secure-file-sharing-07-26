@@ -1,11 +1,4 @@
-<<<<<<< HEAD
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-=======
 @import "tailwindcss";
-
-
 
 :root {
   --text: #6b6375;
@@ -63,8 +56,6 @@ body {
   margin: 0;
 }
 
-
-
 h1,
 h2 {
   font-family: var(--heading);
@@ -108,5 +99,3 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
-@import "tailwindcss";
->>>>>>> origin/main-group-B

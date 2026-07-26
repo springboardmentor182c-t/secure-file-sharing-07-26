@@ -15,12 +15,17 @@ const { request, authHeaders } = createApiRequest(API_BASE_URL);
 // ---------------------------------------------------------------------------
 
 export async function uploadFile({ file, folderId, category }) {
-  const formData = new FormData();
-  formData.append("upload", file);
-  if (folderId) formData.append("folder_id", folderId);
-  if (category) formData.append("category", category);
-  const res = await request("/files", { method: "POST", formData });
-  return res.data;
+  try {
+    const formData = new FormData();
+    formData.append("upload", file);
+    if (folderId) formData.append("folder_id", folderId);
+    if (category) formData.append("category", category || "other");
+    const res = await request("/files", { method: "POST", formData });
+    return res.data;
+  } catch (err) {
+    console.error("File upload error for", file.name, err);
+    throw err;
+  }
 }
 
 export async function listFiles({ search, category, folderId, starred, sortBy, page, pageSize, trashed }) {
@@ -111,13 +116,23 @@ export async function getStorageStats() {
 // ---------------------------------------------------------------------------
 
 export async function listFolders() {
-  const res = await request("/folders");
-  return res.data;
+  try {
+    const res = await request("/folders");
+    return res.data || [];
+  } catch (err) {
+    console.error("Error listing folders:", err);
+    return [];
+  }
 }
 
 export async function createFolder(name, parentId) {
-  const res = await request("/folders", { method: "POST", json: { name, parent_id: parentId || null } });
-  return res.data;
+  try {
+    const res = await request("/folders", { method: "POST", json: { name, parent_id: parentId || null } });
+    return res.data;
+  } catch (err) {
+    console.error("Error creating folder:", err);
+    throw err;
+  }
 }
 
 export async function renameFolder(folderId, name) {
