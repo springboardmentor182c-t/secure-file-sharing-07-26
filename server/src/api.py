@@ -1,6 +1,13 @@
 from fastapi import APIRouter
+
 from src.dashboard import router as dashboard_router
+from src.activity_monitor.controller import router as activity_router
 
 api_router = APIRouter()
 
 api_router.include_router(dashboard_router)
+api_router.include_router(
+    activity_router,
+    prefix="/activity",
+    tags=["Activity Monitor"]
+)

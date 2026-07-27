@@ -1,8 +1,11 @@
+import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PageContainer from "./layout/PageContainer";
+
+// Pages
 import Home from "./pages/Home";
 import Settings from "./pages/Settings";
-import SecureSharing from "./pages/Securesharing";
+import Securesharing from "./pages/Securesharing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Upload from "./pages/Upload";
@@ -11,10 +14,15 @@ import Users from "./pages/Users";
 import Activity from "./pages/Activity";
 import Storage from "./pages/Storage";
 
+// Features
+import Dashboard from "./features/dashboard/Dashboard";
+import NotificationFeature from "./features/notifications/NotificationFeature";
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+
         <Route
           path="/"
           element={
@@ -28,7 +36,7 @@ function App() {
           path="/sharing"
           element={
             <PageContainer>
-              <SecureSharing />
+              <Securesharing />
             </PageContainer>
           }
         />
@@ -41,12 +49,13 @@ function App() {
             </PageContainer>
           }
         />
+
         <Route
           path="/upload"
           element={
-          <PageContainer>
-            <Upload />
-          </PageContainer>
+            <PageContainer>
+              <Upload />
+            </PageContainer>
           }
         />
 
@@ -54,8 +63,8 @@ function App() {
           path="/files"
           element={
             <PageContainer>
-            <Files />
-          </PageContainer>
+              <Files />
+            </PageContainer>
           }
         />
 
@@ -78,6 +87,24 @@ function App() {
         />
 
         <Route
+          path="/dashboard"
+          element={
+            <PageContainer>
+              <Dashboard />
+            </PageContainer>
+          }
+        />
+
+        <Route
+          path="/notifications"
+          element={
+            <PageContainer>
+              <NotificationFeature />
+            </PageContainer>
+          }
+        />
+
+        <Route
           path="/storage"
           element={
             <PageContainer>
@@ -85,8 +112,10 @@ function App() {
             </PageContainer>
           }
         />
+
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+
       </Routes>
     </BrowserRouter>
   );
