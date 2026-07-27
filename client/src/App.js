@@ -18,7 +18,6 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 
 import Dashboard from "./features/dashboard/Dashboard";
-import NotificationFeature from "./features/notifications/NotificationFeature";
 import ActivityMonitorPage from "./pages/ActivityMonitorPage";
 
 
@@ -66,6 +65,8 @@ function App() {
         {/* =================================================
             DASHBOARD
         ================================================= */}
+
+        <Route path="/login" element={<Login />} />
 
         <Route
           path="/dashboard"
@@ -117,6 +118,10 @@ function App() {
             </PageContainer>
           }
         />
+        <Route
+  path="/admin"
+  element={<AdminDashboard />}
+/>
 
 
         {/* =================================================

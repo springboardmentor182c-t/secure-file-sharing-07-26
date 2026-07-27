@@ -2,10 +2,7 @@ import os
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
-from sqlalchemy.orm import (
-    declarative_base,
-    sessionmaker,
-)
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 
 # =====================================================
@@ -19,9 +16,13 @@ load_dotenv()
 # DATABASE CONFIGURATION
 # =====================================================
 
-# First try the DATABASE_URL format used by
-# the latest main-group-C configuration.
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
 
+# Prefer DATABASE_URL when provided
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 
@@ -29,17 +30,10 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 # FALLBACK DATABASE CONFIGURATION
 # =====================================================
 
-# If DATABASE_URL is not available, build the
-# connection URL using the individual variables
-# previously used by File Management.
+# If DATABASE_URL is not provided, construct it
+# using the individual database environment variables.
 
 if not DATABASE_URL:
-
-    DB_HOST = os.getenv("DB_HOST")
-    DB_PORT = os.getenv("DB_PORT")
-    DB_NAME = os.getenv("DB_NAME")
-    DB_USER = os.getenv("DB_USER")
-    DB_PASSWORD = os.getenv("DB_PASSWORD")
 
     if not all([
         DB_HOST,
