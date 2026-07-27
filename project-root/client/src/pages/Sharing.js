@@ -1,20 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { sharesAPI, filesAPI } from '../utils/api';
+import { sharesAPI, filesAPI, sharedWithMeAPI } from '../utils/api';
 
 export default function Sharing() {
   const [shares, setShares] = useState([]);
   const [files, setFiles] = useState([]);
+  const [directShares, setDirectShares] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [showDirectShare, setShowDirectShare] = useState(false);
   const [form, setForm] = useState({ file_id: '', permission: 'view', max_views: '', password: '', expires_at: '' });
+  const [directForm, setDirectForm] = useState({ file_id: '', recipient_email: '', permission: 'view' });
   const [creating, setCreating] = useState(false);
   const [toast, setToast] = useState(null);
   const [copied, setCopied] = useState(null);
 
   const load = () => {
     setLoading(true);
-    Promise.all([sharesAPI.list(), filesAPI.list()])
-      .then(([s, f]) => { setShares(s.data); setFiles(f.data.files); })
+    Promise.all([sharesAPI.list(), filesAPI.list(), sharedWithMeAPI.listDirect()])
+      .then(([s, f, d]) => { setShares(s.data); setFiles(f.data.files); setDirectShares(d.data.shares); })
       .finally(() => setLoading(false));
   };
 
@@ -49,6 +52,35 @@ export default function Sharing() {
     catch { showToast('Revoke failed', 'error'); }
   };
 
+  const handleDirectShare = async (e) => {
+    e.preventDefault();
+    setCreating(true);
+    try {
+      await sharedWithMeAPI.shareDirect({
+        file_id: parseInt(directForm.file_id, 10),
+        recipient_email: directForm.recipient_email.trim(),
+        permission: directForm.permission,
+      });
+      showToast('File shared with teammate!');
+      setDirectForm({ file_id: '', recipient_email: '', permission: 'view' });
+      setShowDirectShare(false);
+      load();
+    } catch (e) {
+      showToast(e.response?.data?.detail || 'Failed to share with teammate', 'error');
+    } finally { setCreating(false); }
+  };
+
+  const handleDirectRevoke = async (permissionId) => {
+    if (!window.confirm('Remove this teammate\'s access?')) return;
+    try {
+      await sharedWithMeAPI.revokeDirect(permissionId);
+      showToast('Teammate access removed');
+      load();
+    } catch (e) {
+      showToast(e.response?.data?.detail || 'Failed to remove access', 'error');
+    }
+  };
+
   const copyLink = (link, id) => {
     navigator.clipboard.writeText(link);
     setCopied(id);
@@ -71,10 +103,48 @@ export default function Sharing() {
           <h1 style={{ fontSize: '1.375rem', fontWeight: 800 }}>Sharing Center</h1>
           <p className="text-muted text-sm mt-1">{shares.filter(s => s.is_active).length} active links · {shares.length} total</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowCreate(v => !v)}>
-          {showCreate ? '✕ Close' : '+ New Share Link'}
-        </button>
+        <div className="flex gap-2">
+          <button className="btn btn-secondary" onClick={() => setShowDirectShare(v => !v)}>
+            {showDirectShare ? 'Close teammate share' : '+ Share with Teammate'}
+          </button>
+          <button className="btn btn-primary" onClick={() => setShowCreate(v => !v)}>
+            {showCreate ? '✕ Close' : '+ New Share Link'}
+          </button>
+        </div>
       </div>
+
+      {showDirectShare && (
+        <div className="card mb-6" style={{ padding: 24, borderColor: 'var(--border-accent)' }}>
+          <h2 style={{ fontWeight: 700, marginBottom: 6 }}>Share directly with a teammate</h2>
+          <p className="text-secondary text-sm mb-4">The recipient must already have a TrustShare account. The file will appear in their Shared with Me page.</p>
+          <form onSubmit={handleDirectShare}>
+            <div className="grid-2 mb-4">
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Select File</label>
+                <select className="form-input" value={directForm.file_id} onChange={e => setDirectForm(f => ({ ...f, file_id: e.target.value }))} required>
+                  <option value="">Choose a file...</option>
+                  {files.map(f => <option key={f.id} value={f.id}>{f.original_name}</option>)}
+                </select>
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Teammate Email</label>
+                <input className="form-input" type="email" placeholder="teammate@company.com" value={directForm.recipient_email} onChange={e => setDirectForm(f => ({ ...f, recipient_email: e.target.value }))} required />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Permission Level</label>
+                <select className="form-input" value={directForm.permission} onChange={e => setDirectForm(f => ({ ...f, permission: e.target.value }))}>
+                  <option value="view">View only</option>
+                  <option value="download">Download</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button type="submit" className="btn btn-primary" disabled={creating}>{creating ? 'Sharing...' : 'Share File'}</button>
+              <button type="button" className="btn btn-ghost" onClick={() => setShowDirectShare(false)}>Cancel</button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Create form */}
       {showCreate && (
@@ -117,6 +187,26 @@ export default function Sharing() {
               <button type="button" className="btn btn-ghost" onClick={() => setShowCreate(false)}>Cancel</button>
             </div>
           </form>
+        </div>
+      )}
+
+      {!loading && directShares.length > 0 && (
+        <div className="card mb-6" style={{ padding: 20 }}>
+          <h2 style={{ fontWeight: 700, marginBottom: 14 }}>Direct teammate access</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {directShares.map(share => (
+              <div key={share.permission_id} className="flex items-center justify-between" style={{ padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+                <div>
+                  <strong style={{ display: 'block' }}>{share.file_name}</strong>
+                  <span className="text-sm text-secondary">{share.recipient_name} ({share.recipient_email})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`badge ${share.permission === 'download' ? 'badge-purple' : 'badge-blue'}`}>{share.permission}</span>
+                  <button className="btn btn-danger btn-sm" onClick={() => handleDirectRevoke(share.permission_id)}>Remove access</button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

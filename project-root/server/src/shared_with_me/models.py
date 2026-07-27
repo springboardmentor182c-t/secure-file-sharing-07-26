@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 
 class SharedFileOut(BaseModel):
@@ -24,3 +24,25 @@ class SharedFilesResponse(BaseModel):
     total: int
     view_only: int
     downloadable: int
+
+
+class DirectShareCreate(BaseModel):
+    file_id: int
+    recipient_email: EmailStr
+    permission: Literal["view", "download"] = "view"
+
+
+class DirectShareOut(BaseModel):
+    permission_id: int
+    file_id: int
+    file_name: str
+    recipient_id: int
+    recipient_name: str
+    recipient_email: str
+    permission: str
+    shared_at: datetime
+
+
+class DirectSharesResponse(BaseModel):
+    shares: list[DirectShareOut]
+    total: int

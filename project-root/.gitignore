@@ -13,3 +13,21 @@ venv/
 server/.env
 # Encryption keys
 server/keys/
+
+# Master encryption key (CRITICAL - never commit!)
+master.key
+server/master.key
+
+# Additional encryption artifacts
+*.enc
+*.key.tmp
+
+# Backup files
+*_backup.py
+*_backup.js
+*.bak
+
+# Environment variations
+.env
+.env.production
+.env.development

@@ -150,6 +150,9 @@ export const dashboardAPI = {
 export const sharedWithMeAPI = {
   list: () => api.get('/api/shared-with-me/'),
   download: (fileId) => api.get(`/api/shared-with-me/${fileId}/download`, { responseType: 'blob' }),
+  listDirect: () => api.get('/api/shared-with-me/direct'),
+  shareDirect: (data) => api.post('/api/shared-with-me/direct', data),
+  revokeDirect: (permissionId) => api.delete(`/api/shared-with-me/direct/${permissionId}`),
 };
 
 // ── Admin ─────────────────────────────────────────────────────────────────
@@ -173,28 +176,28 @@ export const searchAPI = {
 
 // ── Settings (API Placeholders) ──────────────────────────────────────────
 export const settingsAPI = {
-  getProfile: () => api.get("/settings/profile"),
+  getProfile: () => api.get("/api/settings/profile"),
 
   updateProfile: (data) =>
-    api.put("/settings/profile", data),
+    api.put("/api/settings/profile", data),
 
   changePassword: (data) =>
-    api.post("/settings/change-password", data),
+    api.post("/api/settings/change-password", data),
 
   getSessions: () =>
-    api.get("/settings/sessions"),
+    api.get("/api/settings/sessions"),
 
   logoutSession: (id) =>
-    api.delete(`/settings/sessions/${id}`),
+    api.delete(`/api/settings/sessions/${id}`),
 
   logoutAllSessions: () =>
-    api.delete("/settings/sessions"),
+    api.delete("/api/settings/sessions"),
 
   getNotificationPreferences: () =>
-    api.get("/settings/notifications"),
+    api.get("/api/settings/notifications"),
 
   updateNotificationPreferences: (data) =>
-    api.put("/settings/notifications", data),
+    api.put("/api/settings/notifications", data),
 };
 
 export default api;

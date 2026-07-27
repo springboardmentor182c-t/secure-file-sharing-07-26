@@ -31,9 +31,11 @@ export default function SecurityView({
   const panelsCfg = uiConfig?.panels || {};
   const severity = uiConfig?.severity || {};
 
+    // FIX ISS-3: Use analyticsAPI.users() instead of analyticsAPI.get()
+  // analyticsAPI has a dedicated users() method — use it properly
   useEffect(() => {
     analyticsAPI
-      .get("/api/analytics/users")
+      .users()
       .then((r) => setUsers(r.data.users || []))
       .catch(() => setUsers([]));
   }, []);
