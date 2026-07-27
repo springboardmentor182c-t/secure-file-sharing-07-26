@@ -5,60 +5,60 @@ import { motion } from "framer-motion";
 import {
   LogIn, Upload, Download, Share2, Trash2, ShieldAlert, Activity,
 } from "lucide-react";
-import Card, { CardHeader }         from "../shared/Card";
-import { RecentActivitySkeleton }   from "../shared/Skeleton";
-import EmptyState                   from "../shared/EmptyState";
-import DateRangeDropdown            from "../Header/DateRangeDropdown";
+import Card, { CardHeader } from "../shared/Card";
+import { RecentActivitySkeleton } from "../shared/Skeleton";
+import EmptyState from "../shared/EmptyState";
+import DateRangeDropdown from "../Header/DateRangeDropdown";
 
 const EVENT_ICONS = {
-  LOGIN:    LogIn,
-  UPLOAD:   Upload,
+  LOGIN: LogIn,
+  UPLOAD: Upload,
   DOWNLOAD: Download,
-  SHARE:    Share2,
-  DELETE:   Trash2,
+  SHARE: Share2,
+  DELETE: Trash2,
   SECURITY: ShieldAlert,
 };
 
 const EVENT_COLORS = {
-  LOGIN:    "var(--an-kpi-emerald)",
-  UPLOAD:   "var(--an-kpi-indigo)",
+  LOGIN: "var(--an-kpi-emerald)",
+  UPLOAD: "var(--an-kpi-indigo)",
   DOWNLOAD: "var(--an-kpi-sky)",
-  SHARE:    "var(--an-kpi-blue)",
-  DELETE:   "var(--an-kpi-red)",
+  SHARE: "var(--an-kpi-blue)",
+  DELETE: "var(--an-kpi-red)",
   SECURITY: "var(--an-kpi-amber)",
 };
 
 const EVENT_BG = {
-  LOGIN:    "var(--an-kpi-emerald-bg)",
-  UPLOAD:   "var(--an-kpi-indigo-bg)",
+  LOGIN: "var(--an-kpi-emerald-bg)",
+  UPLOAD: "var(--an-kpi-indigo-bg)",
   DOWNLOAD: "var(--an-kpi-sky-bg)",
-  SHARE:    "var(--an-kpi-blue-bg)",
-  DELETE:   "var(--an-kpi-red-bg)",
+  SHARE: "var(--an-kpi-blue-bg)",
+  DELETE: "var(--an-kpi-red-bg)",
   SECURITY: "var(--an-kpi-amber-bg)",
 };
 
 function timeAgo(iso) {
-  const now  = new Date();
+  const now = new Date();
   const then = new Date(iso);
   const diff = (now - then) / 1000;
 
-  if (diff < 60)     return "Just now";
-  if (diff < 3600)   return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400)  return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 60) return "Just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
   return then.toLocaleDateString();
 }
 
 function RecentActivityPanel({
-  activities   = [],
-  loading      = false,
-  config       = {},
-  users        = [],
+  activities = [],
+  loading = false,
+  config = {},
+  users = [],
   selectedUser = "",
   onUserChange,
 }) {
-  const title    = config.title      || "Recent Activity";
-  const empty    = config.empty      || "No recent activity.";
+  const title = config.title || "Recent Activity";
+  const empty = config.empty || "No recent activity.";
   const allLabel = config.filter_all || "All users";
 
   // Event type filter state
@@ -75,13 +75,13 @@ function RecentActivityPanel({
 
   // Event type dropdown options
   const eventOptions = [
-    { value: "",         label: "All events" },
-    { value: "LOGIN",    label: "Logins"     },
-    { value: "UPLOAD",   label: "Uploads"    },
-    { value: "DOWNLOAD", label: "Downloads"  },
-    { value: "SHARE",    label: "Shares"     },
-    { value: "DELETE",   label: "Deletes"    },
-    { value: "SECURITY", label: "Security"   },
+    { value: "", label: "All events" },
+    { value: "LOGIN", label: "Logins" },
+    { value: "UPLOAD", label: "Uploads" },
+    { value: "DOWNLOAD", label: "Downloads" },
+    { value: "SHARE", label: "Shares" },
+    { value: "DELETE", label: "Deletes" },
+    { value: "SECURITY", label: "Security" },
   ];
 
   // Filter activities by event type
@@ -137,9 +137,9 @@ function RecentActivityPanel({
       ) : (
         <div className="an-recent-list">
           {filteredActivities.map((a, i) => {
-            const Icon     = EVENT_ICONS[a.event_type]  || Activity;
-            const color    = EVENT_COLORS[a.event_type] || "var(--an-kpi-blue)";
-            const bg       = EVENT_BG[a.event_type]     || "var(--an-kpi-blue-bg)";
+            const Icon = EVENT_ICONS[a.event_type] || Activity;
+            const color = EVENT_COLORS[a.event_type] || "var(--an-kpi-blue)";
+            const bg = EVENT_BG[a.event_type] || "var(--an-kpi-blue-bg)";
             const isFailed = a.status === "FAILED";
 
             return (
@@ -150,8 +150,8 @@ function RecentActivityPanel({
                 animate={{ opacity: 1, x: 0 }}
                 transition={{
                   duration: 0.3,
-                  delay:    0.05 * i,
-                  ease:     [0.32, 0.72, 0, 1],
+                  delay: 0.05 * i,
+                  ease: [0.32, 0.72, 0, 1],
                 }}
               >
                 <div
@@ -169,9 +169,18 @@ function RecentActivityPanel({
                     )}
                   </div>
                   <div className="an-recent-meta">
-                    {a.user_id    && <span>User #{a.user_id}</span>}
-                    {a.file_id    && <span> · File #{a.file_id}</span>}
-                    {a.ip_address && <span> · {a.ip_address}</span>}
+                    {/* FIX: Show name instead of User #ID */}
+                    {a.user_name && (
+                      <span>{a.user_name}</span>
+                    )}
+                    {/* Show file name instead of File #ID */}
+                    {a.file_name && (
+                      <span> · {a.file_name}</span>
+                    )}
+                    {/* Show IP if no file name */}
+                    {!a.file_name && a.ip_address && (
+                      <span> · {a.ip_address}</span>
+                    )}
                   </div>
                 </div>
 
