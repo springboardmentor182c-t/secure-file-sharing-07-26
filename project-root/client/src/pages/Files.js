@@ -1,31 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
-  Files as FilesIcon, Lock, Unlock,
-  Moon, Sun, Search, FolderPlus,
-  Upload, Filter, List, LayoutGrid, Folder, ChevronRight, ChevronLeft,
+  Lock, Unlock,
+  Search, FolderPlus, Upload, Filter, List, LayoutGrid, Folder, ChevronRight,
   MoreVertical, Share, Download, Trash2, Check, FileText,
-  FileSpreadsheet, Image, Presentation, Bell,
-  LayoutDashboard, Share2, Activity, BarChart2, ShieldCheck, Users, Settings // eslint-disable-line no-unused-vars
+  FileSpreadsheet, Image, Presentation,
 } from 'lucide-react';
 import { useAnalytics } from '../context/AnalyticsContext';
 import { filesAPI, foldersAPI } from '../utils/api';
 import Modal from '../components/Modals/Modal';
 import { getEncryptionKey, encryptText, decryptText, encryptFileBytes, decryptFileBytes } from '../utils/crypto';
 
-
-/* ─── Nav Items ─────────────────────────────────────────────────── */
-const NAV_ITEMS = [
-  { label: 'Dashboard',         icon: LayoutDashboard, active: false },
-  { label: 'My Files',          icon: FilesIcon,       to: '/files', active: true },
-  { label: 'Secure Sharing',    icon: Share2,           active: false },
-  { label: 'Encryption',        icon: ShieldCheck,      active: false },
-  { label: 'Activity Logs',     icon: Activity,         active: false },
-  { label: 'Notifications',     icon: Bell,             active: false, badge: 4 },
-  { label: 'Analytics',         icon: BarChart2,        active: false },
-  { label: 'Admin Panel',       icon: Users,            active: false },
-  { label: 'Profile & Settings',icon: Settings,         active: false },
-];
 
 /* ─── Tag Badge ─────────────────────────────────────────────────── */
 function Tag({ label }) {
@@ -50,270 +34,7 @@ function Tag({ label }) {
   );
 }
 
-/* ─── Shield Logo Icon ──────────────────────────────────────────── */
-function ShieldLogo({ size = 20 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path
-        d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.35C16.5 22.15 20 17.25 20 12V6l-8-4z"
-        fill="url(#shieldGrad)" stroke="rgba(255,255,255,0.15)" strokeWidth="0.5"
-      />
-      <path
-        d="M9 12l2 2 4-4"
-        stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-      />
-      <defs>
-        <linearGradient id="shieldGrad" x1="4" y1="2" x2="20" y2="24" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#3b82f6" />
-          <stop offset="100%" stopColor="#6366f1" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
 
-/* ─── Sidebar ───────────────────────────────────────────────────── */
-function Sidebar({ collapsed, onToggle, user, onLogout, theme, onToggleTheme }) {
-  const navigate = useNavigate();
-  return (
-    <aside style={{
-      width: collapsed ? 68 : 240,
-      minWidth: collapsed ? 68 : 240,
-      background: '#0d1117',
-      display: 'flex', flexDirection: 'column',
-      height: '100vh', flexShrink: 0,
-      transition: 'width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1)',
-      overflow: 'hidden',
-      position: 'relative',
-      borderRight: '1px solid rgba(255,255,255,0.05)',
-    }}>
-
-      {/* ── Logo row ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        padding: collapsed ? '20px 0' : '20px 16px 18px',
-        justifyContent: collapsed ? 'center' : 'space-between',
-        flexShrink: 0,
-      }}>
-        {/* Logo + name */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
-          {/* Shield circle */}
-          <div style={{
-            width: 36, height: 36, borderRadius: '50%',
-            background: 'linear-gradient(135deg,#3b82f6 0%,#6366f1 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0, boxShadow: '0 0 12px rgba(99,102,241,0.35)',
-          }}>
-            <ShieldLogo size={19} />
-          </div>
-          {!collapsed && (
-            <span style={{
-              color: '#f1f5f9', fontWeight: 700, fontSize: '1.08rem',
-              letterSpacing: '-0.01em', whiteSpace: 'nowrap',
-            }}>SecureShare</span>
-          )}
-        </div>
-        {/* Collapse toggle */}
-        {!collapsed && (
-          <button
-            onClick={onToggle}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: '#475569', padding: 4, display: 'flex', alignItems: 'center',
-              borderRadius: 6, flexShrink: 0,
-              transition: 'color 0.15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#94a3b8'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#475569'; }}
-          >
-            <ChevronLeft size={16} />
-          </button>
-        )}
-        {collapsed && (
-          <button
-            onClick={onToggle}
-            style={{
-              position: 'absolute', right: -1, top: 22,
-              background: '#1e2736', border: '1px solid rgba(255,255,255,0.08)',
-              cursor: 'pointer', color: '#64748b',
-              borderRadius: '0 6px 6px 0',
-              padding: '4px 3px', display: 'flex', alignItems: 'center',
-            }}
-          >
-            <ChevronRight size={13} />
-          </button>
-        )}
-      </div>
-
-      {/* ── Nav ── */}
-      <nav style={{
-        flex: 1, padding: '4px 10px 4px',
-        display: 'flex', flexDirection: 'column', gap: 1,
-        overflowY: 'auto', overflowX: 'hidden',
-      }}>
-        {NAV_ITEMS.map(({ label, icon: Icon, active, badge, to }) => (
-          <button
-            key={label}
-            type="button"
-            title={collapsed ? label : undefined}
-            onClick={() => to && navigate(to)}
-            style={{
-              display: 'flex', alignItems: 'center',
-              gap: 12,
-              padding: collapsed ? '11px 0' : '10px 14px',
-              borderRadius: 9, border: 'none', cursor: 'pointer',
-              justifyContent: collapsed ? 'center' : 'flex-start',
-              background: active ? 'linear-gradient(90deg,rgba(59,130,246,0.25) 0%,rgba(99,102,241,0.12) 100%)' : 'transparent',
-              color: active ? '#60a5fa' : '#64748b',
-              fontWeight: active ? 600 : 400,
-              fontSize: '0.9rem',
-              width: '100%', textAlign: 'left',
-              transition: 'background 0.15s, color 0.15s',
-              position: 'relative',
-              borderLeft: active ? '2px solid #3b82f6' : '2px solid transparent',
-              letterSpacing: '0.01em',
-            }}
-            onMouseEnter={e => {
-              if (!active) {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                e.currentTarget.style.color = '#94a3b8';
-              }
-            }}
-            onMouseLeave={e => {
-              if (!active) {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.color = '#64748b';
-              }
-            }}
-          >
-            <Icon size={17} style={{ flexShrink: 0, opacity: active ? 1 : 0.75 }} />
-            {!collapsed && <span style={{ whiteSpace: 'nowrap', flex: 1 }}>{label}</span>}
-            {!collapsed && badge && (
-              <span style={{
-                background: '#3b82f6', color: '#fff',
-                borderRadius: 99, fontSize: '0.68rem', fontWeight: 700,
-                padding: '2px 8px', lineHeight: 1.5, flexShrink: 0,
-              }}>{badge}</span>
-            )}
-            {collapsed && badge && (
-              <span style={{
-                position: 'absolute', top: 5, right: 5,
-                width: 15, height: 15, borderRadius: '50%',
-                background: '#3b82f6', color: '#fff',
-                fontSize: '0.55rem', fontWeight: 700,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>{badge}</span>
-            )}
-          </button>
-        ))}
-      </nav>
-
-      {/* ── Bottom ── */}
-      <div style={{
-        padding: '8px 10px 16px',
-        borderTop: '1px solid rgba(255,255,255,0.06)',
-        display: 'flex', flexDirection: 'column', gap: 1,
-      }}>
-        {/* Dark Mode toggle */}
-        <button
-          type="button"
-          onClick={onToggleTheme}
-          title={collapsed ? (theme === 'dark' ? 'Light Mode' : 'Dark Mode') : undefined}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            padding: collapsed ? '11px 0' : '10px 14px',
-            borderRadius: 9, border: 'none', cursor: 'pointer',
-            background: 'transparent', color: '#64748b',
-            fontSize: '0.9rem', width: '100%', textAlign: 'left',
-            transition: 'background 0.15s, color 0.15s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#94a3b8'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
-        >
-          {theme === 'dark'
-            ? <Sun size={17} style={{ flexShrink: 0, opacity: 0.75 }} />
-            : <Moon size={17} style={{ flexShrink: 0, opacity: 0.75 }} />}
-          {!collapsed && <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
-        </button>
-      </div>
-    </aside>
-  );
-}
-
-/* ─── Top Bar ───────────────────────────────────────────────────── */
-function TopBar({ user, colors, filter, setFilter }) {
-  const navigate = useNavigate();
-  return (
-    <div style={{
-      height: 60, background: colors.bgTopBar,
-      borderBottom: `1px solid ${colors.border}`,
-      display: 'flex', alignItems: 'center',
-      padding: '0 24px', gap: 16, flexShrink: 0,
-      transition: 'background-color 0.2s, border-color 0.2s',
-    }}>
-      {/* Search */}
-      <div style={{ position: 'relative', flex: 1, maxWidth: 380 }}>
-        <Search size={15} style={{
-          position: 'absolute', left: 12, top: '50%',
-          transform: 'translateY(-50%)', color: colors.textMuted,
-        }} />
-        <input
-          type="text"
-          placeholder="Search files..."
-          value={filter}
-          onChange={e => setFilter(e.target.value)}
-          style={{
-            width: '100%', padding: '8px 12px 8px 36px',
-            border: `1px solid ${colors.inputBorder}`, borderRadius: 8,
-            background: colors.inputBg, fontSize: '0.85rem', color: colors.textPrimary,
-            outline: 'none', boxSizing: 'border-box',
-            transition: 'background-color 0.2s, border-color 0.2s, color 0.2s',
-          }}
-        />
-      </div>
-
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16 }}>
-        {/* Bell */}
-        <div style={{ position: 'relative' }}>
-          <button type="button" style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            padding: '6px', borderRadius: 8, color: colors.textSecondary,
-            display: 'flex', alignItems: 'center',
-          }}>
-            <Bell size={20} />
-          </button>
-          <span style={{
-            position: 'absolute', top: 2, right: 2,
-            width: 8, height: 8, borderRadius: '50%',
-            background: '#3b82f6', border: `2px solid ${colors.bgTopBar}`,
-          }} />
-        </div>
-
-        {/* User */}
-        <div
-          onClick={() => navigate('/settings')}
-          style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
-        >
-          <div style={{
-            width: 36, height: 36, borderRadius: '50%',
-            background: '#3b82f6',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0,
-          }}>
-            {(user?.full_name || 'AJ').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
-          </div>
-          <div>
-            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: colors.textPrimary, lineHeight: 1.2 }}>
-              {user?.full_name || 'Alex Johnson'}
-            </div>
-            <div style={{ fontSize: '0.7rem', color: colors.textMuted }}>Admin</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ─── Icons & Format Helpers ───────────────────────────────────── */
 const getFileIconInfo = (mimetype, filename) => {
@@ -342,10 +63,29 @@ const formatBytes = (bytes, decimals = 1) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
+/** Reads the current theme from the <html> class and listens for changes. */
+function useTheme() {
+  const [isLight, setIsLight] = useState(
+    () => document.documentElement.classList.contains('light')
+  );
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsLight(document.documentElement.classList.contains('light'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  return isLight;
+}
+
 /* ─── Main Page ─────────────────────────────────────────────────── */
 export default function Files() {
-  const { user, logoutUser, theme, toggleTheme } = useAnalytics();
-  const [collapsed, setCollapsed] = useState(false);
+  const { user } = useAnalytics();
+  const isLight = useTheme();
+  const isDark  = !isLight;
+
   const [dragging, setDragging] = useState(false);
   const [filter, setFilter] = useState('');
   const [viewMode, setViewMode] = useState('list');
@@ -369,20 +109,18 @@ export default function Files() {
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
 
-
-  const isDark = theme === 'dark';
   const colors = {
-    bgPage: isDark ? '#0f172a' : '#f0f4f8',
+    bgPage: isDark ? '#0f172a' : '#f4f6fb',
     bgCard: isDark ? '#1e293b' : '#ffffff',
     bgTopBar: isDark ? '#1e293b' : '#ffffff',
-    border: isDark ? '#334155' : '#e8edf2',
+    border: isDark ? '#334155' : 'rgba(15,23,42,0.08)',
     borderDashed: isDark ? '#475569' : '#cbd5e1',
     textPrimary: isDark ? '#f8fafc' : '#0f172a',
     textSecondary: isDark ? '#cbd5e1' : '#475569',
     textMuted: isDark ? '#64748b' : '#94a3b8',
-    rowHover: isDark ? 'rgba(255, 255, 255, 0.04)' : '#fafbfc',
-    inputBg: isDark ? '#0f172a' : '#f8fafc',
-    inputBorder: isDark ? '#334155' : '#e2e8f0',
+    rowHover: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(15,23,42,0.03)',
+    inputBg: isDark ? '#0f172a' : '#f1f5f9',
+    inputBorder: isDark ? '#334155' : 'rgba(15,23,42,0.12)',
     folderCardHoverBorder: isDark ? '#475569' : '#c7d7e8',
   };
 
@@ -658,12 +396,7 @@ export default function Files() {
   };
 
   return (
-    <div style={{
-      display: 'flex', height: '100vh', overflow: 'hidden',
-      fontFamily: "'Inter', 'Segoe UI', sans-serif",
-      background: colors.bgPage,
-      transition: 'background-color 0.2s',
-    }}>
+    <div className="fade-in">
       <style>{`
         @keyframes encryptGlow {
           0% {
@@ -680,78 +413,65 @@ export default function Files() {
           }
         }
       `}</style>
-      <Sidebar
-        collapsed={collapsed}
-        onToggle={() => setCollapsed(c => !c)}
-        user={user}
-        onLogout={logoutUser}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-      />
 
-      {/* Right Panel */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <TopBar user={user} colors={colors} filter={filter} setFilter={setFilter} />
-
-        {/* Scrollable Content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
-
-          {/* Page Heading */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
-            <div>
-              <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: colors.textPrimary, margin: 0 }}>My Files</h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: '0.8rem', color: colors.textMuted }}>
-                {breadcrumbs.map((crumb, idx) => (
-                  <React.Fragment key={idx}>
-                    {idx > 0 && <ChevronRight size={13} />}
-                    <span
-                      onClick={() => navigateToBreadcrumb(idx)}
-                      style={{
-                        cursor: 'pointer',
-                        fontWeight: idx === breadcrumbs.length - 1 ? 600 : 400,
-                        color: idx === breadcrumbs.length - 1 ? colors.textSecondary : colors.textMuted
-                      }}
-                    >
-                      {crumb.name}
-                    </span>
-                  </React.Fragment>
-                ))}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                type="button"
-                onClick={() => setNewFolderModalOpen(true)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 7,
-                  padding: '9px 16px', borderRadius: 8,
-                  border: `1.5px solid ${colors.borderDashed}`, background: colors.bgCard,
-                  color: colors.textPrimary, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer',
-                }}
-              >
-                <FolderPlus size={16} /> New Folder
-              </button>
-              <button
-                type="button"
-                onClick={() => inputRef.current?.click()}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 7,
-                  padding: '9px 18px', borderRadius: 8,
-                  border: 'none', background: '#3b82f6',
-                  color: '#fff', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer',
-                }}
-              >
-                <Upload size={16} /> Upload
-              </button>
-              <input
-                ref={inputRef}
-                type="file"
-                multiple
-                onChange={handleFileUpload}
-                style={{ display: 'none' }}
-              />
-            </div>
+      {/* Page Heading */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
+        <div>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: colors.textPrimary, margin: 0 }}>My Files</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: '0.8rem', color: colors.textMuted }}>
+            {breadcrumbs.map((crumb, idx) => (
+              <React.Fragment key={idx}>
+                {idx > 0 && <ChevronRight size={13} />}
+                <span
+                  onClick={() => navigateToBreadcrumb(idx)}
+                  style={{
+                    cursor: 'pointer',
+                    fontWeight: idx === breadcrumbs.length - 1 ? 600 : 400,
+                    color: idx === breadcrumbs.length - 1 ? colors.textSecondary : colors.textMuted
+                  }}
+                >
+                  {crumb.name}
+                </span>
+              </React.Fragment>
+            ))}
           </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setNewFolderModalOpen(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              padding: '9px 16px', borderRadius: 8,
+              border: `1.5px solid ${colors.borderDashed}`, background: colors.bgCard,
+              color: colors.textPrimary, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer',
+            }}
+          >
+            <FolderPlus size={16} /> New Folder
+          </button>
+
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              padding: '9px 18px', borderRadius: 8,
+              border: 'none', background: '#3b82f6',
+              color: '#fff', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer',
+            }}
+          >
+            <Upload size={16} /> Upload
+          </button>
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            onChange={handleFileUpload}
+            style={{ display: 'none' }}
+          />
+        </div>
+      </div>
 
           {/* Drop Zone / Upload Progress */}
           {uploading ? (
@@ -1396,8 +1116,6 @@ export default function Files() {
               </>
             )}
           </div>
-        </div>
-      </div>
 
       {/* New Folder Modal */}
       <Modal

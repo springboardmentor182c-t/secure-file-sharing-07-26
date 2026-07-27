@@ -22,10 +22,9 @@ import { notificationsAPI } from './utils/api';
 import './assets/global.css';
 
 // AppShell: wraps protected pages with layout chrome.
-// Currently Files.js has its own self-contained nav/sidebar,
-// so AppShell just renders the matched child route directly.
 function AppShell() {
   const [unreadCount, setUnreadCount] = useState(0);
+  const [collapsed, setCollapsed]     = useState(false);
 
   useEffect(() => {
     notificationsAPI.list()
@@ -36,10 +35,16 @@ function AppShell() {
       .catch(() => {});
   }, []);
 
+  const sidebarW = collapsed ? 68 : 240;
+
   return (
     <div className="app-shell">
-      <Sidebar unreadCount={unreadCount} />
-      <div className="main-area">
+      <Sidebar
+        unreadCount={unreadCount}
+        collapsed={collapsed}
+        onToggle={() => setCollapsed(c => !c)}
+      />
+      <div className="main-area" style={{ marginLeft: sidebarW }}>
         <Navbar unreadCount={unreadCount} />
         <main className="page-body">
           <Routes>
@@ -60,6 +65,7 @@ function AppShell() {
   );
 }
 
+
 export default function App() {
   return (
     <AnalyticsProvider>
@@ -71,9 +77,6 @@ export default function App() {
             <Route path="/signup"          element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/oauth/callback"  element={<OAuthCallback />} />
-
-            {/* Main app — Files page (has its own full layout) */}
-            <Route path="/files" element={<Files />} />
 
             {/* Protected shell routes */}
             <Route
