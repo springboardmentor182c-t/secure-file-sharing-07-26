@@ -1,0 +1,185 @@
+.storage-grid{
+    display:grid;
+    grid-template-columns:1.2fr .8fr;
+    gap:25px;
+    margin-top:20px;
+}
+
+.storage-card{
+    background:#fff;
+    padding:25px;
+    border-radius:20px;
+    box-shadow:0 5px 15px rgba(0,0,0,.05);
+}
+
+.storage-card h2{
+    font-size:24px;
+    margin-bottom:20px;
+    color:#333;
+}
+
+.storage-info{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:12px;
+    font-size:15px;
+    color:#777;
+}
+
+.main-progress{
+    height:12px;
+    background:#ECECEC;
+    border-radius:10px;
+    overflow:hidden;
+    margin-bottom:30px;
+}
+
+.main-progress-fill{
+    height:100%;
+    width:85.6%;
+    background:#6B5A52;
+    border-radius:10px;
+}
+
+.storage-user{
+    display:flex;
+    align-items:center;
+    gap:15px;
+    margin-bottom:18px;
+}
+
+.avatar{
+    width:46px;
+    height:46px;
+    border-radius:50%;
+    background:#6B5A52;
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+    flex-shrink:0;
+}
+
+.user-details{
+    flex:1;
+}
+
+.user-row{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:6px;
+    font-size:15px;
+}
+
+.mini-progress{
+    height:7px;
+    background:#ECECEC;
+    border-radius:8px;
+    overflow:hidden;
+}
+
+.mini-fill{
+    height:100%;
+    background:#6B5A52;
+}
+
+/* Donut Chart */
+
+.donut{
+    width:220px;
+    height:220px;
+    margin:25px auto;
+    border-radius:50%;
+    background:
+    conic-gradient(
+        #5B514C 0% 38%,
+        #9C8F87 38% 60%,
+        #B8ADA7 60% 78%,
+        #D1C8C2 78% 92%,
+        #ECE7E3 92% 100%
+    );
+    position:relative;
+}
+
+.donut::after{
+    content:"";
+    position:absolute;
+    width:120px;
+    height:120px;
+    background:#fff;
+    border-radius:50%;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+}
+
+/* Legend */
+
+.legend{
+    margin-top:25px;
+}
+
+.legend-item{
+    display:flex;
+    align-items:center;
+    margin-bottom:14px;
+}
+
+.dot{
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    margin-right:12px;
+    flex-shrink:0;
+}
+
+.label{
+    flex:1;
+    font-size:15px;
+    color:#333;
+}
+
+.value{
+    font-size:15px;
+    font-weight:600;
+    color:#333;
+}
+
+.d1{
+    background:#5B514C;
+}
+
+.d2{
+    background:#9C8F87;
+}
+
+.d3{
+    background:#B8ADA7;
+}
+
+.d4{
+    background:#D1C8C2;
+}
+
+.d5{
+    background:#ECE7E3;
+}
+
+@media(max-width:900px){
+
+    .storage-grid{
+        grid-template-columns:1fr;
+    }
+
+    .donut{
+        width:180px;
+        height:180px;
+    }
+
+    .donut::after{
+        width:95px;
+        height:95px;
+    }
+
+}

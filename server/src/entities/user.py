@@ -3,9 +3,10 @@ from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
+    Integer,
     String,
     Text,
-    func
+    func,
 )
 
 from sqlalchemy.dialects.postgresql import UUID
@@ -37,6 +38,12 @@ class User(Base):
         nullable=False
     )
 
+    # Optional field from main-group-C
+    name = Column(
+        String(100),
+        nullable=True
+    )
+
     email = Column(
         String(255),
         unique=True,
@@ -60,6 +67,17 @@ class User(Base):
         default=False
     )
 
+    # Optional fields from main-group-C
+    storage_used = Column(
+        String(20),
+        default="0 GB"
+    )
+
+    status = Column(
+        String(20),
+        default="Active"
+    )
+
     last_login = Column(
         DateTime(timezone=True),
         nullable=True
@@ -78,9 +96,8 @@ class User(Base):
         nullable=False
     )
 
-    # ==========================
-    # Relationships
-    # ==========================
+    
+    
 
     role = relationship(
         "Role",
@@ -111,8 +128,9 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
+
     email_verification_tokens = relationship(
-    "EmailVerificationToken",
-    back_populates="user",
-    cascade="all, delete-orphan"
+        "EmailVerificationToken",
+        back_populates="user",
+        cascade="all, delete-orphan"
     )

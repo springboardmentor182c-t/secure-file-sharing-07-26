@@ -1,10 +1,9 @@
 import React from "react";
-
 import {
   BrowserRouter,
   Routes,
   Route,
-  Navigate
+  Navigate,
 } from "react-router-dom";
 
 // Authentication Pages
@@ -38,9 +37,7 @@ import AdminRoute from "./features/authentication/components/AdminRoute";
 function App() {
   return (
     <BrowserRouter>
-
       <Routes>
-
         {/* Default */}
         <Route
           path="/"
@@ -146,7 +143,7 @@ function App() {
           }
         />
 
-        {/* Activity */}
+        {/* Activity Monitor */}
         <Route
           path="/activity"
           element={
@@ -168,14 +165,12 @@ function App() {
           }
         />
 
-        {/* Invalid */}
+        {/* Invalid Routes */}
         <Route
           path="*"
           element={<Navigate to="/login" replace />}
         />
-
       </Routes>
-
     </BrowserRouter>
   );
 }
