@@ -20,6 +20,7 @@ from src.shared_with_me.controller import router as shared_with_me_router
 from src.shares.controller import router as shares_router
 from src.todos.controller import router as todos_router
 from src.users.controller import router as users_router
+from src.security.controller import router as security_router
 
 
 def create_app() -> FastAPI:
@@ -67,6 +68,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_router,          prefix="/api/admin",          tags=["Admin"])
     app.include_router(activity_router,       prefix="/api/activity",       tags=["Activity"])
     app.include_router(todos_router,          prefix="/api/todos",          tags=["Todos"])
+    app.include_router(security_router,       prefix="/api/security",       tags=["Security"],)
 
     # ── Health check ──────────────────────────────────────────────────────────
     @app.get("/health", tags=["System"])
