@@ -11,7 +11,7 @@
 ![Module](https://img.shields.io/badge/Module-Encryption_%26_Security-DC2626?style=for-the-badge&logo=shieldsdotio&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Production_Ready-34C759?style=for-the-badge&logo=checkmarx&logoColor=white)
 ![PSD](https://img.shields.io/badge/PSD_Compliance-100%25-5856D6?style=for-the-badge)
-![Tests](https://img.shields.io/badge/Tests-15%2F15_Passing-34C759?style=for-the-badge&logo=jest&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-20%2F20_Passing-34C759?style=for-the-badge&logo=jest&logoColor=white)
 ![Encryption](https://img.shields.io/badge/Encryption-AES--256--GCM-007AFF?style=for-the-badge&logo=letsencrypt&logoColor=white)
 
 ![Features](https://img.shields.io/badge/Features-30%2B_Security-DC2626?style=for-the-badge&logo=sparkfun&logoColor=white)
@@ -83,7 +83,7 @@ Built with a **zero-trust, defense-in-depth philosophy**, the module implements 
 | 🔑 **Key Architecture** | Unique key per file, encrypted with master key |
 | 🛡️ **Vulnerability Count** | Zero critical, zero high |
 | 📊 **API Endpoints** | 16 REST endpoints (health, metrics, rotation, validation) |
-| 🧪 **Test Coverage** | 15 automated tests, 100% pass rate |
+| 🧪 **Test Coverage** | 20 automated tests, 100% pass rate |
 | 📈 **Performance Tracking** | Real-time encryption/decryption metrics |
 | 🔄 **Key Rotation** | Manual + automatic batch (90-day policy) |
 | ☁️ **Cloud Ready** | AWS S3 abstraction implemented |
@@ -922,7 +922,7 @@ server/src/security/
     └── validators.py                    🆕 CREATED (magic bytes + MIME + size)
 
 server/tests/
-└── test_security.py                     🆕 CREATED (15 unit tests)
+└── test_security.py                     🆕 CREATED (20 unit tests)
 
 Related files (integration):
 ├── server/src/files/service.py          ✏️ Uses security module
@@ -939,7 +939,7 @@ Related files (integration):
 |:--|:--:|
 | 🆕 **Files Created** | 25+ |
 | ✏️ **Files Integrated** | 4 |
-| 🧪 **Test Files** | 1 (15 tests) |
+| 🧪 **Test Files** | 1 (20 tests) |
 | **📦 Total Impact** | **30+ files** |
 
 <div align="center">
@@ -1366,7 +1366,7 @@ POST /api/security/configs/refresh → Force reload from database
 | P99 decryption latency | **10.1ms** | 99th percentile |
 | Key generation time | **< 1ms** | `secrets.token_bytes(32)` |
 | SHA-256 hashing | **~800 MB/s** | Chunked, 64KB blocks |
-| Unit test execution | **0.30s** | All 15 tests |
+| Unit test execution | **0.21s** | All 20 tests |
 | Success rate | **100%** | Zero failed operations |
 
 ### Live Performance Dashboard
@@ -1479,7 +1479,7 @@ POST /api/security/configs/refresh → Force reload from database
 
 | Deliverable | Status |
 |:--|:--:|
-| Security testing (15 unit tests) | ✅ |
+| Security testing (20 unit tests) | ✅ |
 | Performance metrics | ✅ |
 | Module documentation | ✅ |
 | API endpoints (16) | ✅ |
@@ -1562,6 +1562,29 @@ POST /api/security/configs/refresh → Force reload from database
 
 </details>
 
+<details>
+<summary><b>🔑 Password Validator Tests</b> — 3/3 Passed ✅</summary>
+<br/>
+
+| # | Test Case | Expected Result | Status |
+|---|-----------|----------------|:------:|
+| 16 | Weak passwords rejected | "password", "123456" blocked | ✅ |
+| 17 | Strong passwords accepted | Score 70+, no issues | ✅ |
+| 18 | All requirement types checked | Length, upper, lower, digit, special | ✅ |
+
+</details>
+
+<details>
+<summary><b>🗄️ Config Loader Tests</b> — 2/2 Passed ✅</summary>
+<br/>
+
+| # | Test Case | Expected Result | Status |
+|---|-----------|----------------|:------:|
+| 19 | Config returns valid values | Defaults work correctly | ✅ |
+| 20 | JSON config parsing works | Rate limits, passwords parsed | ✅ |
+
+</details>
+
 ### 📊 Test Summary
 
 | Category | Tests | Passed | Status |
@@ -1571,7 +1594,9 @@ POST /api/security/configs/refresh → Force reload from database
 | 🔒 Hashing | 2 | 2 | ✅ |
 | 🎫 Token Generation | 3 | 3 | ✅ |
 | 🔄 Key Rotation | 2 | 2 | ✅ |
-| **Total** | **15** | **15** | **✅ 100%** |
+| 🔑 Password Validator | 3 | 3 | ✅ |
+| 🗄️ Config Loader | 2 | 2 | ✅ |
+| **Total** | **20** | **20** | **✅ 100%** |
 
 ### Test Execution
 
@@ -1592,8 +1617,13 @@ tests/test_security.py::TestTokenGeneration::test_otp_generation PASSED
 tests/test_security.py::TestTokenGeneration::test_signed_token_verification PASSED
 tests/test_security.py::TestKeyRotation::test_rotation_policy_thresholds PASSED
 tests/test_security.py::TestKeyRotation::test_days_until_rotation_calculation PASSED
+tests/test_security.py::TestPasswordValidator::test_weak_password_rejected PASSED
+tests/test_security.py::TestPasswordValidator::test_strong_password_accepted PASSED
+tests/test_security.py::TestPasswordValidator::test_password_checks_all_requirements PASSED
+tests/test_security.py::TestConfigLoader::test_config_returns_safe_defaults PASSED
+tests/test_security.py::TestConfigLoader::test_config_json_parsing PASSED
 
-========================== 15 passed in 0.30s =========================
+========================== 20 passed in 0.21s =========================
 ```
 
 <div align="center">
@@ -2084,7 +2114,7 @@ cd server
 # Run all security tests
 python -m pytest tests/test_security.py -v
 
-# Expected: 15 passed in 0.30s
+# Expected: 20 passed in 0.21s
 ```
 
 ### 📊 Step 11: Test Encryption Works
@@ -2280,8 +2310,8 @@ Pre-Production Checklist:
 [ ] MongoDB enabled for activity logs (optional)
 [ ] AWS S3 configured for file storage (if needed)
 [ ] Backup MASTER_KEY_HEX stored securely
-[ ] All 15 security tests passing
-[ ] All 16 API endpoints verified
+[ ] All 20 security tests passing
+[ ] All 19 API endpoints verified
 [ ] File upload/download working end-to-end
 [ ] Key rotation working (test with dry_run=true)
 ```
@@ -2321,7 +2351,7 @@ Pre-Production Checklist:
 |:--|:--:|:--:|:--|:--:|
 | Files Created | 25+ | | Security Standards | 4 (NIST, FIPS, OWASP, RFC) |
 | API Endpoints | 16 | | Performance Tracked | 4 operations |
-| Unit Tests | 15/15 | | Token Types | 7 |
+| Unit Tests | 20/20 | | Token Types | 7 |
 | Security Features | 30+ | | Hash Algorithms | 5 |
 | Encryption Throughput | 634 MB/s | | Known Bugs | 0 |
 | Key Rotation Policy | 90 days | | PSD Compliance | 100% |
@@ -2363,7 +2393,7 @@ Pre-Production Checklist:
 
 ## 🏆 Module Status: Production Ready
 
-**30+ features · 16 API endpoints · 15 tests · 634 MB/s · 4 standards · 26 DB configs · 100% PSD compliance · 0 bugs**
+**30+ features · 16 API endpoints · 20 tests · 634 MB/s · 4 standards · 26 DB configs · 100% PSD compliance · 0 bugs**
 
 *Part of the TrustShare Secure File-Sharing System*
 
