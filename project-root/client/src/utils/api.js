@@ -150,6 +150,9 @@ export const dashboardAPI = {
 export const sharedWithMeAPI = {
   list: () => api.get('/api/shared-with-me/'),
   download: (fileId) => api.get(`/api/shared-with-me/${fileId}/download`, { responseType: 'blob' }),
+  listDirect: () => api.get('/api/shared-with-me/direct'),
+  shareDirect: (data) => api.post('/api/shared-with-me/direct', data),
+  revokeDirect: (permissionId) => api.delete(`/api/shared-with-me/direct/${permissionId}`),
 };
 
 // ── Admin ─────────────────────────────────────────────────────────────────
