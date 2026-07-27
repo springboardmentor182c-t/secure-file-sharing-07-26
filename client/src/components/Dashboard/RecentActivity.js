@@ -1,5 +1,4 @@
 import "./RecentActivity.css";
-import { useNavigate } from "react-router-dom";
 
 export default function RecentActivity({ activities }) {
   return (
@@ -7,7 +6,10 @@ export default function RecentActivity({ activities }) {
       <h3>Recent Activity</h3>
 
       {activities.map((item) => (
-        <div className="activity-card" key={item.id}>
+        <div
+          className="activity-card"
+          key={item.id}
+        >
           <div className="activity-info">
             <div className={`activity-dot ${item.status}`}></div>
 

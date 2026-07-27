@@ -38,6 +38,7 @@ export default function RecentFiles({ files }) {
 
         <button
           className="view-all"
+          type="button"
           onClick={() => navigate("/files")}
         >
           View All <FiArrowRight />

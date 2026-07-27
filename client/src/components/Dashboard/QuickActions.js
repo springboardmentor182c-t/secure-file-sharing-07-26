@@ -31,6 +31,7 @@ export default function QuickActions() {
         {actions.map((action) => (
           <button
             key={action.title}
+            type="button"
             onClick={() => navigate(action.path)}
           >
             {action.title}
