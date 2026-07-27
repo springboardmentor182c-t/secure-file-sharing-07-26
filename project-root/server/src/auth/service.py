@@ -6,7 +6,7 @@ from src.entities.user import User
 from src.auth.models import SignupRequest, TokenResponse, UserOut
 from src.auth.dependencies import hash_password, verify_password, create_access_token, create_refresh_token
 
-MFA_ISSUER = "TrustShare"
+MFA_ISSUER = "SecureShare"
 
 
 def authenticate_user(db: Session, email: str, password: str) -> User | None:

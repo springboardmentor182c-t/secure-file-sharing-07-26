@@ -209,78 +209,7 @@ export const authAPI = {
 
 
 
-// ─────────────────────────────────────────────
-// FILE APIs
-// ─────────────────────────────────────────────
 
-export const filesAPI = {
-
-  list: (folderId) =>
-    api.get(
-      "/api/files/",
-      {
-        params:{
-          folder_id: folderId
-        }
-      }
-    ),
-
-  upload: (
-    formData,
-    folderId,
-    encrypted,
-    mimetype,
-    onProgress
-  ) =>
-    api.post(
-      "/api/files/upload",
-      formData,
-      {
-        params: { folder_id: folderId, encrypted, mimetype },
-        headers:{
-          "Content-Type":
-          "multipart/form-data",
-        },
-
-        onUploadProgress:(event)=>{
-
-          if(onProgress){
-
-            const percent =
-              Math.round(
-                (event.loaded * 100) /
-                event.total
-              );
-
-            onProgress(percent);
-
-          }
-
-        },
-
-      }
-    ),
-
-
-  get:(id)=>
-    api.get(`/api/files/${id}`),
-
-
-  download:(id)=>
-    api.get(
-      `/api/files/${id}/download`,
-      {
-        responseType:"blob",
-      }
-    ),
-
-
-  delete:(id)=>
-    api.delete(`/api/files/${id}`),
-
-  toggleEncrypt: (id) => api.patch(`/api/files/${id}/encrypt`),
-
-};
 
 
 
@@ -392,43 +321,15 @@ export const notificationsAPI = {
 
 
 // ─────────────────────────────────────────────
-// Encryption
-// ─────────────────────────────────────────────
-
-export const encryptionAPI = {
-
-  dashboard: () =>
-    api.get("/api/encryption/dashboard"),
-
-  encrypt: (plaintext) =>
-    api.post(
-      "/api/encryption/encrypt",
-      {
-        plaintext,
-      }
-    ),
-
-  decrypt: (ciphertext) =>
-    api.post(
-      "/api/encryption/decrypt",
-      {
-        ciphertext,
-      }
-    ),
-
-};
-
-
-
-// ─────────────────────────────────────────────
 // Analytics
 // ─────────────────────────────────────────────
 
 export const analyticsAPI = {
 
-  summary:() =>
+  summary: (range = "7d") =>
     api.get(
-      "/api/analytics/summary"
+      "/api/analytics/summary",
+      { params: { range } }
     ),
 
 };
@@ -477,6 +378,15 @@ export const auditAPI = {
 
 };
 
+// ─────────────────────────────────────────────
+// Search
+// ─────────────────────────────────────────────
 
+export const searchAPI = {
+  query: (q) =>
+    api.get("/api/search/", {
+      params: { q },
+    }),
+};
 
 export default api;

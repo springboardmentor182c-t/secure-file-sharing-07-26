@@ -4,15 +4,15 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      - POSTGRES_USER=trustshare
-      - POSTGRES_PASSWORD=trustshare
-      - POSTGRES_DB=trustshare
+      - POSTGRES_USER=secureshare
+      - POSTGRES_PASSWORD=secureshare
+      - POSTGRES_DB=secureshare
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U trustshare"]
+      test: ["CMD-SHELL", "pg_isready -U secureshare"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -22,8 +22,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql+psycopg2://trustshare:trustshare@db:5432/trustshare
-      - SECRET_KEY=trustshare-super-secret-key-change-in-prod-2026
+      - DATABASE_URL=postgresql+psycopg2://secureshare:secureshare@db:5432/secureshare
+      - SECRET_KEY=secureshare-super-secret-key-change-in-prod-2026
       - BACKEND_URL=http://localhost:8000
       - FRONTEND_URL=http://localhost:3000
       # OAuth credentials — set these in a .env file next to docker-compose.yml
