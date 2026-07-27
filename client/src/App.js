@@ -5,6 +5,11 @@ import Settings from "./pages/Settings";
 import SecureSharing from "./pages/Securesharing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import Upload from "./pages/Upload";
+import Files from "./pages/Files";
+import Users from "./pages/Users";
+import Activity from "./pages/Activity";
+import Storage from "./pages/Storage";
 
 function App() {
   return (
@@ -36,7 +41,50 @@ function App() {
             </PageContainer>
           }
         />
+        <Route
+          path="/upload"
+          element={
+          <PageContainer>
+            <Upload />
+          </PageContainer>
+          }
+        />
 
+        <Route
+          path="/files"
+          element={
+            <PageContainer>
+            <Files />
+          </PageContainer>
+          }
+        />
+
+        <Route
+          path="/users"
+          element={
+            <PageContainer>
+              <Users />
+            </PageContainer>
+          }
+        />
+
+        <Route
+          path="/activity"
+          element={
+            <PageContainer>
+              <Activity />
+            </PageContainer>
+          }
+        />
+
+        <Route
+          path="/storage"
+          element={
+            <PageContainer>
+              <Storage />
+            </PageContainer>
+          }
+        />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
       </Routes>
