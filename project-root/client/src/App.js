@@ -10,7 +10,8 @@ import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import OAuthCallback from './pages/OAuthCallback';
 import Dashboard from './pages/Dashboard';
-
+import Files from './pages/Files';
+import Encryption from './pages/Encryption';
 import Sharing from './pages/Sharing';
 import Analytics from './pages/Analytics';
 import Notifications from './pages/Notifications';
@@ -48,9 +49,9 @@ function AppShell() {
         <main className="page-body">
           <Routes>
             <Route path="/dashboard"     element={<Dashboard />} />
-            <Route path="/files"         element={<Dashboard />} />
+            <Route path="/files"         element={<Files />} />
+            <Route path="/encryption"    element={<Encryption />} />
             <Route path="/sharing"       element={<Sharing />} />
-            <Route path="/encryption"    element={<Dashboard />} />
             <Route path="/analytics"     element={<Analytics />} />
             <Route path="/activity"      element={<ActivityLogs />} />
             <Route path="/notifications" element={<Notifications />} />
@@ -88,7 +89,7 @@ export default function App() {
             />
 
             {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<Navigate to="/files" replace />} />
           </Routes>
         </Router>
       </AuthProvider>

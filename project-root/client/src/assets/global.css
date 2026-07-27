@@ -40,7 +40,7 @@
   --shadow-blue: 0 0 30px rgba(59,130,246,.25);
 
   --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 24px;
-  --sidebar-w: 270px;
+  --sidebar-w: 256px;
   --header-h: 64px;
   --transition: .2s cubic-bezier(.4,0,.2,1);
 }
@@ -411,16 +411,6 @@ input,textarea,select{font-family:inherit;outline:none;border:none}
             radial-gradient(ellipse at bottom right,rgba(139,92,246,.06) 0%,transparent 50%),
             linear-gradient(180deg,#f4f6fb 0%,#eef2f9 100%);
 }
+:root.light .sidebar{background:rgba(255,255,255,.92);border-right-color:var(--border-subtle)}
 :root.light .navbar{background:rgba(255,255,255,.85);border-bottom-color:var(--border-subtle)}
 :root.light .notif-dot{border-color:#fff}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.search-result-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-:root.light .search-result-item:hover {
-  background: rgba(0, 0, 0, 0.05);
-}
