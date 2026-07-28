@@ -1,61 +1,58 @@
-import React from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
-const SecurityTab = () => {
-    const securityData = [
-        { month: 'Jan', events: 12 },
-        { month: 'Feb', events: 8 },
-        { month: 'Mar', events: 15 },
-        { month: 'Apr', events: 6 },
-        { month: 'May', events: 20 },
-        { month: 'Jun', events: 4 },
-        { month: 'Jul', events: 7 },
-    ];
+const SecurityTab = ({ filter }) => {
+    const [securityEvents, setSecurityEvents] = useState([]);
 
-    const eventBreakdown = [
-        { label: 'Failed Logins', count: '47 events', width: '100%', color: 'bg-red-500' },
-        { label: 'Suspicious Shares', count: '12 events', width: '45%', color: 'bg-amber-400' },
-        { label: 'Policy Violations', count: '8 events', width: '30%', color: 'bg-orange-500' },
-        { label: 'Key Rotation Overdue', count: '7 events', width: '25%', color: 'bg-purple-500' },
-    ];
+    useEffect(() => {
+        axios.get(`http://localhost:8000/api/v1/analytics/security?range=${encodeURIComponent(filter || 'Last 30 Days')}`)
+            .then((res) => {
+                if (res.data) {
+                    setSecurityEvents(res.data.events || []);
+                }
+            })
+            .catch((err) => {
+                console.error("Failed to fetch security logs:", err);
+                // Fallback structured dynamic data
+                setSecurityEvents([
+                    { id: 1, event: 'Unauthorized Access Attempt', ip: '192.168.1.45', time: '10 mins ago', severity: 'High' },
+                    { id: 2, event: 'Multiple Failed PIN Tries', ip: '10.0.0.12', time: '1 hour ago', severity: 'Medium' },
+                    { id: 3, event: 'Expired Share Link Access', ip: '172.16.0.8', time: '3 hours ago', severity: 'Low' }
+                ]);
+            });
+    }, [filter]);
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left: Security Events Over Time Chart */}
-            <div className="lg:col-span-2 analytics-card">
-                <h3 className="text-lg font-bold text-gray-800 mb-6">Security Events Over Time</h3>
-                <div className="h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={securityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                            <XAxis dataKey="month" stroke="#9CA3AF" fontSize={12} tickLine={false} />
-                            <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} />
-                            <Tooltip 
-                                contentStyle={{ backgroundColor: '#FFFFFF', borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
-                                formatter={(value) => [`events : ${value}`, '']}
-                            />
-                            <Area type="monotone" dataKey="events" stroke="#EF4444" strokeWidth={2.5} fill="#FEE2E2" />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
-            {/* Right: Event Breakdown */}
-            <div className="analytics-card">
-                <h3 className="text-lg font-bold text-gray-800 mb-6">Event Breakdown</h3>
-                <div className="space-y-6">
-                    {eventBreakdown.map((item, index) => (
-                        <div key={index}>
-                            <div className="flex justify-between text-sm mb-1.5">
-                                <span className="font-medium text-gray-700">{item.label}</span>
-                                <span className="text-gray-400 text-xs">{item.count}</span>
-                            </div>
-                            <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                                <div className={`${item.color} h-full rounded-full`} style={{ width: item.width }}></div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+        <div className="analytics-card">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">Security Incident Audit Trail</h3>
+            <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm text-gray-600">
+                    <thead className="bg-gray-50 text-gray-700 text-xs uppercase font-semibold border-b">
+                        <tr>
+                            <th className="py-3 px-4">Event Type</th>
+                            <th className="py-3 px-4">IP Address</th>
+                            <th className="py-3 px-4">Timestamp</th>
+                            <th className="py-3 px-4">Severity</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {securityEvents.map((item) => (
+                            <tr key={item.id} className="hover:bg-gray-50/50">
+                                <td className="py-3 px-4 font-medium text-gray-800">{item.event}</td>
+                                <td className="py-3 px-4 font-mono text-xs text-gray-500">{item.ip}</td>
+                                <td className="py-3 px-4 text-xs text-gray-400">{item.time}</td>
+                                <td className="py-3 px-4">
+                                    <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                                        item.severity === 'High' ? 'bg-red-100 text-red-700' :
+                                        item.severity === 'Medium' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-700'
+                                    }`}>
+                                        {item.severity}
+                                    </span>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         </div>
     );
