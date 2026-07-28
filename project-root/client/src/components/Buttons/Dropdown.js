@@ -85,5 +85,4 @@ const Dropdown = ({ label = 'Options', items = [], variant = 'secondary' }) => {
     </div>
   );
 };
-
 export default Dropdown;
