@@ -16,7 +16,7 @@ from src.core import ALLOWED_ORIGINS
 from src.database.core import DATABASE_URL, create_all_tables
 from src.exceptions import register_exception_handlers
 from src.files.scheduler import start_scheduler as start_files_scheduler, stop_scheduler as stop_files_scheduler
-from src.logging import configure_logging
+from src.app_logging import configure_logging
 from src.shared_links.scheduler import start_scheduler, stop_scheduler
 
 # Ensures every entity is registered on Base.metadata before create_all/Alembic runs.

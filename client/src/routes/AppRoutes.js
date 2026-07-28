@@ -16,6 +16,8 @@ import Analytics from "../pages/Analytics/Analytics";
 import Notifications from "../pages/Notifications/Notifications";
 import Settings from "../pages/Settings/Settings";
 import Profile from "../pages/Profile/Profile";
+import Recent from "../pages/Recent/Recent";
+import Trash from "../pages/Trash";
 
 import { AnalyticsView } from "../analytics/analytics";
 
@@ -27,9 +29,9 @@ function AppRoutes() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/files" element={<MyFilesPage initialView="files" />} />
-          <Route path="/recent" element={<MyFilesPage initialView="recent" />} />
+          <Route path="/recent" element={<Recent />} />
           <Route path="/starred" element={<MyFilesPage initialView="starred" />} />
-          <Route path="/trash" element={<MyFilesPage initialView="trash" />} />
+          <Route path="/trash" element={<Trash />} />
           <Route path="/shared-files" element={<SharedFiles />} />
           <Route path="/shared-links" element={<SharedLinksPage />} />
           <Route path="/analytics" element={<Analytics />} />
