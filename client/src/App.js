@@ -4,9 +4,9 @@ import PageContainer from "./layout/PageContainer";
 
 // Pages & Features
 import Home from "./pages/Home";
-// import Settings from "./pages/Settings";
+import Settings from "./pages/Settings";
 import Securesharing from "./pages/Securesharing";
-// import Login from "./pages/Login";
+import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./features/dashboard/Dashboard";
 import ActivityMonitorPage from "./pages/ActivityMonitorPage";
@@ -37,16 +37,16 @@ function App() {
           }
         />
 
-        {/* <Route
+         <Route
           path="/settings"
           element={
             <PageContainer>
               <Settings />
             </PageContainer>
           }
-        /> */}
+        /> 
 
-        {/* <Route path="/login" element={<Login />} /> */}
+         <Route path="/login" element={<Login />} /> 
 
         <Route
           path="/dashboard"
@@ -90,7 +90,7 @@ function App() {
 />
 
         {/* Auth Routes (Without Sidebar/Navbar) */}
-        {/* <Route path="/login" element={<Login />} /> */}
+        <Route path="/login" element={<Login />} /> 
         <Route path="/signup" element={<Signup />} />
 
       </Routes>
