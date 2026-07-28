@@ -3,6 +3,7 @@ import { Bell, Download, Eye, Files, FileText, FolderOpen, Grid2X2, List, Search
 import { useNavigate } from 'react-router-dom';
 import { formatDate } from '../../../utils/formatDate';
 import SharedFileIcon from './SharedFileIcon';
+import FileSummaryPanel from '../../fileSummary/components/FileSummaryPanel';
 
 const EMPTY_FILES = [];
 
@@ -19,6 +20,7 @@ export default function SharedFilesView({ data, onDownload }) {
   const [permission, setPermission] = useState('all');
   const [view, setView] = useState('list');
   const [downloading, setDownloading] = useState(null);
+  const [summaryFile, setSummaryFile] = useState(null);
   const files = data?.files || EMPTY_FILES;
   const filtered = useMemo(() => files.filter((file) => {
     const matchesQuery = `${file.name} ${file.shared_by}`.toLowerCase().includes(query.toLowerCase());
@@ -90,13 +92,14 @@ export default function SharedFilesView({ data, onDownload }) {
           <div className="shared-empty"><span><Users size={28} /></span><h2>{files.length ? 'No matching files' : 'Nothing shared with you yet'}</h2><p>{files.length ? 'Try a different search or access filter.' : 'Files shared by other people will appear here.'}</p></div>
         ) : (
           <div className={`shared-files shared-files-${view}`}>
-            {view === 'list' && <div className="shared-table-head"><span>Name</span><span>Shared by</span><span>Shared on</span><span>Access</span><span /></div>}
+            {view === 'list' && <div className="shared-table-head"><span>Name</span><span>Shared by</span><span>Shared on</span><span>Access</span><span /><span /></div>}
             {filtered.map((file) => (
               <article className="shared-file" key={file.permission_id}>
                 <div className="shared-file-name"><SharedFileIcon mimetype={file.mimetype} name={file.name} /><p><strong title={file.name}>{file.name}</strong><small>{formatSize(file.size)} · {file.encrypted ? 'Encrypted' : 'Protected'}</small></p></div>
                 <div className="shared-owner"><span>{file.shared_by.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}</span><p><strong>{file.shared_by}</strong><small>{file.shared_by_email}</small></p></div>
                 <time>{formatDate(file.shared_at)}</time>
                 <span className={`shared-access ${file.can_download ? 'download' : 'view'}`}>{file.can_download ? <Download size={13} /> : <Eye size={13} />}{file.can_download ? 'Download' : 'View only'}</span>
+                <button className="shared-download" onClick={() => setSummaryFile(file)} title={`Generate AI summary for ${file.name}`} aria-label={`Generate AI summary for ${file.name}`}>✨</button>
                 <button className="shared-download" disabled={!file.can_download || downloading === file.file_id} onClick={() => handleDownload(file)} title={file.can_download ? `Download ${file.name}` : 'The owner disabled downloads'}>
                   {downloading === file.file_id ? <span className="spinner spinner-sm" /> : file.can_download ? <Download size={17} /> : <Eye size={17} />}
                 </button>
@@ -108,6 +111,7 @@ export default function SharedFilesView({ data, onDownload }) {
         </>
       )}
       <p className="shared-security-note"><ShieldCheck size={14} /> Every file is encrypted and access-controlled by its owner.</p>
+      {summaryFile && <FileSummaryPanel file={summaryFile} onClose={() => setSummaryFile(null)} />}
     </section>
   );
 }

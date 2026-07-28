@@ -78,6 +78,14 @@ export const filesAPI = {
   delete: (id) => api.delete(`/api/files/${id}`),
 };
 
+export const fileSummaryAPI = {
+  create: (fileId, options) => api.post(`/api/files/${fileId}/summaries`, options),
+  list: (fileId) => api.get(`/api/files/${fileId}/summaries`),
+  get: (fileId, summaryId) => api.get(`/api/files/${fileId}/summaries/${summaryId}`),
+  regenerate: (fileId, summaryId) => api.post(`/api/files/${fileId}/summaries/${summaryId}/regenerate`),
+  delete: (fileId, summaryId) => api.delete(`/api/files/${fileId}/summaries/${summaryId}`),
+};
+
 // ── Folders ───────────────────────────────────────────────────────────────
 export const foldersAPI = {
   list: (parentId) => api.get('/api/folders/', { params: { parent_id: parentId } }),
