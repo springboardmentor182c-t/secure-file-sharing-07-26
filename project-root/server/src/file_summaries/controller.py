@@ -1,3 +1,5 @@
+import time
+
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from sqlalchemy.orm import Session
 
@@ -16,7 +18,7 @@ def _rate_limit(user_id: int, db: Session):
     if not result["allowed"]:
         from fastapi import HTTPException
         retry_after = max(1, int(result["reset_in"] + 0.999))
-        raise HTTPException(status_code=429, detail=f"Too many summary requests. Please try again in {retry_after} seconds.")
+        raise HTTPException(status_code=429, detail={"message": "Too many summary requests.", "retry_after": retry_after})
 
 
 @router.post("/{file_id}/summaries", response_model=SummaryOut)
@@ -58,7 +60,8 @@ def regenerate(file_id: int, summary_id: int, background_tasks: BackgroundTasks,
     old = service.get_summary(db, file_id, summary_id, current_user.id)
     data = SummaryCreate(summary_length=old.summary_length, output_language=old.output_language, output_format=old.output_format, force_regenerate=True)
     summary, _ = service.create_summary(db, file_id, current_user.id, data)
-    background_tasks.add_task(service.process_summary, summary.id)
+    variation = summary.id * 1_000_003 + int(time.time() * 1000) % 1_000_003
+    background_tasks.add_task(service.process_summary, summary.id, variation)
     return summary
 
 

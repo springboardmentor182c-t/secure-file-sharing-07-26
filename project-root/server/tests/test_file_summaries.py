@@ -13,6 +13,7 @@ from src.file_summaries.models import SummaryCreate
 from src.file_summaries.providers import ExtractiveFallbackProvider, ProviderUnavailable, _prompt
 from src.file_summaries.service import _provider, authorize_file, create_summary
 from src.file_summaries.text_extraction import chunk_text, extract_text
+from src.security.rate_limiter import DEFAULT_RATE_LIMITS
 
 
 def _user(db, email):
@@ -89,6 +90,15 @@ def test_external_provider_blocked_and_fallback_is_deterministic(monkeypatch):
     with pytest.raises(ProviderUnavailable): _provider()
     result = ExtractiveFallbackProvider().generate_summary("Alpha project is secure. Alpha project supports sharing. Audit records are retained.", {"summary_length": "short"})
     assert result["summary"] and result["keywords"]
+
+
+def test_regeneration_varies_fallback_summary_and_limit_is_five_per_minute():
+    text = "Security protects every uploaded document. Permissions control access for recipients. Audit events record important actions. Encryption protects stored file data. Notifications inform users about completed work."
+    provider = ExtractiveFallbackProvider()
+    first = provider.generate_summary(text, {"summary_length": "standard", "variation": 0})
+    regenerated = provider.generate_summary(text, {"summary_length": "standard", "variation": 3})
+    assert regenerated["summary"] != first["summary"]
+    assert DEFAULT_RATE_LIMITS["file_summary"] == {"requests": 5, "window_seconds": 60}
 
 
 def test_chunk_overlap_and_database_dialects_are_portable():

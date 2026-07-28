@@ -124,7 +124,7 @@ def create_summary(db: Session, file_id: int, user_id: int, data: SummaryCreate)
     return summary, False
 
 
-def process_summary(summary_id: int) -> None:
+def process_summary(summary_id: int, variation: int = 0) -> None:
     db = SessionLocal()
     plaintext = None
     try:
@@ -141,7 +141,12 @@ def process_summary(summary_id: int) -> None:
         if len(text) > max_chars:
             text = text[:max_chars]
             warning = "Only part of the document was processed because the extracted-text limit was reached."
-        options = {"summary_length": summary.summary_length, "output_language": summary.output_language, "output_format": summary.output_format}
+        options = {
+            "summary_length": summary.summary_length,
+            "output_language": summary.output_language,
+            "output_format": summary.output_format,
+            "variation": variation,
+        }
         chunks = chunk_text(text, _int_env("SUMMARY_CHUNK_SIZE", 12000), _int_env("SUMMARY_CHUNK_OVERLAP", 500))
         chunk_results, used_provider, provider_warning = [], None, None
         for chunk in chunks:

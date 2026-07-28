@@ -35,7 +35,7 @@ DEFAULT_RATE_LIMITS = {
     "performance": {"requests": 30, "window_seconds": 60},
     # Summary generation is interactive and may include retries/regeneration.
     # Keep a targeted guard without locking a user out after only a few tests.
-    "file_summary": {"requests": 20, "window_seconds": 60},
+    "file_summary": {"requests": 5, "window_seconds": 60},
     "default": {"requests": 60, "window_seconds": 60},
 }
 

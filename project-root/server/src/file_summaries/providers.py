@@ -67,7 +67,13 @@ class OllamaProvider(SummaryProvider):
         try:
             response = httpx.post(
                 f"{self.base_url}/api/generate",
-                json={"model": self.model_name, "prompt": _prompt(text, options), "format": "json", "stream": False, "options": {"temperature": 0.1}},
+                json={
+                    "model": self.model_name,
+                    "prompt": _prompt(text, options),
+                    "format": "json",
+                    "stream": False,
+                    "options": {"temperature": 0.35, "seed": int(options.get("variation", 0))},
+                },
                 timeout=self.timeout,
             )
             response.raise_for_status()
@@ -92,7 +98,7 @@ class HuggingFaceProvider(SummaryProvider):
             response = httpx.post(
                 "https://router.huggingface.co/v1/chat/completions",
                 headers={"Authorization": f"Bearer {self.token}"},
-                json={"model": self.model_name, "messages": [{"role": "user", "content": _prompt(text, options)}], "temperature": 0.1},
+                json={"model": self.model_name, "messages": [{"role": "user", "content": _prompt(text, options)}], "temperature": 0.35},
                 timeout=self.timeout,
             )
             response.raise_for_status()
@@ -134,6 +140,12 @@ class ExtractiveFallbackProvider(SummaryProvider):
         counts = Counter(re.findall(r"[A-Za-z][A-Za-z-]{3,}", text.lower()))
         ranked = sorted(enumerate(sentences), key=lambda item: sum(counts[w] for w in re.findall(r"[A-Za-z][A-Za-z-]{3,}", item[1].lower())) / max(1, len(item[1])), reverse=True)
         target = {"short": 2, "standard": 4, "detailed": 7}[options["summary_length"]]
-        selected = [sentence for _, sentence in sorted(ranked[:target])]
+        variation = int(options.get("variation", 0))
+        offset = variation % len(ranked)
+        varied_ranked = ranked[offset:] + ranked[:offset]
+        selected_with_positions = varied_ranked[:min(target, len(varied_ranked))]
+        selected = [sentence for _, sentence in sorted(selected_with_positions)]
+        if variation and len(selected) > 1:
+            rotation = variation % len(selected)
+            selected = selected[rotation:] + selected[:rotation]
         return {"title": "Extractive document summary", "summary": " ".join(selected), "key_points": selected[:6], "keywords": _keywords(text)}
-

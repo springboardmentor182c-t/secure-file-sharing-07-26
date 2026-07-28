@@ -33,3 +33,13 @@ test('renders completed summary, key points and copy action', async () => {
   await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalled());
   expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument();
 });
+
+test('shows the live retry countdown and disables retry until it expires', () => {
+  useFileSummary.mockReturnValue({
+    summary: null, loading: false, error: 'Too many summary requests.', retryAfter: 26,
+    generate: jest.fn(), regenerate: jest.fn(),
+  });
+  render(<FileSummaryPanel file={{ id: 7, original_name: 'report.pdf' }} onClose={jest.fn()} />);
+  expect(screen.getByText('Too many summary requests. Please try again in 26 seconds.')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Try again in 26s' })).toBeDisabled();
+});

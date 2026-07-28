@@ -5,7 +5,7 @@ import '../fileSummary.css';
 export default function FileSummaryPanel({ file, onClose }) {
   const [options, setOptions] = useState({ summary_length: 'standard', output_language: 'original', output_format: 'paragraph', force_regenerate: false });
   const [copied, setCopied] = useState(false);
-  const { summary, loading, error, generate, regenerate } = useFileSummary(file.id || file.file_id);
+  const { summary, loading, error, retryAfter = 0, generate, regenerate } = useFileSummary(file.id || file.file_id);
 
   const copy = async () => {
     const value = [summary?.summary_text, ...(summary?.key_points || []).map(point => `- ${point}`)].filter(Boolean).join('\n\n');
@@ -32,7 +32,7 @@ export default function FileSummaryPanel({ file, onClose }) {
         )}
 
         {loading && <div className="summary-state" role="status"><span className="spinner" /><h3>Generating your summary...</h3><p>The document is being securely extracted and processed.</p></div>}
-        {error && <div className="summary-error" role="alert"><strong>Summary unavailable</strong><p>{error}</p><button className="btn btn-secondary btn-sm" onClick={() => generate(options)}>Try again</button></div>}
+        {error && <div className="summary-error" role="alert"><strong>Summary unavailable</strong><p>{error}{retryAfter > 0 && ` Please try again in ${retryAfter} seconds.`}</p><button className="btn btn-secondary btn-sm" disabled={retryAfter > 0} onClick={() => generate(options)}>{retryAfter > 0 ? `Try again in ${retryAfter}s` : 'Try again'}</button></div>}
 
         {summary?.status === 'failed' && <div className="summary-error" role="alert"><strong>Generation failed</strong><p>{summary.error_message}</p><button className="btn btn-secondary btn-sm" onClick={regenerate}>Try again</button></div>}
         {summary?.status === 'completed' && !loading && (

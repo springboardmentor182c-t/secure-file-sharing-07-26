@@ -7,6 +7,7 @@ export default function useFileSummary(fileId) {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [retryAfter, setRetryAfter] = useState(0);
   const timer = useRef(null);
 
   const stop = useCallback(() => {
@@ -27,7 +28,7 @@ export default function useFileSummary(fileId) {
   }, [fileId]);
 
   const generate = useCallback(async (options) => {
-    stop(); setError(''); setLoading(true);
+    stop(); setError(''); setRetryAfter(0); setLoading(true);
     try {
       const { data } = await fileSummaryAPI.create(fileId, options);
       setSummary(data);
@@ -36,23 +37,32 @@ export default function useFileSummary(fileId) {
     } catch (requestError) {
       const detail = requestError.response?.data?.detail;
       setError(typeof detail === 'object' ? detail.message : detail || 'Summary generation failed.');
+      setRetryAfter(typeof detail === 'object' ? Number(detail.retry_after) || 0 : 0);
       setLoading(false);
     }
   }, [fileId, poll, stop]);
 
   const regenerate = useCallback(async () => {
     if (!summary) return;
-    stop(); setError(''); setLoading(true);
+    stop(); setError(''); setRetryAfter(0); setLoading(true);
     try {
       const { data } = await fileSummaryAPI.regenerate(fileId, summary.id);
       setSummary(data);
       timer.current = setTimeout(() => poll(data.id), 800);
     } catch (requestError) {
-      setError(requestError.response?.data?.detail || 'Regeneration failed.');
+      const detail = requestError.response?.data?.detail;
+      setError(typeof detail === 'object' ? detail.message : detail || 'Regeneration failed.');
+      setRetryAfter(typeof detail === 'object' ? Number(detail.retry_after) || 0 : 0);
       setLoading(false);
     }
   }, [fileId, poll, stop, summary]);
 
   useEffect(() => () => stop(), [stop]);
-  return { summary, loading, error, generate, regenerate };
+  useEffect(() => {
+    if (retryAfter <= 0) return undefined;
+    const countdown = setTimeout(() => setRetryAfter(value => Math.max(0, value - 1)), 1000);
+    return () => clearTimeout(countdown);
+  }, [retryAfter]);
+
+  return { summary, loading, error, retryAfter, generate, regenerate };
 }
