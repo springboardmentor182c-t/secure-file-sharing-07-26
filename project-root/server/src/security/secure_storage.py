@@ -61,7 +61,7 @@ STREAM_CHUNK_SIZE = 64 * 1024
 IS_WINDOWS = platform.system() == "Windows"
 
 # Storage backend type (future extension point)
-STORAGE_BACKEND = "local"  # Future: "aws_s3", "azure_blob"
+STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "local")  # Future: "aws_s3", "azure_blob"
 
 # Setup logger
 logger = logging.getLogger(__name__)
