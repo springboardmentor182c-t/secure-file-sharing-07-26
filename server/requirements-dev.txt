@@ -1,0 +1,6 @@
+# Dev/test-only dependencies (on top of requirements.txt).
+# requirements.txt has FastAPI's TestClient dependency (httpx) is needed
+# to run the test suite; this file was empty before, so `pytest -v`
+# would fail with "No module named pytest" until this was installed.
+pytest==8.3.4
+httpx==0.28.1
