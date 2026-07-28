@@ -1,6 +1,7 @@
 // client/src/features/analytics/hooks/useAnalytics.js
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";  // ← ADD THIS IMPORT
 import { getAnalyticsSummary } from "../services/analyticsService";
 
 function formatStorageValue(gb) {
@@ -39,9 +40,12 @@ export default function useAnalytics(days = 30, userId = null) {
   const [lastRefreshedAt, setLastRefreshedAt] = useState(null);
   const [nextRefreshIn, setNextRefreshIn] = useState(AUTO_REFRESH_INTERVAL / 1000);
 
-  const intervalRef = useRef(null);
+  const intervalRef  = useRef(null);
   const countdownRef = useRef(null);
-  const isMountedRef = useRef(true);   
+  const isMountedRef = useRef(true);
+
+  // ═══ FIX: Track route to detect navigation back to analytics ═══
+  const location = useLocation();
 
   const fetchData = useCallback(async (forceRefresh = false, silent = false) => {
     const key = getCacheKey(days, userId);
@@ -66,14 +70,14 @@ export default function useAnalytics(days = 30, userId = null) {
 
       const result = await getAnalyticsSummary(days, userId);
 
-      const s = result.storage;
-      const u = result.uploads;
-      const d = result.downloads;
+      const s   = result.storage;
+      const u   = result.uploads;
+      const d   = result.downloads;
       const del = result.deletes;
-      const sh = result.sharing;
+      const sh  = result.sharing;
       const trends = result.trends || {};
 
-      const storageGB = s?.storage_used_gb ?? 0;
+      const storageGB  = s?.storage_used_gb ?? 0;
       const storageFmt = formatStorageValue(storageGB);
 
       // Dynamic KPI overrides
@@ -89,13 +93,13 @@ export default function useAnalytics(days = 30, userId = null) {
       }
 
       // Subtitles from real DB data
-      const storageSub = `of ${s?.storage_quota_gb ?? 0} GB · ${(s?.storage_percentage ?? 0).toFixed(1)}% capacity`;
-      const uploadsSub = `this month · ${formatChange(u?.change_pct ?? 0)}`;
+      const storageSub   = `of ${s?.storage_quota_gb ?? 0} GB · ${(s?.storage_percentage ?? 0).toFixed(1)}% capacity`;
+      const uploadsSub   = `this month · ${formatChange(u?.change_pct ?? 0)}`;
       const downloadsSub = `this month · ${formatTransferred(d?.transferred_gb ?? 0, d?.transferred_mb ?? 0)}`;
-      const sharesSub = (sh?.new_this_week ?? 0) > 0
+      const sharesSub    = (sh?.new_this_week ?? 0) > 0
         ? `+${sh.new_this_week} new this week`
         : `${sh?.inactive_links ?? 0} inactive`;
-      const deletesSub = (del?.this_week_deletes ?? 0) > 0
+      const deletesSub   = (del?.this_week_deletes ?? 0) > 0
         ? `${del.this_week_deletes} this week`
         : `${del?.this_month_deletes ?? 0} this month`;
 
@@ -104,25 +108,25 @@ export default function useAnalytics(days = 30, userId = null) {
       const enriched = {
         ...result,
         kpi: {
-          storage: storageFmt.value,
-          uploads: u?.total_uploads ?? 0,
+          storage:   storageFmt.value,
+          uploads:   u?.total_uploads   ?? 0,
           downloads: d?.total_downloads ?? 0,
-          shares: sh?.active_links ?? 0,
-          deletes: del?.total_deletes ?? 0,
+          shares:    sh?.active_links   ?? 0,
+          deletes:   del?.total_deletes ?? 0,
         },
         subtitles: {
-          storage_subtitle: storageSub,
-          uploads_subtitle: uploadsSub,
+          storage_subtitle:   storageSub,
+          uploads_subtitle:   uploadsSub,
           downloads_subtitle: downloadsSub,
-          shares_subtitle: sharesSub,
-          deletes_subtitle: deletesSub,
+          shares_subtitle:    sharesSub,
+          deletes_subtitle:   deletesSub,
         },
         kpiTrends: {
-          uploads: trendData.uploads || null,
+          uploads:   trendData.uploads   || null,
           downloads: trendData.downloads || null,
-          shares: trendData.shares || null,
-          logins: trendData.logins || null,
-          failed: trendData.failed || null,
+          shares:    trendData.shares    || null,
+          logins:    trendData.logins    || null,
+          failed:    trendData.failed    || null,
         },
         fileAccessHistory: trends?.file_access_history || [],
       };
@@ -133,7 +137,7 @@ export default function useAnalytics(days = 30, userId = null) {
 
       if (isMountedRef.current) {
         setLastRefreshedAt(fetchTime);
-        setNextRefreshIn(AUTO_REFRESH_INTERVAL / 1000);  // ✅ Reset countdown
+        setNextRefreshIn(AUTO_REFRESH_INTERVAL / 1000);
         setData(enriched);
       }
     } catch (err) {
@@ -148,6 +152,7 @@ export default function useAnalytics(days = 30, userId = null) {
     }
   }, [days, userId]);
 
+  // ═══ Mount / unmount tracking ════════════════════════════════════════
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -155,18 +160,36 @@ export default function useAnalytics(days = 30, userId = null) {
     };
   }, []);
 
+  // ═══ Initial fetch ════════════════════════════════════════════════════
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // Force refresh (bypasses cache)
+  // ═══ FIX: Refresh when user navigates back to analytics page ═════════
+  // Fires every time the route changes TO /analytics.
+  // Clears cache so fresh data is always fetched on navigation.
+  // silent=true so no loading spinner shows — seamless experience.
+  useEffect(() => {
+    if (
+      location.pathname === "/analytics" &&
+      isMountedRef.current
+    ) {
+      const key = getCacheKey(days, userId);
+      delete cache[key]; // always clear cache on navigation to analytics
+      fetchData(true, true); // forceRefresh=true, silent=true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]); // only fires when pathname changes
+
+  // ═══ Force refresh (bypasses cache) ══════════════════════════════════
   const refresh = useCallback(() => {
     const key = getCacheKey(days, userId);
     delete cache[key];
     setNextRefreshIn(AUTO_REFRESH_INTERVAL / 1000);
-    return fetchData(true, false);   // Not silent - show loading
+    return fetchData(true, false); // Not silent — show loading
   }, [fetchData, days, userId]);
 
+  // ═══ Auto-refresh interval + countdown ═══════════════════════════════
   useEffect(() => {
     // Clean up existing intervals
     if (intervalRef.current) {
@@ -193,10 +216,9 @@ export default function useAnalytics(days = 30, userId = null) {
 
     intervalRef.current = setInterval(() => {
       if (!isMountedRef.current) return;
-
       const key = getCacheKey(days, userId);
       delete cache[key];
-      fetchData(true, true);  
+      fetchData(true, true);
     }, AUTO_REFRESH_INTERVAL);
 
     // Cleanup on unmount or dependency change
@@ -212,7 +234,7 @@ export default function useAnalytics(days = 30, userId = null) {
     };
   }, [autoRefreshEnabled, days, userId, fetchData]);
 
-  // ═══ Toggle auto-refresh ═══
+  // ═══ Toggle auto-refresh ══════════════════════════════════════════════
   const toggleAutoRefresh = useCallback(() => {
     setAutoRefreshEnabled((prev) => !prev);
   }, []);

@@ -1,21 +1,23 @@
 # server/src/analytics/schemas/activity.py
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional, List
 
 
 class RecentActivityItem(BaseModel):
-    id:         int
-    event_type: str
-    status:     str
-    user_id:    Optional[int]
-    file_id:    Optional[int]
-    ip_address: Optional[str] = None
-    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        from_attributes = True
+    id:               int
+    event_type:       str
+    status:           str
+    user_id:          Optional[int]  = None
+    user_name:        Optional[str]  = None   # ← NEW
+    user_email:       Optional[str]  = None   # ← NEW
+    file_id:          Optional[int]  = None
+    file_name:        Optional[str]  = None   # ← NEW
+    ip_address:       Optional[str]  = None
+    created_at:       datetime
 
 
 class RecentActivityResponse(BaseModel):
@@ -35,13 +37,13 @@ class UserListResponse(BaseModel):
 class SystemStatsResponse(BaseModel):
     # Events
     total_events:     int
-    events_1h:        int = 0
+    events_1h:        int   = 0
     events_24h:       int
-    events_7d:        int = 0
+    events_7d:        int   = 0
 
     # Users
     total_users:      int
-    active_users_24h: int = 0
+    active_users_24h: int   = 0
 
     # Files & storage
     total_files:      int
@@ -49,7 +51,7 @@ class SystemStatsResponse(BaseModel):
 
     # Sharing
     total_shares:     int
-    active_shares:    int = 0
+    active_shares:    int   = 0
 
     # Performance
     db_response_ms:   float
@@ -57,5 +59,5 @@ class SystemStatsResponse(BaseModel):
 
     # Status
     status:           str
-    python_version:   str = ""
-    platform:         str = ""
+    python_version:   str   = ""
+    platform:         str   = ""

@@ -41,26 +41,32 @@ export default function Header({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleExport = async (format = "pdf") => {
+    const handleExport = async (format = "pdf") => {
     if (exporting || !data) return;
 
     setShowExportMenu(false);
 
-    const daysMap = { "7days": 7, "30days": 30, "90days": 90 };
-    let days = daysMap[dateRange] || 30;
+    // FIX ISS-6: Added "all": 365 to match Analytics.js DATE_RANGE_TO_DAYS
+    // Previously "all" was undefined → fell back to 30 days incorrectly
+    const daysMap = { "7days": 7, "30days": 30, "90days": 90, "all": 365 };
+    let days       = daysMap[dateRange] || 30;
     let customStart = null;
-    let customEnd = null;
+    let customEnd   = null;
 
     if (dateRange?.startsWith("custom-")) {
       const parts = dateRange.replace("custom-", "").split("-to-");
       if (parts.length === 2) {
-        customStart = parts[0];
-        customEnd = parts[1];
-        const start = new Date(customStart);
-        const end = new Date(customEnd);
-        days = Math.max(1, Math.min(365,
-          Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1
-        ));
+        customStart      = parts[0];
+        customEnd        = parts[1];
+        const start      = new Date(customStart);
+        const end        = new Date(customEnd);
+        // FIX: guard against invalid dates (mirrors Analytics.js fix)
+        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+          days = Math.max(
+            1,
+            Math.min(3650, Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1)
+          );
+        }
       }
     }
 
