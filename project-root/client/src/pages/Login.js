@@ -10,6 +10,7 @@ import {
   FaArrowRight,
 } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
+import { getApiError } from "../utils/api";
 
 const Login = () => {
   const { login } = useAuth();
@@ -28,9 +29,7 @@ const Login = () => {
       await login(email, password);
       navigate("/dashboard", { replace: true });
     } catch (err) {
-      setError(
-        err.response?.data?.detail || "Invalid email or password"
-      );
+      setError(getApiError(err, "Invalid email or password"));
     } finally {
       setSubmitting(false);
     }

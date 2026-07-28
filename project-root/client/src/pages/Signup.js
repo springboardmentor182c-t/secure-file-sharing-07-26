@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import "./signup.css";
 import { FaGoogle, FaGithub, FaMicrosoft } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
+import { getApiError } from "../utils/api";
 
 function Signup() {
   const { register } = useAuth();
@@ -41,9 +42,7 @@ function Signup() {
       await register(formData.name, formData.email, formData.password);
       navigate("/dashboard", { replace: true });
     } catch (err) {
-      setError(
-        err.response?.data?.detail || "Could not create account"
-      );
+      setError(getApiError(err, "Could not create account"));
     } finally {
       setSubmitting(false);
     }

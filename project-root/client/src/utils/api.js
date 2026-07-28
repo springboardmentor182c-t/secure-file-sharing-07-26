@@ -100,6 +100,34 @@ api.interceptors.response.use(
 
 
 // ─────────────────────────────────────────────
+// Error helper
+// ─────────────────────────────────────────────
+
+// Turns an axios failure into something worth showing a user. Without this,
+// an unreachable API (no `err.response`) falls through to whatever fallback
+// the caller passed — e.g. "Invalid email or password" when the real problem
+// is that nothing is serving the backend.
+
+export const getApiError = (err, fallback = "Something went wrong.") => {
+
+  if (!err?.response) {
+    return `Cannot reach the server at ${BASE_URL}. Make sure the backend is running.`;
+  }
+
+  const detail = err.response.data?.detail;
+
+  if (typeof detail === "string") return detail;
+
+  // FastAPI validation errors arrive as a list of {loc, msg, type}
+  if (Array.isArray(detail) && detail.length) {
+    return detail[0]?.msg || fallback;
+  }
+
+  return fallback;
+};
+
+
+// ─────────────────────────────────────────────
 // AUTH APIs
 // ─────────────────────────────────────────────
 
@@ -442,9 +470,25 @@ export const analyticsAPI = {
 export const adminAPI = {
 
 
-  listUsers:() =>
+  stats:() =>
     api.get(
-      "/api/admin/users"
+      "/api/admin/stats"
+    ),
+
+
+  listUsers:(params = {}) =>
+    api.get(
+      "/api/admin/users",
+      {
+        params,
+      }
+    ),
+
+
+  inviteUser:(data)=>
+    api.post(
+      "/api/admin/users/invite",
+      data
     ),
 
 
@@ -452,6 +496,35 @@ export const adminAPI = {
     api.patch(
       `/api/admin/users/${id}`,
       data
+    ),
+
+
+  deleteUser:(id)=>
+    api.delete(
+      `/api/admin/users/${id}`
+    ),
+
+
+  listRoles:() =>
+    api.get(
+      "/api/admin/roles"
+    ),
+
+
+  storage:() =>
+    api.get(
+      "/api/admin/storage"
+    ),
+
+
+  auditLogs:(limit=50)=>
+    api.get(
+      "/api/admin/audit-logs",
+      {
+        params:{
+          limit
+        }
+      }
     ),
 
 };
