@@ -4,19 +4,21 @@ import PageContainer from "./layout/PageContainer";
 
 // Pages & Features
 import Home from "./pages/Home";
-import Settings from "./pages/Settings";
-import Securesharing from "./pages/Securesharing"; 
-import Login from "./pages/Login";
+// import Settings from "./pages/Settings";
+import Securesharing from "./pages/Securesharing";
+// import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./features/dashboard/Dashboard";
 import ActivityMonitorPage from "./pages/ActivityMonitorPage";
 import Analytics from "./features/analytics/Analytics";
+import NotificationFeature from "./features/notifications/NotificationFeature";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Core Layout Routes */}
+
         <Route
           path="/"
           element={
@@ -35,20 +37,31 @@ function App() {
           }
         />
 
-        <Route
+        {/* <Route
           path="/settings"
           element={
             <PageContainer>
               <Settings />
             </PageContainer>
           }
-        />
+        /> */}
+
+        {/* <Route path="/login" element={<Login />} /> */}
 
         <Route
           path="/dashboard"
           element={
             <PageContainer>
               <Dashboard />
+            </PageContainer>
+          }
+        />
+
+        <Route
+          path="/notifications"
+          element={
+            <PageContainer>
+              <NotificationFeature />
             </PageContainer>
           }
         />
@@ -62,12 +75,24 @@ function App() {
           }
         />
 
-        <Route path="/analytics" 
-        element={<PageContainer><Analytics /></PageContainer>} />
+        <Route 
+          path="/analytics" 
+          element={
+            <PageContainer>
+              <Analytics />
+            </PageContainer>
+          }
+        />
+        
+        <Route
+  path="/admin"
+  element={<AdminDashboard />}
+/>
 
         {/* Auth Routes (Without Sidebar/Navbar) */}
-        <Route path="/login" element={<Login />} />
+        {/* <Route path="/login" element={<Login />} /> */}
         <Route path="/signup" element={<Signup />} />
+
       </Routes>
     </BrowserRouter>
   );
