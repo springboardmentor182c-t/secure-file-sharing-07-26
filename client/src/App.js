@@ -37,14 +37,14 @@ function App() {
           }
         />
 
-        { <Route
+         <Route
           path="/settings"
           element={
             <PageContainer>
               <Settings />
             </PageContainer>
           }
-        /> */}
+        /> 
 
          <Route path="/login" element={<Login />} /> 
 
