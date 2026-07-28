@@ -23,6 +23,7 @@ from src.shares.controller import router as shares_router
 from src.todos.controller import router as todos_router
 from src.users.controller import router as users_router
 from src.security.controller import router as security_router
+from src.file_summaries.controller import router as file_summaries_router
 
 
 def create_app() -> FastAPI:
@@ -70,6 +71,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router,           prefix="/api/auth",           tags=["Auth"])
     app.include_router(users_router,          prefix="/api/users",          tags=["Users"])
     app.include_router(files_router,          prefix="/api/files",          tags=["Files"])
+    app.include_router(file_summaries_router, prefix="/api/files",          tags=["File summaries"])
     app.include_router(folders_router,        prefix="/api/folders",        tags=["Folders"])
     app.include_router(shares_router,         prefix="/api/shares",         tags=["Sharing"])
     app.include_router(notifications_router,  prefix="/api/notifications",  tags=["Notifications"])

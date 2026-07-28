@@ -37,6 +37,13 @@ DEFAULT_RATE_LIMITS = {
     "audit_log":         {"requests": 20, "window_seconds": 60},
     "performance":       {"requests": 30, "window_seconds": 60},
     "default":           {"requests": 60, "window_seconds": 60},
+    "verify_file":       {"requests": 10, "window_seconds": 60},
+    "suggest_password":  {"requests": 15, "window_seconds": 60},
+    "audit_log":         {"requests": 20, "window_seconds": 60},
+    "performance":       {"requests": 30, "window_seconds": 60},
+    # Summary generation / regeneration endpoint
+    "file_summary":      {"requests": 5,  "window_seconds": 60},
+    "default":           {"requests": 60, "window_seconds": 60},
 }
 
 __all__ = [
