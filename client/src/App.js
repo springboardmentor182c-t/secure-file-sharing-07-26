@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./features/dashboard/Dashboard";
 import ActivityMonitorPage from "./pages/ActivityMonitorPage";
+import Analytics from "./features/analytics/Analytics";
 
 function App() {
   return (
@@ -60,6 +61,9 @@ function App() {
             </PageContainer>
           }
         />
+
+        <Route path="/analytics" 
+        element={<PageContainer><Analytics /></PageContainer>} />
 
         {/* Auth Routes (Without Sidebar/Navbar) */}
         <Route path="/login" element={<Login />} />
