@@ -1,0 +1,42 @@
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: trustshare_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sharedlinks_user
+      POSTGRES_PASSWORD: sharedlinks_pass
+      POSTGRES_DB: sharedlinks_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - trustshare_pgdata:/var/lib/postgresql/data
+
+
+  backend:
+    build:
+      context: ./server
+    container_name: trustshare_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://sharedlinks_user:sharedlinks_pass@postgres:5432/sharedlinks_db
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+
+
+  frontend:
+    build:
+      context: ./client
+    container_name: trustshare_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+
+volumes:
+  trustshare_pgdata:
