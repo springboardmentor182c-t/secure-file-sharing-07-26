@@ -11,7 +11,6 @@ const api = axios.create({
   },
 });
 
-
 // ─────────────────────────────────────────────
 // Attach JWT token automatically
 // ─────────────────────────────────────────────
@@ -244,7 +243,6 @@ export const authAPI = {
 
 export const filesAPI = {
 
-
   list: (folderId) =>
     api.get(
       "/api/files/",
@@ -255,15 +253,18 @@ export const filesAPI = {
       }
     ),
 
-
   upload: (
     formData,
+    folderId,
+    encrypted,
+    mimetype,
     onProgress
   ) =>
     api.post(
       "/api/files/upload",
       formData,
       {
+        params: { folder_id: folderId, encrypted, mimetype },
         headers:{
           "Content-Type":
           "multipart/form-data",
@@ -304,6 +305,8 @@ export const filesAPI = {
 
   delete:(id)=>
     api.delete(`/api/files/${id}`),
+
+  toggleEncrypt: (id) => api.patch(`/api/files/${id}/encrypt`),
 
 };
 

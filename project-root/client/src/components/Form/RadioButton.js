@@ -1,35 +1,44 @@
 import React from 'react';
 
 /**
- * RadioButton component
- * @param {string} id - Radio input ID
- * @param {string} name - Radio group name
- * @param {string} label - Radio label text
- * @param {string} value - Radio value
- * @param {string} checked - Currently selected value
- * @param {function} onChange - Change handler
- * @param {boolean} disabled - Disabled state
+ * RadioButton – renders a single radio button with label.
+ *
+ * Props:
+ *   name        – name attribute for grouping radios.
+ *   value       – value of this radio item.
+ *   checked     – boolean indicating if this radio is selected.
+ *   onChange    – handler called with the selected value.
+ *   label       – optional label displayed next to the radio.
+ *   disabled    – disables the radio when true.
+ *   className   – additional CSS classes for the wrapper.
  */
-const RadioButton = ({ id, name, label, value, checked, onChange, disabled = false }) => {
+export default function RadioButton({
+  name,
+  value,
+  checked = false,
+  onChange,
+  label,
+  disabled = false,
+  className = ''
+}) {
+  const handleChange = () => {
+    if (onChange) onChange(value);
+  };
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '6px 0' }}>
+    <label
+      className={`inline-flex items-center cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`.trim()}
+    >
       <input
         type="radio"
-        id={id}
         name={name}
         value={value}
-        checked={checked === value}
-        onChange={onChange}
+        checked={checked}
+        onChange={handleChange}
         disabled={disabled}
-        style={{ width: '16px', height: '16px', cursor: disabled ? 'not-allowed' : 'pointer', accentColor: 'var(--primary)' }}
+        className="form-radio h-4 w-4 text-indigo-600 border-gray-300"
       />
-      {label && (
-        <label htmlFor={id} style={{ cursor: disabled ? 'not-allowed' : 'pointer', color: disabled ? 'var(--text-muted)' : 'var(--text)' }}>
-          {label}
-        </label>
-      )}
-    </div>
+      {label && <span className="ml-2 text-sm text-gray-700">{label}</span>}
+    </label>
   );
-};
-
-export default RadioButton;
+}

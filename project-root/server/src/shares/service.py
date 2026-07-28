@@ -1,117 +1,92 @@
+import uuid
 import secrets
 from datetime import datetime, timezone
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
+
 from src.entities.share_link import ShareLink
 from src.entities.file import File
-from src.entities.audit_log import AuditLog
-from src.auth.dependencies import hash_password, verify_password
-from pydantic import BaseModel
-from typing import Optional
+from src.entities.user import User
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-class ShareCreate(BaseModel):
-    file_id: int
-    permission: str = "view"
-    expires_at: Optional[datetime] = None
-    password: Optional[str] = None
-    max_views: Optional[int] = None
-
-
-class ShareOut(BaseModel):
-    id: int
-    file_id: int
-    token: str
-    permission: str
-    expires_at: Optional[datetime]
-    access_count: int
-    max_views: Optional[int]
-    is_active: bool
-    created_at: datetime
-    link: str
-
-    class Config:
-        from_attributes = True
-
-
-def _build_link(token: str) -> str:
-    return f"https://trust.sh/s/{token}"
-
-
-def create_share(db: Session, data: ShareCreate, user_id: int) -> ShareOut:
-    # Verify file ownership
-    file = db.query(File).filter(File.id == data.file_id, File.is_deleted == False).first()
-    if not file:
-        raise HTTPException(status_code=404, detail="File not found")
-
-    token = secrets.token_urlsafe(12)
-    share = ShareLink(
-        file_id=data.file_id,
-        token=token,
-        permission=data.permission,
-        expires_at=data.expires_at,
-        password_hash=hash_password(data.password) if data.password else None,
-        max_views=data.max_views,
-        created_by=user_id,
-    )
-    db.add(share)
-
-    log = AuditLog(user_id=user_id, action="SHARE", resource_type="file",
-                   resource_id=data.file_id, resource_name=file.original_name, level="info")
-    db.add(log)
-    db.commit()
-    db.refresh(share)
-    return _to_out(share)
-
-
-def list_shares(db: Session, user_id: int) -> list[ShareOut]:
-    shares = (
+def list_shares(db: Session, user: User) -> list[ShareLink]:
+    return (
         db.query(ShareLink)
-        .join(File, ShareLink.file_id == File.id)
-        .filter(ShareLink.created_by == user_id)
+        .filter(ShareLink.owner_id == user.id, ShareLink.is_active == True)  # noqa: E712
         .order_by(ShareLink.created_at.desc())
         .all()
     )
-    return [_to_out(s) for s in shares]
 
 
-def revoke_share(db: Session, share_id: int, user_id: int) -> None:
-    share = db.query(ShareLink).filter(ShareLink.id == share_id, ShareLink.created_by == user_id).first()
-    if not share:
-        raise HTTPException(status_code=404, detail="Share not found")
-    share.is_active = False
-    log = AuditLog(user_id=user_id, action="REVOKE_SHARE", resource_type="share_link",
-                   resource_id=share_id, level="warn")
-    db.add(log)
-    db.commit()
+def create_share(
+    db: Session,
+    user: User,
+    file_id: uuid.UUID,
+    expires_at: datetime | None,
+    password: str | None,
+    max_access: int | None,
+) -> ShareLink:
+    # Verify file ownership
+    file = db.query(File).filter(File.id == file_id, File.owner_id == user.id).first()
+    if not file:
+        return None
 
+    token = secrets.token_urlsafe(24)
+    pw_hash = pwd_context.hash(password) if password else None
 
-def access_share(db: Session, token: str, password: str | None = None) -> ShareOut:
-    share = db.query(ShareLink).filter(ShareLink.token == token, ShareLink.is_active == True).first()
-    if not share:
-        raise HTTPException(status_code=404, detail="Share link not found or revoked")
-    if share.expires_at and share.expires_at < datetime.now(timezone.utc):
-        raise HTTPException(status_code=410, detail="Share link has expired")
-    if share.max_views and share.access_count >= share.max_views:
-        raise HTTPException(status_code=410, detail="Share link view limit reached")
-    if share.password_hash:
-        if not password or not verify_password(password, share.password_hash):
-            raise HTTPException(status_code=401, detail="Invalid share password")
-    share.access_count += 1
-    db.commit()
-    return _to_out(share)
-
-
-def _to_out(share: ShareLink) -> ShareOut:
-    return ShareOut(
-        id=share.id,
-        file_id=share.file_id,
-        token=share.token,
-        permission=share.permission,
-        expires_at=share.expires_at,
-        access_count=share.access_count,
-        max_views=share.max_views,
-        is_active=share.is_active,
-        created_at=share.created_at,
-        link=_build_link(share.token),
+    link = ShareLink(
+        file_id=file_id,
+        owner_id=user.id,
+        token=token,
+        password_hash=pw_hash,
+        expires_at=expires_at,
+        max_access=max_access,
     )
+    db.add(link)
+    db.commit()
+    db.refresh(link)
+    return link
+
+
+def revoke_share(db: Session, share_id: uuid.UUID, user: User) -> bool:
+    link = db.query(ShareLink).filter(
+        ShareLink.id == share_id,
+        ShareLink.owner_id == user.id,
+    ).first()
+    if not link:
+        return False
+    link.is_active = False
+    db.commit()
+    return True
+
+
+def access_share(db: Session, token: str, password: str | None) -> tuple[ShareLink | None, str | None]:
+    """Returns (share_link, error_message). On success error is None."""
+    link = db.query(ShareLink).filter(
+        ShareLink.token == token,
+        ShareLink.is_active == True,  # noqa: E712
+    ).first()
+    if not link:
+        return None, "Share link not found or revoked"
+
+    if link.expires_at:
+        exp = link.expires_at
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) > exp:
+            return None, "Share link has expired"
+
+    if link.max_access and link.access_count >= link.max_access:
+        return None, "Access limit reached"
+
+    if link.password_hash:
+        if not password or not pwd_context.verify(password, link.password_hash):
+            return None, "Invalid password"
+
+    # Record access
+    link.access_count += 1
+    db.commit()
+    db.refresh(link)
+    return link, None

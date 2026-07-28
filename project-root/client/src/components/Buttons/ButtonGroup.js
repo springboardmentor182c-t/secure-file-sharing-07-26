@@ -1,48 +1,40 @@
 import React from 'react';
 
 /**
- * ButtonGroup component — renders a group of buttons in a horizontal row
- * @param {Array<{label: string, onClick: function, variant: string, disabled: boolean}>} buttons
- * @param {string} gap - Gap between buttons (default: '8px')
+ * ButtonGroup – groups Button components (or any clickable elements) together.
+ *
+ * Props:
+ *   children   – button elements to render inside the group.
+ *   vertical   – if true, stacks buttons vertically; default is horizontal.
+ *   className  – additional CSS classes for custom styling.
  */
-const ButtonGroup = ({ buttons = [], gap = '8px' }) => {
-  const getVariantStyle = (variant = 'primary') => {
-    const base = {
-      padding: '10px 20px',
-      borderRadius: '8px',
-      border: 'none',
-      fontSize: '14px',
-      fontWeight: 600,
-      cursor: 'pointer',
-      transition: 'all 0.2s ease',
-    };
-    const variants = {
-      primary: { background: 'var(--primary)', color: '#fff' },
-      secondary: { background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' },
-      danger: { background: 'var(--danger)', color: '#fff' },
-      ghost: { background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)' },
-    };
-    return { ...base, ...(variants[variant] || variants.primary) };
-  };
+export default function ButtonGroup({ children, vertical = false, className = '' }) {
+  const flexDirection = vertical ? 'flex-col' : 'flex-row';
+  const count = React.Children.count(children);
 
   return (
-    <div style={{ display: 'flex', gap, flexWrap: 'wrap', alignItems: 'center' }}>
-      {buttons.map((btn, idx) => (
-        <button
-          key={idx}
-          onClick={btn.onClick}
-          disabled={btn.disabled}
-          style={{
-            ...getVariantStyle(btn.variant),
-            opacity: btn.disabled ? 0.5 : 1,
-            cursor: btn.disabled ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {btn.label}
-        </button>
-      ))}
+    <div
+      className={`inline-flex ${flexDirection} ${className}`.trim()}
+      role="group"
+    >
+      {React.Children.map(children, (child, index) => {
+        if (!React.isValidElement(child)) return child;
+        const isFirst = index === 0;
+        const isLast = index === count - 1;
+        // Apply rounded corners on the outermost buttons and remove left border between siblings.
+        const extraClasses = [];
+        if (!vertical) {
+          if (isFirst) extraClasses.push('rounded-l-md');
+          if (isLast) extraClasses.push('rounded-r-md');
+          extraClasses.push('border-l-0');
+        } else {
+          if (isFirst) extraClasses.push('rounded-t-md');
+          if (isLast) extraClasses.push('rounded-b-md');
+          extraClasses.push('border-t-0');
+        }
+        const combinedClass = `${child.props.className || ''} ${extraClasses.join(' ')}`.trim();
+        return React.cloneElement(child, { className: combinedClass });
+      })}
     </div>
   );
-};
-
-export default ButtonGroup;
+}

@@ -1,31 +1,9 @@
-// Application-wide constants
-
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-
-export const ROUTES = {
-  HOME: '/',
-  LOGIN: '/login',
-  SIGNUP: '/signup',
-  SETTINGS: '/settings',
-};
-
-export const STATUS = {
-  IDLE: 'idle',
-  LOADING: 'loading',
-  SUCCESS: 'success',
-  ERROR: 'error',
-};
-
-export const LOCAL_STORAGE_KEYS = {
-  AUTH_TOKEN: 'auth_token',
-  USER: 'user',
-  THEME: 'theme',
-};
-
-export const HTTP_METHODS = {
-  GET: 'GET',
-  POST: 'POST',
-  PUT: 'PUT',
-  PATCH: 'PATCH',
-  DELETE: 'DELETE',
+export const APP_NAME = 'SecureShare';
+export const SUPPORTED_LOCALES = ['en-US', 'fr-FR', 'de-DE'];
+export const DEFAULT_LOCALE = 'en-US';
+export const THEME_COLORS = {
+  primary: '#0d6efd', // Bootstrap primary blue
+  accent: '#20c997', // teal accent
+  dark: '#212529',
+  light: '#f8f9fa',
 };

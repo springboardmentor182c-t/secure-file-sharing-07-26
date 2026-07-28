@@ -1,31 +1,42 @@
 import React from 'react';
 
 /**
- * Checkbox component
- * @param {string} id - Unique identifier
- * @param {string} label - Checkbox label text
- * @param {boolean} checked - Controlled checked state
- * @param {function} onChange - Change handler
- * @param {boolean} disabled - Disabled state
+ * Checkbox – a reusable checkbox input with label.
+ *
+ * Props:
+ *   id          – unique identifier for the input.
+ *   label       – text displayed next to the checkbox.
+ *   checked     – boolean indicating checked state.
+ *   onChange    – handler called with the new checked value.
+ *   disabled    – disables the checkbox when true.
+ *   className   – additional CSS classes for the wrapper.
  */
-const Checkbox = ({ id, label, checked = false, onChange, disabled = false }) => {
+export default function Checkbox({
+  id,
+  label,
+  checked = false,
+  onChange,
+  disabled = false,
+  className = ''
+}) {
+  const handleChange = (e) => {
+    if (onChange) onChange(e.target.checked);
+  };
+
   return (
-    <div className="checkbox-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '6px 0' }}>
+    <label
+      htmlFor={id}
+      className={`inline-flex items-center cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`.trim()}
+    >
       <input
         type="checkbox"
         id={id}
         checked={checked}
-        onChange={onChange}
+        onChange={handleChange}
         disabled={disabled}
-        style={{ width: '16px', height: '16px', cursor: disabled ? 'not-allowed' : 'pointer', accentColor: 'var(--primary)' }}
+        className="form-checkbox h-4 w-4 text-indigo-600 border-gray-300 rounded"
       />
-      {label && (
-        <label htmlFor={id} style={{ cursor: disabled ? 'not-allowed' : 'pointer', color: disabled ? 'var(--text-muted)' : 'var(--text)' }}>
-          {label}
-        </label>
-      )}
-    </div>
+      {label && <span className="ml-2 text-sm text-gray-700">{label}</span>}
+    </label>
   );
-};
-
-export default Checkbox;
+}

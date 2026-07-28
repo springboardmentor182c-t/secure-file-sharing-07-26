@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AnalyticsProvider } from './context/AnalyticsContext';
+import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './layout/ProtectedRoute';
 import Navbar from './layout/Navbar';
 import Sidebar from './layout/Sidebar';
@@ -20,22 +21,30 @@ import Settings from './pages/Settings';
 import { notificationsAPI } from './utils/api';
 import './assets/global.css';
 
+// AppShell: wraps protected pages with layout chrome.
 function AppShell() {
-  const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [collapsed, setCollapsed]     = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-    const load = () => notificationsAPI.list().then(r => setUnreadCount(r.data.filter(n => !n.is_read).length)).catch(() => {});
-    load();
-    const iv = setInterval(load, 30000);
-    return () => clearInterval(iv);
-  }, [user]);
+    notificationsAPI.list()
+      .then(res => {
+        const items = res.data || [];
+        setUnreadCount(items.filter(n => !n.read).length);
+      })
+      .catch(() => {});
+  }, []);
+
+  const sidebarW = collapsed ? 68 : 240;
 
   return (
     <div className="app-shell">
-      <Sidebar unreadCount={unreadCount} />
-      <div className="main-area">
+      <Sidebar
+        unreadCount={unreadCount}
+        collapsed={collapsed}
+        onToggle={() => setCollapsed(c => !c)}
+      />
+      <div className="main-area" style={{ marginLeft: sidebarW }}>
         <Navbar unreadCount={unreadCount} />
         <main className="page-body">
           <Routes>
@@ -56,28 +65,34 @@ function AppShell() {
   );
 }
 
+
 export default function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/login"  element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/oauth/callback" element={<OAuthCallback />} />
+    <AnalyticsProvider>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login"           element={<Login />} />
+            <Route path="/signup"          element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/oauth/callback"  element={<OAuthCallback />} />
 
-          {/* Protected routes */}
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <AppShell />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </Router>
-    </AuthProvider>
+            {/* Protected shell routes */}
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <AppShell />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Default redirect */}
+            <Route path="/" element={<Navigate to="/files" replace />} />
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </AnalyticsProvider>
   );
 }

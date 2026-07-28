@@ -1,53 +1,68 @@
+import uuid
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from src.entities.notification import Notification
-from pydantic import BaseModel
-from datetime import datetime
-from typing import Optional
+from src.entities.user import User
 
 
-class NotificationOut(BaseModel):
-    id: int
-    type: str
-    category: str
-    title: str
-    message: str
-    icon: str
-    is_read: bool
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-def get_notifications(db: Session, user_id: int) -> list[NotificationOut]:
+def list_notifications(db: Session, user: User) -> list[Notification]:
     return (
         db.query(Notification)
-        .filter(Notification.user_id == user_id)
+        .filter(Notification.user_id == user.id)
         .order_by(Notification.created_at.desc())
-        .limit(50)
+        .limit(100)
         .all()
     )
 
 
-def mark_read(db: Session, notif_id: int, user_id: int) -> None:
-    n = db.query(Notification).filter(Notification.id == notif_id, Notification.user_id == user_id).first()
+def mark_read(db: Session, notif_id: uuid.UUID, user: User) -> Notification | None:
+    n = db.query(Notification).filter(
+        Notification.id == notif_id,
+        Notification.user_id == user.id,
+    ).first()
     if n:
-        n.is_read = True
+        n.read = True
         db.commit()
+        db.refresh(n)
+    return n
 
 
-def mark_all_read(db: Session, user_id: int) -> None:
-    db.query(Notification).filter(Notification.user_id == user_id, Notification.is_read == False).update({"is_read": True})
+def mark_all_read(db: Session, user: User) -> int:
+    count = (
+        db.query(Notification)
+        .filter(Notification.user_id == user.id, Notification.read == False)  # noqa: E712
+        .update({"read": True})
+    )
     db.commit()
+    return count
 
 
-def delete_notification(db: Session, notif_id: int, user_id: int) -> None:
-    db.query(Notification).filter(Notification.id == notif_id, Notification.user_id == user_id).delete()
+def delete_notification(db: Session, notif_id: uuid.UUID, user: User) -> bool:
+    n = db.query(Notification).filter(
+        Notification.id == notif_id,
+        Notification.user_id == user.id,
+    ).first()
+    if not n:
+        return False
+    db.delete(n)
     db.commit()
+    return True
 
 
-def create_notification(db: Session, user_id: int, type: str, category: str, title: str, message: str, icon: str = "🔔") -> None:
-    """Helper used by other services to push notifications."""
-    n = Notification(user_id=user_id, type=type, category=category, title=title, message=message, icon=icon)
+def create_notification(
+    db: Session,
+    user_id: uuid.UUID,
+    title: str,
+    message: str,
+    type: str = "info",
+) -> Notification:
+    n = Notification(
+        user_id=user_id,
+        title=title,
+        message=message,
+        type=type,
+    )
     db.add(n)
     db.commit()
+    db.refresh(n)
+    return n

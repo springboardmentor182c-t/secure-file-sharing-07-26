@@ -1,22 +1,24 @@
+import uuid
 from datetime import datetime
 from typing import Optional
-
-from fastapi import APIRouter, Depends, Query, status
-from pydantic import BaseModel, EmailStr, Field
+from fastapi import APIRouter, Depends,Query, HTTPException, status
 from sqlalchemy.orm import Session
+from pydantic import BaseModel, EmailStr, Field
 
 from src.admin import service
-from src.auth.dependencies import require_admin
 from src.database.core import get_db
+from src.auth.dependencies import get_current_user, require_admin
 from src.entities.user import User
+from src.users import service
 
 router = APIRouter()
 
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
 
+# ── Pydantic ──────────────────────────────────────────────────────────────────
 class UserAdminOut(BaseModel):
-    id: int
+    id: uuid.UUID
     name: str
     email: str
     role: str
@@ -26,7 +28,7 @@ class UserAdminOut(BaseModel):
     storage_used: int
     storage_quota: int
     avatar_color: Optional[str]
-    created_at: Optional[datetime]
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -113,6 +115,7 @@ def get_stats(db: Session = Depends(get_db), _admin: User = Depends(require_admi
     return service.get_stats(db)
 
 
+# ── Routes ────────────────────────────────────────────────────────────────────
 @router.get("/users", response_model=list[UserAdminOut])
 def list_all_users(
     search: Optional[str] = Query(None, description="Match against name or email"),
@@ -133,6 +136,12 @@ def invite_user(
     """Create an account and return a one-time password for the admin to hand over."""
     user, temp_password = service.invite_user(db, admin, data)
     return {"user": user, "temp_password": temp_password}
+def list_users(
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Admin: list all users."""
+    return service.list_users(db)
 
 
 @router.patch("/users/{user_id}", response_model=UserAdminOut)
@@ -142,16 +151,28 @@ def update_user(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
-    return service.update_user(db, admin, user_id, data)
+      """Admin: update a user's role, plan, active status, or storage quota."""
+    user = service.update_user(
+        db, user_id,
+        role=body.role,
+        plan=body.plan,
+        is_active=body.is_active,
+        storage_quota=body.storage_quota,
+    )
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return user
 
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(
     user_id: int,
+    user_id: uuid.UUID,
+    body: UpdateUserRequest,
+    _: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    admin: User = Depends(require_admin),
 ):
-    service.delete_user(db, admin, user_id)
+  return service.delete_user(db, admin, user_id)
 
 
 @router.get("/roles", response_model=list[RoleOut])

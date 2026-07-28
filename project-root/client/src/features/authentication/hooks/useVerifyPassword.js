@@ -1,26 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 /**
- * useVerifyPassword — validates password strength and match
- * @returns {{ verifyStrength: function, verifyMatch: function, strength: string }}
+ * useVerifyPassword – validates a password according to common security rules.
+ *
+ * Returns an object with boolean flags and an overall `isValid` field.
+ *
+ * Rules:
+ *   - Minimum length 8 characters
+ *   - At least one uppercase letter
+ *   - At least one lowercase letter
+ *   - At least one numeric digit
+ *   - At least one special character
  */
-export const useVerifyPassword = () => {
-  const [strength, setStrength] = useState('');
+export default function useVerifyPassword(password) {
+  const [state, setState] = useState({
+    lengthOk: false,
+    hasUpper: false,
+    hasLower: false,
+    hasNumber: false,
+    hasSpecial: false,
+    isValid: false,
+  });
 
-  const verifyStrength = (password) => {
-    if (!password) return setStrength('');
-    if (password.length < 6) return setStrength('weak');
-    const hasUpper = /[A-Z]/.test(password);
-    const hasNumber = /\d/.test(password);
-    const hasSymbol = /[^a-zA-Z0-9]/.test(password);
-    if (password.length >= 12 && hasUpper && hasNumber && hasSymbol) return setStrength('strong');
-    if (password.length >= 8 && (hasNumber || hasSymbol)) return setStrength('medium');
-    return setStrength('weak');
-  };
+  useEffect(() => {
+    const lengthOk = password?.length >= 8;
+    const hasUpper = /[A-Z]/.test(password || '');
+    const hasLower = /[a-z]/.test(password || '');
+    const hasNumber = /[0-9]/.test(password || '');
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password || '');
+    const isValid = lengthOk && hasUpper && hasLower && hasNumber && hasSpecial;
+    setState({ lengthOk, hasUpper, hasLower, hasNumber, hasSpecial, isValid });
+  }, [password]);
 
-  const verifyMatch = (password, confirmPassword) => {
-    return password === confirmPassword;
-  };
-
-  return { strength, verifyStrength, verifyMatch };
-};
+  return state;
+}

@@ -1,173 +1,314 @@
-import React, { useEffect, useState } from 'react';
-import { analyticsAPI } from '../utils/api';
-import { useAuth } from '../context/AuthContext';
+import React, { useEffect, useState } from "react";
+import "./Analytics.css";
+import { analyticsAPI } from "../utils/api";
 import {
-  Chart as ChartJS,
-  CategoryScale, LinearScale, BarElement, PointElement, LineElement,
-  ArcElement, Title, Tooltip, Legend, Filler,
-} from 'chart.js';
-import { Bar, Line, Doughnut } from 'react-chartjs-2';
+  FaFolder,
+  FaLock,
+  FaFile,
+  FaHdd,
+  FaImage,
+  FaFilePdf,
+  FaFileVideo,
+  FaFileAudio,
+  FaFileArchive,
+  FaTable,
+  FaUpload,
+  FaDownload,
+  FaShareAlt,
+  FaTrash,
+  FaSignInAlt,
+  FaSyncAlt,
+  FaInfoCircle,
+  FaCheckCircle,
+  FaExclamationTriangle,
+  FaTimesCircle,
+} from "react-icons/fa";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler);
-
-const CHART_OPTS = {
-  responsive: true, maintainAspectRatio: false,
-  plugins: { legend: { display: false } },
-  scales: {
-    x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b', font: { size: 11 } } },
-    y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b', font: { size: 11 } } },
-  },
+// ── Colour palette for bar chart ────────────────────────────────────────────
+const BAR_COLORS = {
+  uploads:    "#3b82f6",
+  downloads:  "#8b5cf6",
+  encryptions:"#10b981",
 };
 
+// ── File-type colours & icons ────────────────────────────────────────────────
+const TYPE_META = {
+  Documents:   { icon: <FaFilePdf />,    color: "#f43f5e", bg: "rgba(244,63,94,.12)"   },
+  Images:      { icon: <FaImage />,      color: "#3b82f6", bg: "rgba(59,130,246,.12)"  },
+  Videos:      { icon: <FaFileVideo />,  color: "#8b5cf6", bg: "rgba(139,92,246,.12)"  },
+  Audio:       { icon: <FaFileAudio />,  color: "#06b6d4", bg: "rgba(6,182,212,.12)"   },
+  Spreadsheets:{ icon: <FaTable />,      color: "#10b981", bg: "rgba(16,185,129,.12)"  },
+  Archives:    { icon: <FaFileArchive />,color: "#f59e0b", bg: "rgba(245,158,11,.12)"  },
+  Other:       { icon: <FaFile />,       color: "#64748b", bg: "rgba(100,116,139,.12)" },
+};
+
+// ── KPI icon & colour look-up ────────────────────────────────────────────────
+const KPI_META = [
+  { icon: <FaFile />,   bg: "rgba(59,130,246,.12)",  color: "#3b82f6" },
+  { icon: <FaHdd />,    bg: "rgba(139,92,246,.12)",  color: "#8b5cf6" },
+  { icon: <FaLock />,   bg: "rgba(16,185,129,.12)",  color: "#10b981" },
+  { icon: <FaFolder />, bg: "rgba(6,182,212,.12)",   color: "#06b6d4" },
+];
+
+// ── Action icon look-up ──────────────────────────────────────────────────────
+function actionIcon(action) {
+  const a = action.toLowerCase();
+  if (a.includes("upload"))   return <FaUpload />;
+  if (a.includes("download")) return <FaDownload />;
+  if (a.includes("share"))    return <FaShareAlt />;
+  if (a.includes("delete"))   return <FaTrash />;
+  if (a.includes("login"))    return <FaSignInAlt />;
+  if (a.includes("encrypt"))  return <FaLock />;
+  return <FaFile />;
+}
+
+function levelIcon(level) {
+  switch (level) {
+    case "success": return <FaCheckCircle />;
+    case "warn":    return <FaExclamationTriangle />;
+    case "error":   return <FaTimesCircle />;
+    default:        return <FaInfoCircle />;
+  }
+}
+
+// ── Fallback data for offline / unauthenticated state ───────────────────────
+const FALLBACK = {
+  stats: [
+    { label: "Total Files",  value: "0",  sub: "0 uploads this week",    trend: "0%",  trend_up: true  },
+    { label: "Storage Used", value: "0 B",sub: "0% of 5.0 GB quota",     trend: "0%",  trend_up: true  },
+    { label: "Encrypted",    value: "0%", sub: "0 of 0 files",           trend: "0%",  trend_up: true  },
+    { label: "Folders",      value: "0",  sub: "Active directories",     trend: "0%",  trend_up: true  },
+  ],
+  activity: ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(l => ({
+    label: l, uploads: 0, downloads: 0, encryptions: 0,
+  })),
+  file_types: [],
+  recent_actions: [],
+  storage: { label: "0 B", bytes_used: 0, pct: 0, color: "#3b82f6" },
+  storage_quota_gb: 5,
+  storage_used_gb: 0,
+};
+
+// ── Main component ───────────────────────────────────────────────────────────
 export default function Analytics() {
-  const { user } = useAuth();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData]       = useState(FALLBACK);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    analyticsAPI.summary()
-      .then(res => setData(res.data))
-      .catch(() => setData(null))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400 }}><div className="spinner" /></div>;
-
-  const storagePct = data?.storage ? Math.round(data.storage.used_bytes / data.storage.quota_bytes * 100) : 0;
-
-  const uploadChart = {
-    labels: data?.upload_trend?.map(d => d.date) || [],
-    datasets: [{
-      data: data?.upload_trend?.map(d => d.count) || [],
-      backgroundColor: 'rgba(59,130,246,0.5)',
-      borderColor: '#3b82f6', borderWidth: 2,
-      borderRadius: 6, borderSkipped: false,
-    }],
+  const load = () => {
+    setLoading(true);
+    analyticsAPI
+      .summary()
+      .then(({ data: d }) => setData(d))
+      .catch(() => setData(FALLBACK))
+      .finally(() => setTimeout(() => setLoading(false), 700));
   };
 
-  const typeEntries = Object.entries(data?.top_file_types || {}).slice(0, 6);
-  const typeChart = {
-    labels: typeEntries.map(([k]) => k.toUpperCase()),
-    datasets: [{
-      data: typeEntries.map(([, v]) => v),
-      backgroundColor: ['rgba(59,130,246,.8)', 'rgba(139,92,246,.8)', 'rgba(16,185,129,.8)', 'rgba(245,158,11,.8)', 'rgba(236,72,153,.8)', 'rgba(6,182,212,.8)'],
-      borderColor: 'transparent', hoverOffset: 8,
-    }],
-  };
+  useEffect(() => { load(); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  const kpis = [
-    { icon: '📁', label: 'Total Files', value: data?.total_files ?? 0, color: 'var(--blue-400)', bg: 'rgba(59,130,246,.1)' },
-    { icon: '🔗', label: 'Active Links', value: data?.active_share_links ?? 0, color: 'var(--purple-400)', bg: 'rgba(139,92,246,.1)' },
-    { icon: '👁️', label: 'Share Views', value: data?.total_share_views ?? 0, color: 'var(--emerald-400)', bg: 'rgba(16,185,129,.1)' },
-    { icon: '💾', label: 'Storage Used', value: `${data?.storage?.used_gb ?? 0} GB`, color: 'var(--amber-400)', bg: 'rgba(245,158,11,.1)' },
-    { icon: '📊', label: 'Storage %', value: `${storagePct}%`, color: 'var(--cyan-400)', bg: 'rgba(6,182,212,.1)' },
-    { icon: '🛡️', label: 'Plan', value: user?.plan || 'free', color: 'var(--rose-400)', bg: 'rgba(244,63,94,.1)' },
-  ];
+  const { stats, activity, file_types, recent_actions, storage, storage_quota_gb, storage_used_gb } = data;
+
+  // Bar chart geometry
+  const maxVal = Math.max(
+    1,
+    ...activity.flatMap(a => [a.uploads, a.downloads, a.encryptions])
+  );
+
+  // Donut geometry
+  const R    = 56;
+  const CIRC = 2 * Math.PI * R;
+  const offset = CIRC * (1 - Math.min(storage.pct, 100) / 100);
 
   return (
-    <div className="fade-in">
-      <div className="flex justify-between items-center mb-6">
+    <div className="an-fade-in">
+      {/* ── Header ─────────────────────────────────────────────────────── */}
+      <div className="an-header">
         <div>
-          <h1 style={{ fontSize: '1.375rem', fontWeight: 800 }}>Analytics Dashboard</h1>
-          <p className="text-muted text-sm mt-1">Storage, usage & access insights from live data</p>
+          <h1>Analytics Dashboard</h1>
+          <p>Your storage, activity & file insights — updated in real-time</p>
         </div>
-        <select className="form-input" style={{ width: 'auto', padding: '8px 14px', fontSize: '.875rem' }}>
-          <option>Last 7 days</option>
-          <option>Last 30 days</option>
-        </select>
+        <button
+          className={`an-refresh-btn${loading ? " spinning" : ""}`}
+          onClick={load}
+        >
+          <FaSyncAlt />
+          {loading ? "Refreshing…" : "Refresh"}
+        </button>
       </div>
 
-      {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 12, marginBottom: 24 }}>
-        {kpis.map(k => (
-          <div key={k.label} className="card" style={{ padding: '16px 14px', textAlign: 'center' }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: k.bg, color: k.color, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', fontSize: '1rem' }}>{k.icon}</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: k.color }}>{k.value}</div>
-            <div style={{ fontSize: '.6875rem', color: 'var(--text-muted)', marginTop: 2 }}>{k.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Charts */}
-      <div className="grid-2 mb-6">
-        <div className="card card-pad">
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>📤 Daily Uploads</div>
-          <div className="text-xs text-muted mb-4">File upload activity by day</div>
-          <div style={{ height: 180 }}>
-            {data?.upload_trend?.length ? (
-              <Bar data={uploadChart} options={{ ...CHART_OPTS }} />
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>No uploads yet</div>
-            )}
-          </div>
-        </div>
-
-        <div className="card card-pad">
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>📂 File Types</div>
-          <div className="text-xs text-muted mb-4">Breakdown by file extension</div>
-          <div style={{ height: 180, display: 'flex', alignItems: 'center', gap: 20 }}>
-            {typeEntries.length ? (
-              <>
-                <div style={{ width: 150, height: 150, flexShrink: 0 }}>
-                  <Doughnut data={typeChart} options={{ responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { display: false } } }} />
+      {/* ── KPI cards ──────────────────────────────────────────────────── */}
+      <div className="an-kpi-grid">
+        {stats.map((s, i) => {
+          const m = KPI_META[i] || KPI_META[0];
+          return (
+            <div key={s.label} className="card an-kpi-card">
+              <div className="an-kpi-top">
+                <div className="an-kpi-icon" style={{ background: m.bg, color: m.color }}>
+                  {m.icon}
                 </div>
-                <div style={{ flex: 1 }}>
-                  {typeEntries.map(([k, v], i) => (
-                    <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '.8125rem' }}>
-                      <div className="flex items-center gap-2">
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: typeChart.datasets[0].backgroundColor[i] }} />
-                        <span className="text-secondary">.{k}</span>
-                      </div>
-                      <span style={{ fontWeight: 700 }}>{v}</span>
-                    </div>
+                <span className={s.trend_up ? "an-trend-up" : "an-trend-down"}>
+                  {s.trend_up ? "▲" : "▼"} {s.trend}
+                </span>
+              </div>
+              <div className="an-kpi-value">{s.value}</div>
+              <div className="an-kpi-label">{s.label}</div>
+              <div className="an-kpi-sub">{s.sub}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Mid row: bar chart + file types ────────────────────────────── */}
+      <div className="an-mid-row">
+
+        {/* Activity bar chart */}
+        <div className="card an-chart-card">
+          <h2>7-Day Activity</h2>
+          <div className="an-chart-wrap">
+            {activity.map(day => (
+              <div key={day.label} className="an-bar-group">
+                <div className="an-bars">
+                  {[
+                    { key: "uploads",    v: day.uploads,    color: BAR_COLORS.uploads    },
+                    { key: "downloads",  v: day.downloads,  color: BAR_COLORS.downloads  },
+                    { key: "encryptions",v: day.encryptions,color: BAR_COLORS.encryptions},
+                  ].map(({ key, v, color }) => (
+                    <div
+                      key={key}
+                      className="an-bar"
+                      title={`${key}: ${v}`}
+                      style={{
+                        height: `${Math.max(4, Math.round((v / maxVal) * 140))}px`,
+                        background: color,
+                        opacity: v === 0 ? 0.15 : 0.9,
+                      }}
+                    />
                   ))}
                 </div>
-              </>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', color: 'var(--text-muted)' }}>No files yet</div>
-            )}
+                <div className="an-bar-label">{day.label}</div>
+              </div>
+            ))}
           </div>
+          <div className="an-legend">
+            {Object.entries(BAR_COLORS).map(([k, c]) => (
+              <div key={k} className="an-legend-item">
+                <div className="an-legend-dot" style={{ background: c }} />
+                {k.charAt(0).toUpperCase() + k.slice(1)}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* File-type breakdown */}
+        <div className="card an-types-card">
+          <h2>File Types</h2>
+          {file_types.length === 0 ? (
+            <div className="an-empty">
+              <FaFile />
+              <span>No files uploaded yet</span>
+            </div>
+          ) : (
+            file_types.map(ft => {
+              const m = TYPE_META[ft.mime_group] || TYPE_META.Other;
+              return (
+                <div key={ft.mime_group} className="an-type-row">
+                  <div className="an-type-icon" style={{ background: m.bg, color: m.color }}>
+                    {m.icon}
+                  </div>
+                  <div className="an-type-info">
+                    <div className="an-type-name">{ft.mime_group}</div>
+                    <div className="an-type-bar-wrap">
+                      <div
+                        className="an-type-bar"
+                        style={{ width: `${ft.pct}%`, background: m.color }}
+                      />
+                    </div>
+                  </div>
+                  <div className="an-type-count">{ft.count}</div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 
-      {/* Storage + Security */}
-      <div className="grid-2">
-        <div className="card card-pad">
-          <div style={{ fontWeight: 700, marginBottom: 16 }}>💾 Storage Breakdown</div>
-          <div className="flex justify-between mb-2">
-            <span className="text-sm font-semibold">Storage Usage</span>
-            <span style={{ fontWeight: 800, color: 'var(--emerald-400)' }}>{storagePct}%</span>
-          </div>
-          <div className="progress-bar" style={{ height: 10, marginBottom: 16 }}>
-            <div className="progress-fill" style={{ width: `${storagePct}%` }} />
-          </div>
-          {[
-            { label: 'Used', value: `${data?.storage?.used_gb ?? 0} GB`, color: 'var(--blue-400)' },
-            { label: 'Available', value: `${(data?.storage?.quota_gb - data?.storage?.used_gb || 0).toFixed(1)} GB`, color: 'var(--emerald-400)' },
-            { label: 'Total Quota', value: `${data?.storage?.quota_gb ?? 5} GB`, color: 'var(--text-muted)' },
-          ].map(s => (
-            <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: '.875rem' }}>
-              <span className="text-secondary">{s.label}</span>
-              <span style={{ fontWeight: 700, color: s.color }}>{s.value}</span>
+      {/* ── Bottom row: storage donut + recent actions ──────────────────── */}
+      <div className="an-bot-row">
+
+        {/* Storage donut */}
+        <div className="card an-storage-card">
+          <h2>Storage</h2>
+          <div className="an-donut-wrap">
+            <svg width="140" height="140">
+              <defs>
+                <linearGradient id="anGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%"   stopColor="#3b82f6" />
+                  <stop offset="100%" stopColor="#8b5cf6" />
+                </linearGradient>
+              </defs>
+              <circle className="an-donut-track" cx="70" cy="70" r={R} />
+              <circle
+                className="an-donut-fill"
+                cx="70" cy="70" r={R}
+                strokeDasharray={CIRC}
+                strokeDashoffset={offset}
+              />
+            </svg>
+            <div className="an-donut-label">
+              <b>{storage.pct}%</b>
+              <span>used</span>
             </div>
-          ))}
+          </div>
+          <div className="an-storage-meta">
+            <div className="an-storage-row">
+              <span>Used</span>
+              <span>{storage.label}</span>
+            </div>
+            <div className="an-storage-row">
+              <span>Quota</span>
+              <span>{storage_quota_gb} GB</span>
+            </div>
+            <div className="an-storage-row">
+              <span>Free</span>
+              <span>
+                {Math.max(0, storage_quota_gb - storage_used_gb).toFixed(1)} GB
+              </span>
+            </div>
+          </div>
+          {storage.pct >= 80 && (
+            <span className="badge badge-amber" style={{ marginTop: 4 }}>
+              ⚠ Storage almost full
+            </span>
+          )}
+          {storage.pct < 80 && (
+            <span className="badge badge-emerald" style={{ marginTop: 4 }}>
+              ✓ Plenty of space
+            </span>
+          )}
         </div>
 
-        <div className="card card-pad">
-          <div style={{ fontWeight: 700, marginBottom: 16 }}>🛡️ Security Overview</div>
-          {[
-            { label: 'MFA Status', value: user?.mfa_enabled ? '✅ Enabled' : '⚠️ Disabled', ok: user?.mfa_enabled },
-            { label: 'File Encryption', value: '✅ AES-256', ok: true },
-            { label: 'Active Share Links', value: data?.active_share_links ?? 0, ok: true },
-            { label: 'Total Share Views', value: data?.total_share_views ?? 0, ok: true },
-            { label: 'Account Role', value: user?.role, ok: true },
-            { label: 'Compliance', value: 'SOC 2 · GDPR', ok: true },
-          ].map(s => (
-            <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: '.875rem' }}>
-              <span className="text-secondary">{s.label}</span>
-              <span style={{ fontWeight: 600, color: s.ok ? 'var(--emerald-400)' : 'var(--amber-400)' }}>{String(s.value)}</span>
+        {/* Recent actions */}
+        <div className="card an-recent-card">
+          <h2>Recent Activity</h2>
+          <div className="an-recent-sub">Last {recent_actions.length} recorded actions</div>
+          {recent_actions.length === 0 ? (
+            <div className="an-empty">
+              <FaInfoCircle />
+              <span>No activity recorded yet</span>
             </div>
-          ))}
+          ) : (
+            recent_actions.map((a, i) => (
+              <div key={i} className="an-action-row">
+                <div className={`an-action-icon ${a.level}`}>
+                  {levelIcon(a.level)}
+                </div>
+                <div className="an-action-info">
+                  <div className="an-action-name">{a.action}</div>
+                  <div className="an-action-res">{a.resource}</div>
+                </div>
+                <div className="an-action-time">{a.time_ago}</div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
