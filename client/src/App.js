@@ -1,8 +1,8 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PageContainer from "./layout/PageContainer";
+// Pages & Features
 
-// Pages
 import Home from "./pages/Home";
 import Settings from "./pages/Settings";
 import Securesharing from "./pages/Securesharing";
@@ -17,6 +17,8 @@ import Storage from "./pages/Storage";
 // Features
 import Dashboard from "./features/dashboard/Dashboard";
 import NotificationFeature from "./features/notifications/NotificationFeature";
+import Dashboard from "./features/dashboard/Dashboard";
+import ActivityMonitorPage from "./pages/ActivityMonitorPage";
 
 function App() {
   return (
@@ -112,6 +114,39 @@ function App() {
             </PageContainer>
           }
         />
+
+        <Route path="/login" element={<Login />} />
+
+        <Route
+          path="/dashboard"
+          element={
+            <PageContainer>
+              <Dashboard />
+            </PageContainer>
+          }
+        />
+
+        <Route
+          path="/notifications"
+          element={
+            <PageContainer>
+              <NotificationFeature />
+            </PageContainer>
+          }
+        />
+
+        <Route
+          path="/activity"
+          element={
+            <PageContainer>
+              <ActivityMonitorPage />
+            </PageContainer>
+          }
+        />
+        <Route
+  path="/admin"
+  element={<AdminDashboard />}
+/>
 
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
