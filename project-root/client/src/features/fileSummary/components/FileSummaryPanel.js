@@ -25,7 +25,6 @@ export default function FileSummaryPanel({ file, onClose }) {
         {!summary && !loading && (
           <form className="summary-options" onSubmit={event => { event.preventDefault(); generate(options); }}>
             <label>Summary length<select value={options.summary_length} onChange={event => setOptions({ ...options, summary_length: event.target.value })}><option value="short">Short</option><option value="standard">Standard</option><option value="detailed">Detailed</option></select></label>
-            <label>Language<select value={options.output_language} onChange={event => setOptions({ ...options, output_language: event.target.value })}><option value="original">Original</option><option value="English">English</option><option value="Hindi">Hindi</option></select></label>
             <label>Format<select value={options.output_format} onChange={event => setOptions({ ...options, output_format: event.target.value })}><option value="paragraph">Paragraph</option><option value="bullet_points">Bullet points</option></select></label>
             <p className="summary-privacy">Secure processing: your encrypted file is decrypted only in backend memory. External AI is disabled unless explicitly configured.</p>
             <button className="btn btn-primary" type="submit">Generate summary</button>

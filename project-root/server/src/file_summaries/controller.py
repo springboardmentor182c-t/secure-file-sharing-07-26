@@ -15,7 +15,8 @@ def _rate_limit(user_id: int, db: Session):
     result = check_rate_limit(str(user_id), "file_summary", db)
     if not result["allowed"]:
         from fastapi import HTTPException
-        raise HTTPException(status_code=429, detail="Too many summary requests. Please try again later.")
+        retry_after = max(1, int(result["reset_in"] + 0.999))
+        raise HTTPException(status_code=429, detail=f"Too many summary requests. Please try again in {retry_after} seconds.")
 
 
 @router.post("/{file_id}/summaries", response_model=SummaryOut)
@@ -65,4 +66,3 @@ def regenerate(file_id: int, summary_id: int, background_tasks: BackgroundTasks,
 def delete(file_id: int, summary_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     service.delete_summary(db, file_id, summary_id, current_user.id)
     return Response(status_code=204)
-

@@ -4,7 +4,7 @@ from typing import Literal, Optional
 from pydantic import BaseModel, ConfigDict
 
 SummaryLength = Literal["short", "standard", "detailed"]
-OutputLanguage = Literal["original", "English", "Hindi"]
+OutputLanguage = Literal["original"]
 OutputFormat = Literal["paragraph", "bullet_points"]
 
 

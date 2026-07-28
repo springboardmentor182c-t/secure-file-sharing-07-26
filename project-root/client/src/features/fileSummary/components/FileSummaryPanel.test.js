@@ -11,9 +11,13 @@ test('shows accessible generation options and submits them', () => {
   render(<FileSummaryPanel file={{ id: 7, original_name: 'report.pdf' }} onClose={jest.fn()} />);
   expect(screen.getByRole('dialog')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Generate summary' })).toBeInTheDocument();
-  fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'Hindi' } });
+  fireEvent.change(screen.getByLabelText('Summary length'), { target: { value: 'detailed' } });
+  fireEvent.change(screen.getByLabelText('Format'), { target: { value: 'bullet_points' } });
   fireEvent.click(screen.getByRole('button', { name: 'Generate summary' }));
-  expect(generate).toHaveBeenCalledWith(expect.objectContaining({ output_language: 'Hindi' }));
+  expect(generate).toHaveBeenCalledWith(expect.objectContaining({
+    summary_length: 'detailed', output_format: 'bullet_points', output_language: 'original',
+  }));
+  expect(screen.queryByLabelText('Language')).not.toBeInTheDocument();
 });
 
 test('renders completed summary, key points and copy action', async () => {
