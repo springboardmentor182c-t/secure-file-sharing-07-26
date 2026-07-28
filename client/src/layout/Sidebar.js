@@ -13,123 +13,96 @@ import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettin
 import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 
-
 const menuItems = [
-    {
-        name: "Dashboard",
-        path: "/",
-        icon: <DashboardIcon />
-    },
-    {
-        name: "File Management",
-        path: "/files",
-        icon: <FolderOutlinedIcon />
-    },
-    {
-        name: "Upload",
-        path: "/upload",
-        icon: <UploadOutlinedIcon />
-    },
-    {
-        name: "Secure Sharing",
-        path: "/sharing",
-        icon: <ShareOutlinedIcon />
-    },
-    {
-        name: "Encryption & Security",
-        path: "/security",
-        icon: <SecurityOutlinedIcon />
-    },
-    {
-        name: "Activity Monitor",
-        path: "/activity",
-        icon: <MonitorHeartOutlinedIcon />
-    },
-    {
-        name: "Notifications",
-        path: "/notifications",
-        icon: <NotificationsNoneOutlinedIcon />
-    },
-    {
-        name: "Analytics",
-        path: "/analytics",
-        icon: <BarChartOutlinedIcon />
-    },
-    {
-        name: "Admin",
-        path: "/admin",
-        icon: <AdminPanelSettingsOutlinedIcon />
-    }
+  {
+    name: "Dashboard",
+    path: "/",
+    icon: <DashboardIcon />,
+  },
+  {
+    name: "File Management",
+    path: "/files",
+    icon: <FolderOutlinedIcon />,
+  },
+  {
+    name: "Upload",
+    path: "/upload",
+    icon: <UploadOutlinedIcon />,
+  },
+  {
+    name: "Secure Sharing",
+    path: "/sharing",
+    icon: <ShareOutlinedIcon />,
+  },
+  {
+    name: "Encryption & Security",
+    path: "/security",
+    icon: <SecurityOutlinedIcon />,
+  },
+  {
+    name: "Activity Monitor",
+    path: "/activity",
+    icon: <MonitorHeartOutlinedIcon />,
+  },
+  {
+    name: "Notifications",
+    path: "/notifications",
+    icon: <NotificationsNoneOutlinedIcon />,
+  },
+  {
+    name: "Analytics",
+    path: "/analytics",
+    icon: <BarChartOutlinedIcon />,
+  },
+  {
+    name: "Admin",
+    path: "/admin",
+    icon: <AdminPanelSettingsOutlinedIcon />,
+  },
 ];
 
-
 const Sidebar = () => {
+  return (
+    <aside className="sidebar">
+      <div>
+        <div className="logo-section">
+          <div className="logo-circle">T</div>
 
-    return (
-        <aside className="sidebar">
+          <div>
+            <h2>TrustShare</h2>
+            <p>Enterprise</p>
+          </div>
+        </div>
 
-            <div>
+        <div className="sidebar-menu">
+          {menuItems.map((item) => (
+            <NavLink
+              key={item.name}
+              to={item.path}
+              className={({ isActive }) =>
+                isActive ? "menu active" : "menu"
+              }
+            >
+              {item.icon}
+              <span>{item.name}</span>
+            </NavLink>
+          ))}
+        </div>
+      </div>
 
-                <div className="logo-section">
+      <div className="bottom-menu">
+        <NavLink to="/profile" className="menu">
+          <AccountCircleOutlinedIcon />
+          <span>Profile</span>
+        </NavLink>
 
-                    <div className="logo-circle">
-                        T
-                    </div>
-
-                    <div>
-                        <h2>TrustShare</h2>
-                        <p>Enterprise</p>
-                    </div>
-
-                </div>
-
-
-                <div className="sidebar-menu">
-
-                    {
-                        menuItems.map((item) => (
-
-                            <NavLink
-                                key={item.name}
-                                to={item.path}
-                                className={({ isActive }) =>
-                                    isActive ? "menu active" : "menu"
-                                }
-                            >
-
-                                {item.icon}
-
-                                <span>{item.name}</span>
-
-                            </NavLink>
-
-                        ))
-                    }
-
-                </div>
-
-            </div>
-
-
-            <div className="bottom-menu">
-
-                <NavLink to="/profile" className="menu">
-                    <AccountCircleOutlinedIcon />
-                    <span>Profile</span>
-                </NavLink>
-
-
-                <NavLink to="/logout" className="menu">
-                    <LogoutOutlinedIcon />
-                    <span>Sign out</span>
-                </NavLink>
-
-            </div>
-
-
-        </aside>
-    );
+        <NavLink to="/logout" className="menu">
+          <LogoutOutlinedIcon />
+          <span>Sign out</span>
+        </NavLink>
+      </div>
+    </aside>
+  );
 };
-
 
 export default Sidebar;

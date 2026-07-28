@@ -6,6 +6,7 @@ import SecureSharing from "./pages/Securesharing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./features/dashboard/Dashboard";
+import Security from "./pages/Security";
 
 
 function App() {
@@ -26,6 +27,15 @@ function App() {
           element={
             <PageContainer>
               <SecureSharing />
+            </PageContainer>
+          }
+        />
+
+        <Route
+          path="/security"
+          element={
+            <PageContainer>
+              <Security />
             </PageContainer>
           }
         />
