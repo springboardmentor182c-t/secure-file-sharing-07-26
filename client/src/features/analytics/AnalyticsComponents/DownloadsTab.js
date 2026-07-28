@@ -12,7 +12,7 @@ const DownloadsTab = ({ filter }) => {
         setLoading(true);
         setError(false);
         
-        // Fetch base URL from the .env file
+        
         const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
         // Live API Endpoint call
