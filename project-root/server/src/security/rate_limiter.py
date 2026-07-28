@@ -33,6 +33,7 @@ DEFAULT_RATE_LIMITS = {
     "suggest_password": {"requests": 15, "window_seconds": 60},
     "audit_log": {"requests": 20, "window_seconds": 60},
     "performance": {"requests": 30, "window_seconds": 60},
+    "file_summary": {"requests": 5, "window_seconds": 300},
     "default": {"requests": 60, "window_seconds": 60},
 }
 
