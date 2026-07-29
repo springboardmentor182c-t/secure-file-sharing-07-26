@@ -74,11 +74,11 @@
   margin-bottom: 20px;
 }
 .stat-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 16px 18px;
-  box-shadow: var(--shadow-card);
+  background: #272938 !important;
+  border: 1px solid #34364A !important;
+  border-radius: 16px !important;
+  padding: 20px 22px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
 }
 .stat-card__row {
   display: flex;
@@ -103,12 +103,12 @@
 
 /* ---------- Chart card ---------- */
 .chart-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  background: #272938 !important;
+  border: 1px solid #34364A !important;
+  border-radius: 16px !important;
   padding: 20px 22px;
   margin-bottom: 20px;
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
 }
 .chart-card__header {
   display: flex;
@@ -127,7 +127,7 @@
 .legend-dot--access { background: #df9112; }
 
 .activity-chart__svg { width: 100%; height: 260px; overflow: visible; }
-.activity-chart__gridline { stroke: var(--border-subtle); stroke-width: 1; }
+.activity-chart__gridline { stroke: #34364A; stroke-width: 1; }
 .activity-chart__axis-label { fill: var(--text-muted); font-size: 11px; }
 .activity-chart__bar--created { fill: #4d3fa8; }
 .activity-chart__bar--access { fill: #c3b8ff; }
@@ -136,8 +136,9 @@
 
 /* ---------- Links panel / toolbar ---------- */
 .links-panel {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+  background: #272938 !important;
+  border: 1px solid #34364A !important;
+  border-radius: 16px !important;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   overflow: hidden;

@@ -6,7 +6,6 @@ import {
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from "recharts";
-import "./security-theme.css";
 
 // ─── Badges ────────────────────────────────────────────────────────────────────
 function SeverityBadge({ severity }) {
@@ -24,7 +23,7 @@ function SeverityBadge({ severity }) {
 }
 
 // Read API URL via Vite's environment variable loading
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 // ─── Security Dashboard ────────────────────────────────────────────────────────
 export function SecurityView() {
@@ -120,7 +119,7 @@ export function SecurityView() {
   };
 
   return (
-    <div className="security-theme flex flex-col h-full bg-background text-foreground animate-fade-in">
+    <div className="flex flex-col h-full text-foreground animate-fade-in">
       <div className="flex-1 overflow-auto p-5 space-y-5">
 
         {/* Stat cards */}

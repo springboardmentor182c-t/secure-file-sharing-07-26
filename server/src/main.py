@@ -23,7 +23,9 @@ from .api import register_routes
 from .core import APP_NAME, ALLOWED_ORIGINS
 from .database.core import Base, engine, DATABASE_URL, create_all_tables
 import src.entities  # noqa: F401
-Base.metadata.create_all(bind=engine)
+# Only auto-create tables for SQLite dev mode; PostgreSQL uses migrations
+if DATABASE_URL.startswith("sqlite"):
+    Base.metadata.create_all(bind=engine)
 
 
 logger = logging.getLogger(__name__)

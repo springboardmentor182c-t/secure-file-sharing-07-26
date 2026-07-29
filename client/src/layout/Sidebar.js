@@ -1,24 +1,25 @@
-import { LayoutDashboard, Folder, Link2, Trash2, Shield, ClipboardList, ShieldAlert, Settings, User, HardDrive, LogOut,Clock  } from "lucide-react";
+import { LayoutDashboard, Folder, Link2, Trash2, ShieldAlert, Settings, User, HardDrive, LogOut, Clock, BarChart3, Share2 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
-export default function Sidebar({ users, stats }) {
-  const admin = users?.find((u) => u.role === "Admin");
+export default function Sidebar({ users, stats, currentUser }) {
   const location = useLocation();
+  const userRole = (currentUser?.role || "").toLowerCase();
+  const isAdmin = userRole.includes("admin");
 
   const mainLinks = [
-    { name: "Dashboard", path: "/", icon: LayoutDashboard },
+    ...(isAdmin ? [{ name: "Dashboard", path: "/", icon: LayoutDashboard }] : []),
     { name: "My Files", path: "/files", icon: Folder },
     { name: "Shared Files", path: "/shared-files", icon: Link2 },
+    { name: "Shared Links", path: "/shared-links", icon: Share2 },
+    { name: "Analytics", path: "/analytics", icon: BarChart3 },
     { name: "Recent", path: "/recent", icon: Clock },
-
     { name: "Trash", path: "/trash", icon: Trash2 },
   ];
 
-  const securityLinks = [
-    { name: "Monitoring", path: "/monitoring", icon: Shield },
-    { name: "Audit Logs", path: "/audit", icon: ClipboardList },
+  const securityLinks = isAdmin ? [
+    { name: "Audit Logs", path: "/audit", icon: ShieldAlert },
     { name: "Security", path: "/security", icon: ShieldAlert },
-  ];
+  ] : [];
 
   const accountLinks = [
     { name: "Settings", path: "/settings", icon: Settings },
@@ -66,12 +67,16 @@ export default function Sidebar({ users, stats }) {
           ))}
         </div>
 
-        <p className="text-gray-500 text-xs px-4 mb-2 mt-6">SECURITY</p>
-        <div className="space-y-1">
-          {securityLinks.map((link) => (
-            <NavItem key={link.name} {...link} />
-          ))}
-        </div>
+        {securityLinks.length > 0 && (
+          <>
+            <p className="text-gray-500 text-xs px-4 mb-2 mt-6">SECURITY</p>
+            <div className="space-y-1">
+              {securityLinks.map((link) => (
+                <NavItem key={link.name} {...link} />
+              ))}
+            </div>
+          </>
+        )}
 
         <p className="text-gray-500 text-xs px-4 mb-2 mt-6">ACCOUNT</p>
         <div className="space-y-1">
@@ -142,7 +147,7 @@ export default function Sidebar({ users, stats }) {
                 font-bold
               "
             >
-              X
+              {currentUser?.initials || currentUser?.name?.charAt(0) || "U"}
             </div>
             <div>
               <h3
@@ -152,7 +157,7 @@ export default function Sidebar({ users, stats }) {
                   text-white
                 "
               >
-                XYZ
+                {currentUser?.name || "User"}
               </h3>
 
               <p
@@ -161,7 +166,7 @@ export default function Sidebar({ users, stats }) {
                   text-gray-400
                 "
               >
-                Engineering Lead
+                {currentUser?.role || currentUser?.email || "Team Member"}
               </p>
             </div>
           </div>

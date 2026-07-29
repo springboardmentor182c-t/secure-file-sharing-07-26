@@ -110,7 +110,7 @@ export default function SharedLinksPage() {
   }, [deleteLink, deletingLink, showToast]);
 
   return (
-    <div className="shared-links-page">
+    <div className="shared-links-page p-6 lg:p-8 space-y-6 animate-fade-in">
       <Header searchQuery={searchQuery} onSearchChange={updateSearch} onCreateClick={() => setCreateOpen(true)} />
 
       <section className="stat-grid" aria-label="Summary statistics">

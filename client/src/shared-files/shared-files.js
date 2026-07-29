@@ -74,8 +74,8 @@ export function SharedFilesView() {
 
   const handleShareFile = async (e) => {
     e.preventDefault();
-    if (!shareFileName.trim() || !shareRecipientEmail.trim() || !shareOwnerName.trim()) {
-      alert("Please fill in all required fields.");
+    if (!shareFileName.trim() || !shareRecipientEmail.trim()) {
+      alert("Please fill in file name and recipient email.");
       return;
     }
     setIsSharing(true);
@@ -85,25 +85,21 @@ export function SharedFilesView() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           file_name: shareFileName,
-          size: shareFileSize.trim() || "5.0 MB",
+          size: shareFileSize.trim() || "4.2 MB",
           file_type: shareFileType,
           recipient_email: shareRecipientEmail,
           permission: sharePermission,
-          owner_name: shareOwnerName
         })
       });
       if (!response.ok) {
         throw new Error("Failed to share file");
       }
-      // Reset form
       setShareFileName("");
       setShareFileSize("");
       setShareRecipientEmail("");
       setSharePermission("viewer");
-      setShareOwnerName("");
       setShowShareModal(false);
       
-      // Refresh the view
       await fetchDashboardData();
     } catch (err) {
       alert("Error sharing file: " + err.message);
@@ -133,22 +129,33 @@ export function SharedFilesView() {
   }, []);
 
   const handleRevokeShare = async (shareId) => {
-    if (confirm("Are you sure you want to remove your access to this file?")) {
-      setRevokingId(shareId);
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/shared/files/${shareId}`, {
-          method: "DELETE",
-        });
-        if (!response.ok) {
-          throw new Error("Failed to remove access");
-        }
-        setSelectedShare(null);
-        await fetchDashboardData();
-      } catch (err) {
-        alert("Error: " + err.message);
-      } finally {
-        setRevokingId(null);
-      }
+    setRevokingId(shareId);
+    
+    // Optimistically remove from UI immediately
+    setData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        shares: (prev.shares || []).filter((s) => s.id !== shareId),
+        stats: (prev.stats || []).map((st) =>
+          st.label === "Shared files" ? { ...st, value: String(Math.max(0, (parseInt(st.value) || 1) - 1)) } : st
+        ),
+      };
+    });
+
+    if (selectedShare?.id === shareId) {
+      setSelectedShare(null);
+    }
+
+    try {
+      await fetch(`${API_BASE_URL}/api/shared/files/${shareId}`, {
+        method: "DELETE",
+      });
+      await fetchDashboardData();
+    } catch (err) {
+      console.error("Error removing access:", err);
+    } finally {
+      setRevokingId(null);
     }
   };
 
@@ -193,7 +200,7 @@ export function SharedFilesView() {
   };
 
   return (
-    <div className="space-y-6 text-[#C5C3C4] relative animate-fade-in">
+    <div className="p-6 lg:p-8 space-y-6 text-[#C5C3C4] relative animate-fade-in">
       
       {/* Metrics Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
@@ -315,11 +322,24 @@ export function SharedFilesView() {
                       <FileIcon type={share.file.file_type} size={20} className="shrink-0" />
                       <span className="text-white font-semibold text-sm truncate">{share.file.name}</span>
                     </div>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold capitalize shrink-0 ${
-                      share.permission === "editor" ? "bg-[#7C5CFC]/20 text-[#9E86FF]" : "bg-gray-500/20 text-gray-400"
-                    }`}>
-                      {share.permission}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold capitalize ${
+                        share.permission === "editor" ? "bg-[#7C5CFC]/20 text-[#9E86FF]" : "bg-gray-500/20 text-gray-400"
+                      }`}>
+                        {share.permission}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRevokeShare(share.id);
+                        }}
+                        disabled={revokingId === share.id}
+                        title="Remove shared file access"
+                        className="p-1 text-gray-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <Trash2 size={15} className={revokingId === share.id ? "animate-spin text-red-400" : ""} />
+                      </button>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 mb-3">
                     <SecurityBadge status={share.file.security_status} />
@@ -345,15 +365,15 @@ export function SharedFilesView() {
         ) : (
           <div className="bg-[#272938] border border-[#34364A] rounded-2xl overflow-hidden">
             <div className="grid text-[10px] font-bold text-gray-500 uppercase tracking-wider px-6 py-4 border-b border-[#34364A]"
-              style={{ gridTemplateColumns: "1fr 120px 100px 110px 200px 100px" }}>
-              <div>File name</div><div>Size</div><div>Permission</div><div>Security Scan</div><div>Shared by</div><div>Shared Date</div>
+              style={{ gridTemplateColumns: "1fr 120px 100px 110px 160px 100px 40px" }}>
+              <div>File name</div><div>Size</div><div>Permission</div><div>Security Scan</div><div>Shared by</div><div>Shared Date</div><div>Action</div>
             </div>
             {filteredShares.map(share => (
               <div
                 key={share.id}
                 onClick={() => setSelectedShare(share)}
                 className="grid items-center px-6 py-4 border-b border-[#34364A]/30 last:border-0 text-xs hover:bg-[#34364A]/25 transition-colors cursor-pointer"
-                style={{ gridTemplateColumns: "1fr 120px 100px 110px 200px 100px" }}>
+                style={{ gridTemplateColumns: "1fr 120px 100px 110px 160px 100px 40px" }}>
                 <div className="flex items-center gap-2.5 min-w-0">
                   <FileIcon type={share.file.file_type} size={18} className="shrink-0" />
                   <span className="text-white font-semibold truncate">{share.file.name}</span>
@@ -374,6 +394,19 @@ export function SharedFilesView() {
                   <span className="text-white font-medium truncate">{share.file.owner.name}</span>
                 </div>
                 <div className="text-gray-500 text-[10px]">{share.shared_at.split(" ")[0]}</div>
+                <div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRevokeShare(share.id);
+                    }}
+                    disabled={revokingId === share.id}
+                    title="Remove shared file access"
+                    className="p-1 text-gray-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Trash2 size={15} className={revokingId === share.id ? "animate-spin text-red-400" : ""} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -518,97 +551,64 @@ export function SharedFilesView() {
 
               {/* Modal Form */}
               <form onSubmit={handleShareFile} className="p-6 space-y-4 text-left">
+                {/* Sender Auto Info */}
+                <div className="p-3 bg-[#1E1F2B] border border-[#34364A] rounded-xl flex items-center justify-between text-xs">
+                  <span className="text-gray-400">Sharing As:</span>
+                  <span className="font-semibold text-white">Admin User (admin@trustshare.com)</span>
+                </div>
+
                 <div className="space-y-1">
-                  <label className="text-gray-400 text-xs font-medium">File Name *</label>
+                  <label className="text-gray-400 text-xs font-medium">Select or Enter File Name *</label>
                   <input
                     type="text"
                     required
                     value={shareFileName}
                     onChange={e => setShareFileName(e.target.value)}
-                    placeholder="e.g. Q4-Strategy-Doc.pdf"
-                    className="w-full px-3 py-2.5 bg-[#1E1F2B] border border-[#34364A] rounded-xl text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-[#7C5CFC] transition-colors"
+                    placeholder="e.g. Q3_Financial_Audit_Report.pdf"
+                    className="w-full px-3.5 py-2.5 bg-[#1E1F2B] border border-[#34364A] rounded-xl text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-[#7C5CFC] transition-colors"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-gray-400 text-xs font-medium">File Size (e.g. 12.4 MB)</label>
-                    <input
-                      type="text"
-                      value={shareFileSize}
-                      onChange={e => setShareFileSize(e.target.value)}
-                      placeholder="e.g. 5.2 MB"
-                      className="w-full px-3 py-2.5 bg-[#1E1F2B] border border-[#34364A] rounded-xl text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-[#7C5CFC] transition-colors"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-gray-400 text-xs font-medium">File Type *</label>
+                    <label className="text-gray-400 text-xs font-medium">File Format</label>
                     <select
                       value={shareFileType}
                       onChange={e => setShareFileType(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-[#1E1F2B] border border-[#34364A] rounded-xl text-xs text-white focus:outline-none focus:border-[#7C5CFC] transition-colors cursor-pointer"
+                      className="w-full px-3.5 py-2.5 bg-[#1E1F2B] border border-[#34364A] rounded-xl text-xs text-white focus:outline-none focus:border-[#7C5CFC] cursor-pointer"
                     >
                       <option value="pdf">PDF Document</option>
                       <option value="zip">ZIP Archive</option>
                       <option value="spreadsheet">Spreadsheet</option>
-                      <option value="image">Image</option>
-                      <option value="doc">Word Doc</option>
+                      <option value="image">Image File</option>
+                      <option value="doc">Word Document</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-gray-400 text-xs font-medium">Access Permission</label>
+                    <select
+                      value={sharePermission}
+                      onChange={e => setSharePermission(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-[#1E1F2B] border border-[#34364A] rounded-xl text-xs text-white focus:outline-none focus:border-[#7C5CFC] cursor-pointer"
+                    >
+                      <option value="viewer">Viewer (Read Only)</option>
+                      <option value="editor">Editor (Download Allowed)</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-gray-400 text-xs font-medium">Owner Name * (Who is sharing this?)</label>
-                  <input
-                    type="text"
-                    required
-                    value={shareOwnerName}
-                    onChange={e => setShareOwnerName(e.target.value)}
-                    placeholder="e.g. Sarah Kim"
-                    className="w-full px-3 py-2.5 bg-[#1E1F2B] border border-[#34364A] rounded-xl text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-[#7C5CFC] transition-colors"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-gray-400 text-xs font-medium">Recipient Email * (Your Email to see it here)</label>
+                  <label className="text-gray-400 text-xs font-medium">Recipient Email Address *</label>
                   <input
                     type="email"
                     required
                     value={shareRecipientEmail}
                     onChange={e => setShareRecipientEmail(e.target.value)}
-                    placeholder="e.g. user@acme.com"
-                    className="w-full px-3 py-2.5 bg-[#1E1F2B] border border-[#34364A] rounded-xl text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-[#7C5CFC] transition-colors"
+                    placeholder="e.g. colleague@trustshare.com"
+                    className="w-full px-3.5 py-2.5 bg-[#1E1F2B] border border-[#34364A] rounded-xl text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-[#7C5CFC] transition-colors"
                   />
-                  <p className="text-[10px] text-gray-500">Enter your email to see the file appear in your Shared Files list!</p>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-gray-400 text-xs font-medium block">Permission Level</label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 text-xs text-white cursor-pointer select-none">
-                      <input
-                        type="radio"
-                        name="permission"
-                        value="viewer"
-                        checked={sharePermission === "viewer"}
-                        onChange={() => setSharePermission("viewer")}
-                        className="accent-[#7C5CFC] cursor-pointer"
-                      />
-                      Viewer
-                    </label>
-                    <label className="flex items-center gap-2 text-xs text-white cursor-pointer select-none">
-                      <input
-                        type="radio"
-                        name="permission"
-                        value="editor"
-                        checked={sharePermission === "editor"}
-                        onChange={() => setSharePermission("editor")}
-                        className="accent-[#7C5CFC] cursor-pointer"
-                      />
-                      Editor
-                    </label>
-                  </div>
+                  <p className="text-[10px] text-gray-500 mt-1">An encrypted secure access link will be generated for this recipient.</p>
                 </div>
 
                 {/* Submit Actions */}
@@ -623,9 +623,9 @@ export function SharedFilesView() {
                   <button
                     type="submit"
                     disabled={isSharing}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-[#7C5CFC] hover:bg-[#7C5CFC]/90 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-5 py-2 bg-[#7C5CFC] hover:bg-[#6847EC] text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-lg shadow-[#7C5CFC]/25 disabled:opacity-50"
                   >
-                    {isSharing ? "Sharing..." : "Share File"}
+                    {isSharing ? "Granting Access..." : "Grant Share Access"}
                   </button>
                 </div>
               </form>

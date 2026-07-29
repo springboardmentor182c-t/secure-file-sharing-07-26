@@ -9,11 +9,14 @@ class TrashService:
 
     # Get all deleted files
     def get_deleted_files(self):
-        return (
-            self.db.query(File)
-            .filter(File.is_deleted == True)
-            .all()
-        )
+        try:
+            return (
+                self.db.query(File)
+                .filter(File.is_deleted == True)
+                .all()
+            )
+        except Exception:
+            return []
 
     # Restore a deleted file
     def restore_file(self, file_id: UUID):

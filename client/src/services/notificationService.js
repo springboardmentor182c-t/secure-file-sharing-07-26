@@ -1,11 +1,11 @@
 import axios from "axios";
 
-const API = import.meta.env.VITE_API_URL;
+const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 
 const authHeader = () => ({
   headers: {
-    "X-User-Id": localStorage.getItem("userId"),
+    "X-User-Id": localStorage.getItem("userId") || "00000000-0000-0000-0000-000000000000",
   },
 });
 

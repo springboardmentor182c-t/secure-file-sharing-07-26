@@ -10,9 +10,11 @@ import SharedLinksPage from "../features/sharedLinks/SharedLinksPage";
 import Monitoring from "../pages/Monitoring/Monitoring";
 import Settings from "../pages/Settings/Settings";
 import Profile from "../pages/Profile/Profile";
-import { SecurityView } from "../pages/security/security";
 import Trash from "../pages/Trash";
 
+import { SharedFilesView } from "../shared-files/shared-files";
+import { SecurityView } from "../pages/security/security";
+import { AuditLogsView } from "../pages/AuditLogs/AuditLogs";
 import { AnalyticsView } from "../analytics/analytics";
 
 function AppRoutes() {
@@ -26,14 +28,14 @@ function AppRoutes() {
 
           <Route path="/trash" element={<Trash />} />
 
-          <Route path="/shared-files" element={<SharedFiles />} />
+          <Route path="/shared-files" element={<SharedFilesView />} />
 
           <Route path="/recent" element={<Recent />} />
           <Route path="/shared-links" element={<SharedLinksPage />} />
           <Route path="/analytics" element={<AnalyticsView />} />
 
-          <Route path="/monitoring" element={<Monitoring />} />
           <Route path="/security" element={<SecurityView />} />
+          <Route path="/audit" element={<AuditLogsView />} />
 
           <Route path="/settings" element={<Settings />} />
 

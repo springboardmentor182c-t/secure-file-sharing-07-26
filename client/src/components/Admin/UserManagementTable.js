@@ -2,10 +2,10 @@ import React from "react";
 
 export default function UserManagementTable({ users }) {
   return (
-    <div className="overflow-x-auto bg-[#171826] border border-gray-800 rounded-xl">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto bg-[#272938] border border-[#34364A] rounded-2xl shadow-xl">
+      <table className="w-full text-xs">
         <thead>
-          <tr className="border-b border-gray-800 text-gray-400 text-left">
+          <tr className="border-b border-[#34364A] text-gray-400 text-left font-semibold">
             <th className="px-4 py-3 font-medium">User</th>
             <th className="px-4 py-3 font-medium">Email</th>
             <th className="px-4 py-3 font-medium">Role</th>

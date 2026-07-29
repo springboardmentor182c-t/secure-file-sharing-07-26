@@ -132,7 +132,7 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
               font-semibold
             "
           >
-            X
+            {currentUser?.initials || currentUser?.name?.charAt(0) || "U"}
           </div>
 
       
@@ -150,7 +150,7 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
                 text-white
               "
             >
-              XYZ
+              {currentUser?.name || "User"}
             </p>
 
             <p
@@ -159,7 +159,7 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
                 text-gray-400
               "
             >
-              Engineering Lead
+              {currentUser?.role || currentUser?.email || "Team Member"}
             </p>
           </div>
 

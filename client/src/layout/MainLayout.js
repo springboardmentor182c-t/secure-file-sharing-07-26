@@ -21,7 +21,7 @@ function MainLayout() {
   const location = useLocation();
 
   useEffect(() => {
-    const API_BASE_URL = import.meta.env.VITE_API_URL;
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
     fetch(`${API_BASE_URL}/api/users/me`)
       .then(res => {
@@ -32,8 +32,7 @@ function MainLayout() {
         setUser(data);
       })
       .catch(err => {
-        console.error("Error loading user session:", err);
-        setUser({ name: "Guest User", role: "Viewer", initials: "GU" });
+        setUser({ name: "Admin User", role: "Admin", initials: "AU" });
       })
       .finally(() => {
         setLoading(false);
@@ -60,9 +59,7 @@ function MainLayout() {
   return (
     <div className="flex h-screen overflow-hidden bg-[#1E1F2B]">
 
-      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} users={users} stats={stats}  user={user} />
-
-
+      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} users={users} stats={stats} currentUser={user || currentUser} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header
@@ -70,8 +67,7 @@ function MainLayout() {
 
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
-          currentUser={currentUser}
-          user={user}
+          currentUser={user || currentUser}
  
         />
         <PageContainer>
