@@ -2,7 +2,6 @@ import {
   LayoutDashboard,
   FolderOpen,
   Link2,
-  Clock,
   Share2,
   BarChart3,
   Trash2,
@@ -11,24 +10,24 @@ import {
   ShieldAlert,
   Settings,
   User,
+  Bell,
+  Users,
+  Clock,
+  Star,
 } from "lucide-react";
+
 
 export const sidebarMenu = [
   {
-    title: "MAIN",
+    title: "PERSONAL",
     items: [
-      {
-        name: "Dashboard",
-        path: "/",
-        icon: LayoutDashboard,
-      },
       {
         name: "My Files",
         path: "/files",
         icon: FolderOpen,
       },
       {
-        name: "Shared Files",
+        name: "Shared with me",
         path: "/shared-files",
         icon: Link2,
       },
@@ -36,6 +35,11 @@ export const sidebarMenu = [
         name: "Recent",
         path: "/recent",
         icon: Clock,
+      },
+      {
+        name: "Starred",
+        path: "/starred",
+        icon: Star,
       },
       {
         name: "Trash",
@@ -53,24 +57,19 @@ export const sidebarMenu = [
         path: "/shared-links",
         icon: Share2,
       },
+    ],
+  },
+
+  {
+    title: "MANAGEMENT",
+    items: [
       {
         name: "Analytics",
         path: "/analytics",
         icon: BarChart3,
       },
-    ],
-  },
-
-  {
-    title: "SECURITY",
-    items: [
       {
-        name: "Monitoring",
-        path: "/monitoring",
-        icon: Shield,
-      },
-      {
-        name: "Audit Logs",
+        name: "Audit Log",
         path: "/audit",
         icon: ClipboardList,
       },
@@ -78,6 +77,16 @@ export const sidebarMenu = [
         name: "Security",
         path: "/security",
         icon: ShieldAlert,
+      },
+      {
+        name: "Admin",
+        path: "/admin",
+        icon: Users,
+      },
+      {
+        name: "Notifications",
+        path: "/notifications",
+        icon: Bell,
       },
     ],
   },
