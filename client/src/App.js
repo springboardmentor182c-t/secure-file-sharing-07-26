@@ -10,6 +10,9 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./features/dashboard/Dashboard";
 import ActivityMonitorPage from "./pages/ActivityMonitorPage";
+import Analytics from "./features/analytics/Analytics";
+import NotificationFeature from "./features/notifications/NotificationFeature";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
@@ -34,16 +37,16 @@ function App() {
           }
         />
 
-        <Route
+         <Route
           path="/settings"
           element={
             <PageContainer>
               <Settings />
             </PageContainer>
           }
-        />
+        /> 
 
-        <Route path="/login" element={<Login />} />
+         <Route path="/login" element={<Login />} /> 
 
         <Route
           path="/dashboard"
@@ -71,12 +74,23 @@ function App() {
             </PageContainer>
           }
         />
+
+        <Route 
+          path="/analytics" 
+          element={
+            <PageContainer>
+              <Analytics />
+            </PageContainer>
+          }
+        />
+        
         <Route
   path="/admin"
   element={<AdminDashboard />}
 />
 
-        <Route path="/login" element={<Login />} />
+        {/* Auth Routes (Without Sidebar/Navbar) */}
+        <Route path="/login" element={<Login />} /> 
         <Route path="/signup" element={<Signup />} />
 
       </Routes>
