@@ -1,0 +1,17 @@
+[
+  {
+    "id": "upload",
+    "name": "Upload Files",
+    "icon": "upload"
+  },
+  {
+    "id": "share",
+    "name": "Share Link",
+    "icon": "share-2"
+  },
+  {
+    "id": "analytics",
+    "name": "Analytics",
+    "icon": "bar-chart-2"
+  }
+]
