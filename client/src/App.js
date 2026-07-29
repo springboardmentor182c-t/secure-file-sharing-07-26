@@ -14,6 +14,9 @@ import Dashboard from "./features/dashboard/Dashboard";
 // Activity Monitor
 import ActivityMonitorPage from "./pages/ActivityMonitorPage";
 
+// Analytics
+import Analytics from "./features/analytics/Analytics";
+
 // Notifications
 import NotificationFeature from "./features/notifications/NotificationFeature";
 
@@ -61,7 +64,9 @@ function App() {
           }
         />
 
+        {/* Auth Routes */}
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
 
         <Route
           path="/dashboard"
@@ -91,6 +96,15 @@ function App() {
         />
 
         <Route
+          path="/analytics"
+          element={
+            <PageContainer>
+              <Analytics />
+            </PageContainer>
+          }
+        />
+
+        <Route
           path="/admin"
           element={
             <PageContainer>
@@ -98,8 +112,6 @@ function App() {
             </PageContainer>
           }
         />
-
-        <Route path="/signup" element={<Signup />} />
 
       </Routes>
     </BrowserRouter>
