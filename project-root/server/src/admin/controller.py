@@ -5,11 +5,10 @@ from fastapi import APIRouter, Depends,Query, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr, Field
 
-from src.admin import service
+from src.admin import service as admin_service
 from src.database.core import get_db
 from src.auth.dependencies import get_current_user, require_admin
 from src.entities.user import User
-from src.users import service
 
 router = APIRouter()
 
@@ -80,7 +79,7 @@ class StorageBucketOut(BaseModel):
 
 
 class StorageUserOut(BaseModel):
-    id: int
+    id: uuid.UUID
     name: str
     email: str
     used_bytes: int
@@ -96,7 +95,7 @@ class StorageOut(BaseModel):
 
 
 class AuditLogOut(BaseModel):
-    id: int
+    id: uuid.UUID
     created_at: Optional[datetime]
     admin_name: str
     admin_email: Optional[str]
@@ -112,7 +111,7 @@ class AuditLogOut(BaseModel):
 @router.get("/stats", response_model=StatsOut)
 def get_stats(db: Session = Depends(get_db), _admin: User = Depends(require_admin)):
     """Headline metrics for the admin panel stat cards."""
-    return service.get_stats(db)
+    return admin_service.get_stats(db)
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -124,7 +123,7 @@ def list_all_users(
     db: Session = Depends(get_db),
     _admin: User = Depends(require_admin),
 ):
-    return service.list_users(db, search=search, role=role, status=user_status)
+    return admin_service.list_users(db, search=search, role=role, status=user_status)
 
 
 @router.post("/users/invite", response_model=InviteUserResponse, status_code=status.HTTP_201_CREATED)
@@ -134,31 +133,19 @@ def invite_user(
     admin: User = Depends(require_admin),
 ):
     """Create an account and return a one-time password for the admin to hand over."""
-    user, temp_password = service.invite_user(db, admin, data)
+    user, temp_password = admin_service.invite_user(db, admin, data)
     return {"user": user, "temp_password": temp_password}
-def list_users(
-    _: User = Depends(require_admin),
-    db: Session = Depends(get_db),
-):
-    """Admin: list all users."""
-    return service.list_users(db)
 
 
 @router.patch("/users/{user_id}", response_model=UserAdminOut)
 def update_user(
-    user_id: int,
+    user_id: uuid.UUID,
     data: UpdateUserRequest,
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
-      """Admin: update a user's role, plan, active status, or storage quota."""
-    user = service.update_user(
-        db, user_id,
-        role=body.role,
-        plan=body.plan,
-        is_active=body.is_active,
-        storage_quota=body.storage_quota,
-    )
+    """Admin: update a user's role, plan, active status, or storage quota."""
+    user = admin_service.update_user(db, admin, user_id, data)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user
@@ -166,25 +153,23 @@ def update_user(
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(
-    user_id: int,
     user_id: uuid.UUID,
-    body: UpdateUserRequest,
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-  return service.delete_user(db, admin, user_id)
+    return admin_service.delete_user(db, admin, user_id)
 
 
 @router.get("/roles", response_model=list[RoleOut])
 def list_roles(db: Session = Depends(get_db), _admin: User = Depends(require_admin)):
     """Role catalog with live user counts."""
-    return service.list_roles(db)
+    return admin_service.list_roles(db)
 
 
 @router.get("/storage", response_model=StorageOut)
 def get_storage(db: Session = Depends(get_db), _admin: User = Depends(require_admin)):
     """Workspace quota, usage by file category, and the heaviest accounts."""
-    return service.get_storage(db)
+    return admin_service.get_storage(db)
 
 
 @router.get("/audit-logs", response_model=list[AuditLogOut])
@@ -194,4 +179,4 @@ def list_audit_logs(
     db: Session = Depends(get_db),
     _admin: User = Depends(require_admin),
 ):
-    return service.list_audit_logs(db, limit=limit, skip=skip)
+    return admin_service.list_audit_logs(db, limit=limit, skip=skip)

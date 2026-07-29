@@ -8,6 +8,7 @@ from src.notifications.controller import router as notifications_router
 from src.audit.controller import router as audit_router
 from src.analytics.controller import router as analytics_router
 from src.admin.controller import router as admin_router
+from src.users.controller import router as users_router
 from src.todos.controller import router as todos_router
 from src.encryption.controller import router as encryption_router
 from src.exceptions import AppException, app_exception_handler
@@ -43,6 +44,7 @@ def create_app() -> FastAPI:
 
     # ── Routers ───────────────────────────────────────────────────────────────
     app.include_router(auth_router,          prefix="/api/auth",          tags=["Auth"])
+    app.include_router(users_router,         prefix="/api/users",         tags=["Users"])
     app.include_router(files_router,         prefix="/api/files",         tags=["Files"])
     app.include_router(folders_router,       prefix="/api/folders",       tags=["Folders"])
     app.include_router(shares_router,        prefix="/api/shares",        tags=["Sharing"])

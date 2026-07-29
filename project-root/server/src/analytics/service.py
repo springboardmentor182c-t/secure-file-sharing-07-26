@@ -36,44 +36,43 @@ def _time_ago(dt: datetime) -> str:
     return f"{s // 86400}d ago"
 
 
-def _mime_group(mime: str) -> str:
-    m = mime.lower()
-    if m.startswith("e2ee:"):
-        return "Encrypted"
-    if "image" in m:
+def _mime_group(mime: str, filename: str = "") -> str:
+    m = (mime or "").lower()
+    name = (filename or "").lower()
+
+    if "image" in m or "png" in m or "jpg" in m or "jpeg" in m or "gif" in m or "svg" in m or "image" in name or name.endswith((".png", ".jpg", ".jpeg", ".gif", ".svg")):
         return "Images"
-    if "pdf" in m or "document" in m or "word" in m or "text" in m:
-        return "Documents"
-    if "video" in m:
+    if "video" in m or "mp4" in m or "mkv" in m or "video" in name or name.endswith((".mp4", ".mkv", ".avi", ".mov")):
         return "Videos"
-    if "audio" in m:
+    if "audio" in m or "mp3" in m or "audio" in name or name.endswith((".mp3", ".wav", ".flac")):
         return "Audio"
-    if "spreadsheet" in m or "excel" in m or "csv" in m:
+    if "spreadsheet" in m or "excel" in m or "csv" in m or "csv" in name or name.endswith((".xlsx", ".csv")):
         return "Spreadsheets"
-    if "zip" in m or "tar" in m or "gz" in m or "7z" in m or "rar" in m:
+    if "zip" in m or "tar" in m or "gz" in m or "7z" in m or "rar" in m or name.endswith((".zip", ".tar.gz", ".7z")):
         return "Archives"
-    if "octet" in m or not m:
-        return "Other"
-    return "Other"
-
-
+    if "pdf" in m or "document" in m or "word" in m or "text" in m or "pdf" in name or name.endswith((".pdf", ".docx", ".doc", ".txt")):
+        return "Documents"
+    # Default all user files and E2EE encrypted files to Documents
+    return "Documents"
 def build_summary(db: Session, user: User) -> models.AnalyticsSummary:
     now = datetime.now(timezone.utc)
     day_ago   = now - timedelta(days=1)
     week_ago  = now - timedelta(days=7)
     month_ago = now - timedelta(days=30)
 
-    base = db.query(File).filter(File.owner_id == user.id, File.is_deleted == False)  # noqa: E712
+    # Strictly filter by current logged-in user's data
+    base = db.query(File).filter(File.owner_id == user.id, File.is_deleted.is_(False))
+    recent_logs_query = db.query(AuditLog).filter(AuditLog.user_id == user.id)
 
     # ── Core counts ──────────────────────────────────────────────────────────
     total_files = base.count()
-    enc_files   = base.filter(File.encrypted == True).count()  # noqa: E712
+    enc_files   = base.filter(File.encrypted.is_(True)).count()
     total_size  = db.query(func.coalesce(func.sum(File.size), 0)).filter(
-        File.owner_id == user.id, File.is_deleted == False  # noqa: E712
+        File.owner_id == user.id, File.is_deleted.is_(False)
     ).scalar() or 0
     folders     = db.query(Folder).filter(Folder.owner_id == user.id).count()
 
-    # Uploads this week vs last week (approximate via audit log)
+    # Uploads this week vs last week for this user
     uploads_this_week = db.query(AuditLog).filter(
         AuditLog.user_id == user.id,
         AuditLog.action.ilike("%upload%"),
@@ -153,9 +152,11 @@ def build_summary(db: Session, user: User) -> models.AnalyticsSummary:
     # ── File type breakdown ──────────────────────────────────────────────────
     all_files = base.all()
     groups: dict[str, int] = {}
+    bytes_by_group: dict[str, int] = {}
     for f in all_files:
-        g = _mime_group(f.mimetype)
+        g = _mime_group(f.mimetype, f.original_name or f.filename or "")
         groups[g] = groups.get(g, 0) + 1
+        bytes_by_group[g] = bytes_by_group.get(g, 0) + (f.size or 0)
 
     file_types: list[models.FileTypeStat] = []
     for g, cnt in sorted(groups.items(), key=lambda x: -x[1]):
@@ -167,8 +168,7 @@ def build_summary(db: Session, user: User) -> models.AnalyticsSummary:
 
     # ── Recent audit actions ─────────────────────────────────────────────────
     recent_logs = (
-        db.query(AuditLog)
-        .filter(AuditLog.user_id == user.id)
+        recent_logs_query
         .order_by(AuditLog.created_at.desc())
         .limit(8)
         .all()
