@@ -3,6 +3,16 @@ import { authAPI } from '../utils/api';
 
 const AuthContext = createContext(null);
 
+// FIX ISS-D9: only wipe auth-related keys, preserve theme/settings/etc.
+const AUTH_STORAGE_KEYS = ['access_token', 'refresh_token', 'user'];
+
+const clearAuthStorage = () => {
+  AUTH_STORAGE_KEYS.forEach((k) => {
+    localStorage.removeItem(k);
+    sessionStorage.removeItem(k);
+  });
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -14,8 +24,7 @@ export function AuthProvider({ children }) {
       authAPI.me()
         .then(({ data }) => setUser(data))
         .catch(() => {
-          localStorage.clear();
-          sessionStorage.clear();
+          clearAuthStorage();        // FIX ISS-D9: targeted clear
         })
         .finally(() => setLoading(false));
     } else {
@@ -45,8 +54,7 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     try { await authAPI.logout(); } catch {}
-    localStorage.clear();
-    sessionStorage.clear();
+    clearAuthStorage();              // FIX ISS-D9: targeted clear
     setUser(null);
   }, []);
 

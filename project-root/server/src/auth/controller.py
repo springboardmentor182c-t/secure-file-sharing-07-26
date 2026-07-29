@@ -101,7 +101,8 @@ def signup(
     db: Session = Depends(get_db),
 ):
     ip = _get_client_ip(request)
-    return service.register_user(db, data, ip_address=ip)
+    # FIX ISS-D6: pass request so session tracking works for new signups
+    return service.register_user(db, data, request=request, ip_address=ip)
 
 
 @router.get("/me", response_model=models.UserOut)
@@ -110,7 +111,11 @@ def me(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/refresh", response_model=models.TokenResponse)
-def refresh(body: models.RefreshRequest, db: Session = Depends(get_db)):
+def refresh(
+    body: models.RefreshRequest,
+    request: Request,                       # FIX ISS-D2: accept request
+    db: Session = Depends(get_db),
+):
     payload = decode_token(body.refresh_token)
     if payload.get("type") != "refresh":
         raise HTTPException(
@@ -124,11 +129,25 @@ def refresh(body: models.RefreshRequest, db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
         )
-    return service._build_token_response(user)
+    # FIX ISS-D2: pass db and request so session row is tracked
+    return service._build_token_response(user, db=db, request=request)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(current_user: User = Depends(get_current_user)):
+def logout(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # FIX ISS-D1: Actually invalidate the user's active session rows
+    try:
+        from src.entities.login_session import LoginSession
+        db.query(LoginSession).filter(
+            LoginSession.user_id == current_user.id,
+            LoginSession.is_current == True,
+        ).update({"is_current": False})
+        db.commit()
+    except Exception:
+        db.rollback()
     return None
 
 
@@ -162,7 +181,8 @@ def verify_otp(
             detail="Invalid or expired OTP code",
         )
 
-    return service._build_token_response(user)
+    # FIX ISS-D3: pass db and request for session tracking after MFA success
+    return service._build_token_response(user, db=db, request=request)
 
 
 @router.post("/resend-otp")
@@ -282,7 +302,8 @@ async def google_callback(
             detail="Account suspended",
         )
 
-    token_resp = service._build_token_response(user)
+    # FIX ISS-D7: pass db and request for session tracking on OAuth login
+    token_resp = service._build_token_response(user, db=db, request=request)
     redirect_url = (
         f"{FRONTEND_URL}/oauth-callback"
         f"?access_token={token_resp.access_token}"
@@ -336,7 +357,8 @@ async def microsoft_callback(
             detail="Account suspended",
         )
 
-    token_resp = service._build_token_response(user)
+    # FIX ISS-D7: pass db and request for session tracking on OAuth login
+    token_resp = service._build_token_response(user, db=db, request=request)
     redirect_url = (
         f"{FRONTEND_URL}/oauth-callback"
         f"?access_token={token_resp.access_token}"
