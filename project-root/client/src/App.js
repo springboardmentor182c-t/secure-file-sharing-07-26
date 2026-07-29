@@ -21,7 +21,7 @@ import Dashboard from './pages/Dashboard';
 import Files from './pages/Files';
 import Sharing from './pages/Sharing';
 import SharedWithMe from './pages/SharedWithMe';
-import Activity from './pages/Activity';
+import Activity from './features/activity/ActivityPage';
 import Analytics from './pages/Analytics';
 import Notifications from './pages/Notifications';
 import Admin from './pages/Admin';
