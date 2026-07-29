@@ -29,6 +29,9 @@ _mongo_available = False
 
 MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME", "trustshare")
+# THIS — was missing, causing NameError
+MONGODB_COLLECTION = os.getenv("MONGODB_COLLECTION", "security_activity_logs")
+
 def _get_collection_name(db=None):
     return get_config("MONGODB_COLLECTION", db, "security_activity_logs")
 

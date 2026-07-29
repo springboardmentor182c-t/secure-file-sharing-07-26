@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -37,6 +38,16 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
 
+    # ── HTTPS Redirect Middleware (production only) ────────────────────────────
+    # PSD 4.ii: HTTPS/TLS Communication
+    # In production (ENVIRONMENT=production), all HTTP requests are
+    # automatically redirected to HTTPS.
+    # In development, HTTP is allowed (localhost does not need TLS).
+    _env = os.getenv("ENVIRONMENT", "development").lower().strip()
+    if _env in ("production", "prod"):
+        from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
+        app.add_middleware(HTTPSRedirectMiddleware)
+
     origins = [
         "http://localhost:3000",
         "http://localhost:3001",
@@ -72,7 +83,7 @@ def create_app() -> FastAPI:
     app.include_router(activity_router,       prefix="/api/activity",       tags=["Activity"])
     app.include_router(settings_router,       prefix="/api/settings",       tags=["Settings"])
     app.include_router(todos_router,          prefix="/api/todos",          tags=["Todos"])
-    app.include_router(security_router,       prefix="/api/security",       tags=["Security"],)
+    app.include_router(security_router,       prefix="/api/security",       tags=["Security"])
 
     # ── Health check ──────────────────────────────────────────────────────────
     @app.get("/health", tags=["System"])

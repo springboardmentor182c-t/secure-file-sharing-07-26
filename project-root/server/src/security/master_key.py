@@ -8,6 +8,7 @@ Industry-grade master key handling with:
 - Multiple key sources support (env, file, HSM future)
 - Rotation preparation
 - Key derivation options
+- Production guard (prevents auto-generation in production)
 
 Security Model:
 1. PRODUCTION: MASTER_KEY_HEX environment variable (required)
@@ -39,6 +40,9 @@ from .exceptions import KeyManagementError
 # Environment variable name (production)
 MASTER_KEY_ENV_VAR = "MASTER_KEY_HEX"
 
+# Environment name variable — used to detect production
+ENVIRONMENT_VAR = "ENVIRONMENT"
+
 # Fallback file (development only)
 MASTER_KEY_FILE = Path("master.key")
 
@@ -66,8 +70,25 @@ __all__ = [
     'get_master_key_source',
     'validate_master_key',
     'clear_master_key_cache',
+    'is_production_environment',
     'MASTER_KEY_SIZE_BYTES',
 ]
+
+
+# ENVIRONMENT DETECTION
+
+def is_production_environment() -> bool:
+    """
+    Check if running in production environment.
+
+    Checks ENVIRONMENT env variable.
+    Production requires MASTER_KEY_HEX — never auto-generates.
+
+    Returns:
+        True if ENVIRONMENT=production (case-insensitive).
+    """
+    env = os.getenv(ENVIRONMENT_VAR, "development").lower().strip()
+    return env in ("production", "prod")
 
 
 # VALIDATION
@@ -113,17 +134,14 @@ def _validate_hex_key(key_hex: str) -> bytes:
     if not key_hex:
         raise KeyManagementError("Master key hex string is empty")
 
-    # Strip whitespace
     key_hex = key_hex.strip()
 
-    # Check length
     if len(key_hex) != MASTER_KEY_HEX_LENGTH:
         raise KeyManagementError(
             f"Master key hex must be {MASTER_KEY_HEX_LENGTH} characters "
             f"(got {len(key_hex)})"
         )
 
-    # Check valid hex characters
     if not all(c in '0123456789abcdefABCDEF' for c in key_hex):
         raise KeyManagementError("Master key contains invalid hex characters")
 
@@ -131,8 +149,8 @@ def _validate_hex_key(key_hex: str) -> bytes:
         key = bytes.fromhex(key_hex)
         validate_master_key(key)
         return key
-    except ValueError as e:
-        raise KeyManagementError(f"Failed to decode master key hex")
+    except ValueError:
+        raise KeyManagementError("Failed to decode master key hex")
 
 
 # KEY GENERATION
@@ -141,15 +159,10 @@ def generate_master_key() -> bytes:
     """
     Generate a new cryptographically secure master key.
 
-    Uses `secrets.token_bytes()` for cryptographic randomness.
+    Uses secrets.token_bytes() for cryptographic randomness.
 
     Returns:
         32-byte master key.
-
-    Example:
-        >>> key = generate_master_key()
-        >>> len(key)
-        32
     """
     key = secrets.token_bytes(MASTER_KEY_SIZE_BYTES)
     logger.info("Generated new master key")
@@ -163,13 +176,7 @@ def generate_master_key_hex() -> str:
     Useful for setting MASTER_KEY_HEX environment variable.
 
     Returns:
-        Hex-encoded master key string.
-
-    Example:
-        >>> hex_key = generate_master_key_hex()
-        >>> len(hex_key)
-        64
-        >>> print(f"export MASTER_KEY_HEX={hex_key}")
+        Hex-encoded master key string (64 characters).
     """
     key = generate_master_key()
     return key.hex()
@@ -182,9 +189,14 @@ def load_master_key(force_reload: bool = False) -> bytes:
     Load master key from environment variable or file.
 
     Priority:
-        1. MASTER_KEY_HEX environment variable (production)
+        1. MASTER_KEY_HEX environment variable (production — required)
         2. master.key file (development fallback)
-        3. Auto-generate new key (development only, with warning)
+        3. Auto-generate new key (development ONLY — raises in production)
+
+    FIX REMAINING-3: Added production guard.
+    In production (ENVIRONMENT=production), auto-generation raises an error
+    instead of silently creating a new key that makes all encrypted files
+    permanently unreadable on the next server restart.
 
     Args:
         force_reload: If True, bypass cache and reload key.
@@ -194,11 +206,7 @@ def load_master_key(force_reload: bool = False) -> bytes:
 
     Raises:
         KeyManagementError: If key cannot be loaded or is invalid.
-
-    Security Notes:
-        - Environment variable is preferred (never stored on disk)
-        - File fallback is for development only
-        - Auto-generation is DANGEROUS in production
+                           Always raised in production if key is missing.
     """
     global _master_key_cache
 
@@ -206,7 +214,7 @@ def load_master_key(force_reload: bool = False) -> bytes:
     if not force_reload and _master_key_cache is not None:
         return _master_key_cache
 
-    # ═══ Priority 1: Environment Variable ═══
+    # ═══ Priority 1: Environment Variable (production) ═══
     key_hex = os.getenv(MASTER_KEY_ENV_VAR)
     if key_hex:
         try:
@@ -218,34 +226,51 @@ def load_master_key(force_reload: bool = False) -> bytes:
             logger.critical(f"Invalid {MASTER_KEY_ENV_VAR}: {e}")
             raise
 
-    # ═══ Priority 2: File Fallback ═══
+    # ═══ Priority 2: File Fallback (development) ═══
     if MASTER_KEY_FILE.exists():
         try:
             key = _load_master_key_from_file()
             _master_key_cache = key
             logger.warning(
                 "Loaded master key from file. "
-                "Consider using MASTER_KEY_HEX environment variable for production."
+                "Set MASTER_KEY_HEX environment variable for production."
             )
             return key
         except Exception as e:
             logger.error(f"Failed to load master key from file: {e}")
             raise KeyManagementError("Cannot load master key from file")
 
-    # ═══ Priority 3: Auto-Generate (Development Only) ═══
+    # ═══ Priority 3: Auto-Generate ═══
+    # FIX REMAINING-3: Block auto-generation in production environment.
+    # In production, a new auto-generated key means all previously encrypted
+    # files become permanently unreadable on every server restart.
+    if is_production_environment():
+        logger.critical(
+            f"CRITICAL: Master key not found in production environment. "
+            f"Set {MASTER_KEY_ENV_VAR} environment variable immediately. "
+            f"Generate a key with: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
+        raise KeyManagementError(
+            f"Production environment requires {MASTER_KEY_ENV_VAR} to be set. "
+            f"Cannot auto-generate master key in production — "
+            f"this would make all encrypted files permanently unreadable on restart. "
+            f"Run: python -c \"import secrets; print(secrets.token_hex(32))\" "
+            f"and set {MASTER_KEY_ENV_VAR}=<output> in your .env file."
+        )
+
+    # Development only — auto-generate with clear warning
     logger.warning(
-        "No master key found. Generating new key. "
-        "This is INSECURE for production. "
-        f"Set {MASTER_KEY_ENV_VAR} environment variable."
+        "⚠️  No master key found. Generating new key for DEVELOPMENT only. "
+        f"Set {MASTER_KEY_ENV_VAR} environment variable for production. "
+        f"Auto-generation is INSECURE — key is lost on server restart."
     )
 
     key = generate_master_key()
     save_master_key_to_file(key)
     _master_key_cache = key
 
-    # Log the hex for developer convenience
     logger.info(
-        f"Generated master key. Set environment variable: "
+        f"Generated master key. For production, set: "
         f"export {MASTER_KEY_ENV_VAR}={key.hex()}"
     )
 
@@ -261,11 +286,9 @@ def _load_master_key_from_file() -> bytes:
         raise KeyManagementError("Master key path is not a file")
 
     try:
-        # Read key
         with open(MASTER_KEY_FILE, "rb") as f:
             key = f.read()
 
-        # Validate
         validate_master_key(key)
 
         # Check permissions (Unix)
@@ -292,7 +315,7 @@ def _load_master_key_from_file() -> bytes:
         raise KeyManagementError("Failed to read master key file")
 
 
-# KEY STORAGE (File-based fallback)
+# KEY STORAGE (File-based fallback — development only)
 
 def save_master_key_to_file(key: bytes) -> None:
     """
@@ -307,14 +330,11 @@ def save_master_key_to_file(key: bytes) -> None:
     Raises:
         KeyManagementError: If save fails.
     """
-    # Validate key
     validate_master_key(key)
 
     try:
-        # Write key to file
         MASTER_KEY_FILE.write_bytes(key)
 
-        # Set restrictive permissions (Unix)
         if not IS_WINDOWS:
             os.chmod(MASTER_KEY_FILE, MASTER_KEY_FILE_MODE)
 
@@ -333,9 +353,9 @@ def get_master_key_source() -> str:
 
     Returns:
         String describing the key source:
-        - "environment" - Loaded from env variable
-        - "file" - Loaded from file
-        - "not_loaded" - Not yet loaded
+        - "environment" — Loaded from env variable (production)
+        - "file"        — Loaded from master.key file (development)
+        - "not_loaded"  — Not yet loaded
     """
     if os.getenv(MASTER_KEY_ENV_VAR):
         return "environment"
@@ -365,10 +385,11 @@ def get_master_key_metadata() -> dict:
         Dict with metadata (does NOT include the key itself).
     """
     metadata = {
-        'source': get_master_key_source(),
-        'env_var_set': bool(os.getenv(MASTER_KEY_ENV_VAR)),
-        'file_exists': MASTER_KEY_FILE.exists(),
-        'is_cached': _master_key_cache is not None,
+        'source':       get_master_key_source(),
+        'env_var_set':  bool(os.getenv(MASTER_KEY_ENV_VAR)),
+        'file_exists':  MASTER_KEY_FILE.exists(),
+        'is_cached':    _master_key_cache is not None,
+        'is_production': is_production_environment(),
     }
 
     if MASTER_KEY_FILE.exists():
@@ -384,37 +405,39 @@ def get_master_key_metadata() -> dict:
     return metadata
 
 
-# CLI HELPER (Optional)
+# CLI HELPER
 
 def print_setup_instructions() -> None:
-    """
-    Print instructions for setting up master key.
-    
-    Useful for developers/deployment scripts.
-    """
+    """Print instructions for setting up master key."""
     hex_key = generate_master_key_hex()
-    
+
     print("\n" + "=" * 70)
     print("🔐 TRUSTSHARE MASTER KEY SETUP")
     print("=" * 70)
-    print("\n✅ PRODUCTION (Recommended):")
+    print("\n✅ PRODUCTION (Required):")
     print(f"   export {MASTER_KEY_ENV_VAR}={hex_key}")
     print(f"\n   # Or add to .env file:")
     print(f"   {MASTER_KEY_ENV_VAR}={hex_key}")
-    
+    print(f"   ENVIRONMENT=production")
+
     print("\n⚠️  DEVELOPMENT ONLY:")
     print(f"   Master key will be auto-generated in {MASTER_KEY_FILE}")
     print("   DO NOT COMMIT master.key TO VERSION CONTROL!")
-    
+
+    print("\n🚨 PRODUCTION GUARD:")
+    print("   When ENVIRONMENT=production is set:")
+    print(f"   - {MASTER_KEY_ENV_VAR} MUST be set")
+    print("   - Auto-generation is BLOCKED")
+    print("   - Missing key raises KeyManagementError on startup")
+
     print("\n📋 SECURITY CHECKLIST:")
-    print("   [ ] Master key is 32 bytes (256-bit)")
-    print("   [ ] Master key is stored in environment variable (production)")
-    print("   [ ] Master key file has 0600 permissions (if used)")
+    print(f"   [ ] {MASTER_KEY_ENV_VAR} is 64 hex characters (32 bytes)")
+    print(f"   [ ] {MASTER_KEY_ENV_VAR} is in environment variable (production)")
     print("   [ ] master.key is in .gitignore")
+    print("   [ ] ENVIRONMENT=production is set in production .env")
     print("   [ ] Backup master key securely (loss = permanent data loss)")
     print("=" * 70 + "\n")
 
 
 if __name__ == "__main__":
-    # Allow running as script to get setup instructions
     print_setup_instructions()

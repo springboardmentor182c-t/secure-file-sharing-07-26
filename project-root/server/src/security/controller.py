@@ -429,6 +429,7 @@ def get_security_metrics(
         
         master_key_meta = get_master_key_metadata()
         
+        algo = get_current_algorithm()
         return SecurityMetricsResponse(
             total_files_encrypted=total_encrypted,
             total_encryption_keys=total_keys,
@@ -440,8 +441,8 @@ def get_security_metrics(
             unauthorized_attempts_24h=unauthorized,
             master_key_source=master_key_meta.get('source', 'unknown'),
             storage_used_mb=storage_mb,
-            encryption_algorithm="AES-256-GCM",
-            key_algorithm="AES-256 (256-bit keys)",
+            encryption_algorithm=algo.name,
+            key_algorithm=f"{algo.name} ({algo.key_size_bits}-bit keys)",
         )
         
     except HTTPException:
@@ -656,9 +657,13 @@ def get_security_audit_log(
 
 @router.get("/info")
 def get_security_module_info(
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Get information about the security module."""
+    from src.security.key_rotation import _get_rotation_days
+    rotation_days = _get_rotation_days(db)
+
     return {
         "module": "TrustShare Encryption & Security",
         "version": "2.0.0",
@@ -670,7 +675,7 @@ def get_security_module_info(
             "hash_algorithms_supported": [
                 "SHA-256", "SHA-384", "SHA-512", "SHA3-256", "BLAKE2b"
             ],
-            "key_rotation_policy_days": KEY_ROTATION_DAYS,
+            "key_rotation_policy_days": rotation_days,
             "master_key_encrypted_storage": True,
             "atomic_writes": True,
             "path_traversal_protection": True,
