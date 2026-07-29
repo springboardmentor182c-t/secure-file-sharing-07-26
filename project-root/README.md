@@ -23,6 +23,7 @@ SecureShare is a full-stack, production-ready secure file storage and sharing pl
 - **🔍 Real-time Search** — Filter files instantly by name across the full list.
 
 ### UI & UX
+- **📊 Interactive Dashboard & Analytics** — Real-time storage usage breakdown with interactive donut hover tooltips, live storage quota tracking, recent activity feed, and silent login redirection.
 - **📊 List & Grid Views** — Toggle between a sortable table and a rich card-based grid.
 - **↕️ Column Sorting & Filtering** — Sort by Name, Size, Date, or Status; filter to show only encrypted or plaintext files.
 - **🌙 Dark / Light Mode** — Persistent theme toggle saved to `localStorage`.
