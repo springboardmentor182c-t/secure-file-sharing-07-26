@@ -174,6 +174,12 @@ export const auditAPI = {
   list: (limit = 50) => api.get('/api/audit/', { params: { limit } }),
 };
 
+// Current user's activity feed. The shared Axios client supplies the JWT and
+// environment-based API URL, so this feature never hardcodes a host.
+export const activityAPI = {
+  list: (limit = 100) => api.get('/api/activity/', { params: { limit } }),
+};
+
 // ── Search ───────────────────────────────────────────────────────────────
 export const searchAPI = {
   search: (query) =>
