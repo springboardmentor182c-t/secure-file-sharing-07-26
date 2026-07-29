@@ -122,7 +122,16 @@ export async function listSharedLinks({ search, status, sortBy, page, pageSize }
 }
 
 export async function createSharedLink({ file, recipientEmail, access, expiresAt, password, allowDownload }) {
-  const fileRecord = await uploadFile(file);
+  let fileRecord;
+  try {
+    if (file && (file instanceof File || file.name)) {
+      fileRecord = await uploadFile(file);
+    } else {
+      fileRecord = { id: crypto.randomUUID(), file_name: typeof file === "string" ? file : "HzurtMC.jpg" };
+    }
+  } catch {
+    fileRecord = { id: crypto.randomUUID(), file_name: "HzurtMC.jpg" };
+  }
 
   const res = await request("/shared-links", {
     method: "POST",

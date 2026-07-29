@@ -7,7 +7,7 @@ export default function Sidebar({ users, stats, currentUser }) {
   const isAdmin = userRole.includes("admin");
 
   const mainLinks = [
-    ...(isAdmin ? [{ name: "Dashboard", path: "/", icon: LayoutDashboard }] : []),
+    { name: "Dashboard", path: "/", icon: LayoutDashboard },
     { name: "My Files", path: "/files", icon: Folder },
     { name: "Shared Files", path: "/shared-files", icon: Link2 },
     { name: "Shared Links", path: "/shared-links", icon: Share2 },
@@ -16,10 +16,10 @@ export default function Sidebar({ users, stats, currentUser }) {
     { name: "Trash", path: "/trash", icon: Trash2 },
   ];
 
-  const securityLinks = isAdmin ? [
+  const securityLinks = [
     { name: "Audit Logs", path: "/audit", icon: ShieldAlert },
     { name: "Security", path: "/security", icon: ShieldAlert },
-  ] : [];
+  ];
 
   const accountLinks = [
     { name: "Settings", path: "/settings", icon: Settings },

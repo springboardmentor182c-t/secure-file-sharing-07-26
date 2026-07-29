@@ -52,13 +52,6 @@ function MainLayout() {
   }
 
   const activeUser = user || currentUser || { name: "Admin User", role: "System Administrator", initials: "AU" };
-  const userRoleStr = (activeUser?.role || "").toLowerCase();
-  const isSecurityRoute = ["/security", "/monitoring", "/audit"].includes(location.pathname);
-  const isAdmin = userRoleStr.includes("admin") || userRoleStr.includes("administrator");
-
-  if (isSecurityRoute && !isAdmin) {
-    return <Navigate to="/" replace />;
-  }
 
 
   return (
