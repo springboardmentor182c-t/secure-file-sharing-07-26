@@ -69,10 +69,10 @@ def _bucket_for(mimetype: Optional[str]) -> str:
 
 def record_admin_action(
     db: Session,
-    admin_id: int,
+    admin_id,
     action: str,
     target: Optional[str] = None,
-    target_id: Optional[int] = None,
+    target_id=None,
     level: str = "info",
 ) -> None:
     """Write an admin action to the audit trail. Caller owns the commit."""
@@ -81,7 +81,7 @@ def record_admin_action(
             user_id=admin_id,
             action=action,
             resource_type="user",
-            resource_id=target_id,
+            resource_id=str(target_id) if target_id is not None else None,
             resource_name=target,
             level=level,
         )
