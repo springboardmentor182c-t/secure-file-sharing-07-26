@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 from src.database.core import Base
+
 
 class File(Base):
     __tablename__ = "files"
@@ -10,3 +11,13 @@ class File(Base):
     file_type = Column(String, nullable=False)
     uploaded_by = Column(String, nullable=False)
     uploaded_at = Column(String, nullable=False)
+
+    # New fields
+    category = Column(String, default="Documents")
+    tags = Column(String, default="")
+    is_encrypted = Column(Boolean, default=True)
+    require_password = Column(Boolean, default=False)
+    password = Column(String, nullable=True)
+    virus_scanned = Column(Boolean, default=False)
+    notify_on_access = Column(Boolean, default=False)
+    is_safe = Column(Boolean, default=True)
