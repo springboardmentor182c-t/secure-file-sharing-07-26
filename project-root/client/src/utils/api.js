@@ -6,6 +6,16 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+// FIX ISS-D9: only wipe auth-related keys, preserve theme/settings/etc.
+const AUTH_STORAGE_KEYS = ['access_token', 'refresh_token', 'user'];
+
+const clearAuthStorage = () => {
+  AUTH_STORAGE_KEYS.forEach((k) => {
+    localStorage.removeItem(k);
+    sessionStorage.removeItem(k);
+  });
+};
+
 // ── Request interceptor: attach JWT ────────────────────────────────────────
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
@@ -20,25 +30,29 @@ api.interceptors.response.use(
     const originalRequest = err.config;
     if (err.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const refreshToken = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token');
+
+      // FIX ISS-D10: detect original storage so refresh writes back to same one
+      const usedLocalStorage = !!localStorage.getItem('refresh_token');
+      const refreshToken =
+        localStorage.getItem('refresh_token') ||
+        sessionStorage.getItem('refresh_token');
+
       if (refreshToken) {
         try {
           const { data } = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
             refresh_token: refreshToken,
           });
-          const storage = localStorage.getItem('refresh_token') ? localStorage : sessionStorage;
+          const storage = usedLocalStorage ? localStorage : sessionStorage;
           storage.setItem('access_token', data.access_token);
           storage.setItem('refresh_token', data.refresh_token);
           originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
           return api(originalRequest);
         } catch {
-          localStorage.clear();
-          sessionStorage.clear();
+          clearAuthStorage();       // FIX ISS-D9
           window.location.href = '/login';
         }
       } else {
-        localStorage.clear();
-        sessionStorage.clear();
+        clearAuthStorage();         // FIX ISS-D9
         window.location.href = '/login';
       }
     }
@@ -215,4 +229,3 @@ export const settingsAPI = {
 };
 
 export default api;
-
