@@ -28,21 +28,25 @@ function formatDate(date) {
 }
 
 function TrashRow({ file, onRestore, onDelete }) {
+  const displayName = file.original_filename || file.original_name || file.file_name || file.name || "-";
+  const displayType = file.extension || file.file_extension || file.type || "-";
+  const displaySize = file.size ?? file.file_size ?? null;
+
   return (
     <tr className="border-b border-slate-800 hover:bg-slate-800 transition-colors duration-200">
       <td className="px-6 py-4">
         <div className="flex flex-col">
-          <span className="font-semibold text-white">{file.original_name}</span>
-          <span className="text-xs text-gray-400 mt-1">{file.file_name}</span>
+          <span className="font-semibold text-white">{displayName}</span>
+          <span className="text-xs text-gray-400 mt-1">{displayName}</span>
         </div>
       </td>
 
       <td className="px-6 py-4">
-        <span className="text-gray-300 uppercase">{file.file_extension || "-"}</span>
+        <span className="text-gray-300 uppercase">{displayType === "-" ? "-" : String(displayType).toUpperCase()}</span>
       </td>
 
       <td className="px-6 py-4">
-        <span className="text-gray-300">{formatFileSize(file.file_size)}</span>
+        <span className="text-gray-300">{formatFileSize(displaySize)}</span>
       </td>
 
       <td className="px-6 py-4">
