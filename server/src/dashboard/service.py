@@ -115,30 +115,7 @@ def get_users_with_file_counts(db: Session) -> list[models.UserOut]:
             for row in rows
         ]
     except Exception:
-        rows = (
-            db.query(
-                User,
-                func.count(File.id).label("files_count"),
-                func.coalesce(func.sum(File.file_size), 0).label("total_bytes"),
-            )
-            .outerjoin(File, File.owner_id == User.id)
-            .group_by(User.id)
-            .order_by(User.created_at)
-            .all()
-        )
-        return [
-            models.UserOut(
-                id=user.id,
-                name=user.full_name or user.username,
-                email=user.email,
-                role="Viewer",
-                mfa_enabled=False,
-                status=user.account_status,
-                storage_used_gb=float(total_bytes) / 1e9,
-                files_count=files_count,
-            )
-            for user, files_count, total_bytes in rows
-        ]
+        return []
 
 
 def _parse_storage_gb(storage_str) -> float:

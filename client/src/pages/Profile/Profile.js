@@ -7,13 +7,14 @@ function Profile() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({
-    fullName: "Admin User",
-    email: "admin@trustshare.com",
+    fullName: "",
+    email: "",
     role: "System Administrator",
-    department: "Engineering & Security",
-    storageUsedGB: 0.01,
+    department: "",
+    storageUsedGB: 0,
     storageLimitGB: 1000,
   });
+
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/users/me`)
@@ -23,7 +24,7 @@ function Profile() {
           setProfile((prev) => ({ ...prev, ...data }));
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 

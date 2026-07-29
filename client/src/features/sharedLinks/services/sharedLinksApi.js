@@ -129,7 +129,7 @@ export async function createSharedLink({ file, recipientEmail, access, expiresAt
     json: {
       file_id: fileRecord.id,
       recipient_email: recipientEmail,
-      permission: access,
+      permission: (access || "view").toLowerCase(),
       expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
       password: password ? password : null,
       allow_download: !!allowDownload,
