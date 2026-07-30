@@ -7,6 +7,7 @@ import Header from "./components/Header/Header";
 import { HeaderSkeleton } from "./components/shared/Skeleton";
 import FileAnalyticsView from "./components/views/FileAnalyticsView";
 import SecurityView from "./components/views/SecurityView";
+import { getAnalyticsErrorMessage } from "./analyticsError";
 import "./analytics.css";
 
 const DATE_RANGE_TO_DAYS = {
@@ -62,10 +63,12 @@ export default function Analytics() {
   }, [uiConfig, activeTab]);
 
   if (error) {
+    const errorMessage = getAnalyticsErrorMessage(error);
     return (
       <div className="an-page">
         <div className="an-error">
           <p className="an-error-title">Unable to load analytics.</p>
+          <p className="an-error-detail">{errorMessage}</p>
           <button className="an-error-retry" onClick={refresh}>
             Try again
           </button>

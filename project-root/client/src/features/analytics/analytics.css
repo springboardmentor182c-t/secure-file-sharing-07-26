@@ -1349,6 +1349,15 @@ body.dark .an-tab-btn--active .an-tab-pill {
   letter-spacing: -0.2px;
 }
 
+.an-error-detail {
+  max-width:      520px;
+  margin:         -8px 0 0;
+  color:          var(--an-empty-text);
+  font-size:      14px;
+  line-height:    1.5;
+  text-align:     center;
+}
+
 .an-error-retry {
   padding:       10px 24px;
   border-radius: 12px;
