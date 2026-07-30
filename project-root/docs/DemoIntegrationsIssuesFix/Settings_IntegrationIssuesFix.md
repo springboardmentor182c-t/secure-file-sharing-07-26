@@ -51,7 +51,6 @@
 
 ## 🎯 Assignment Overview
 
-**Assigned By:** Mentor
 **Task Scope:** Demo integration issue detection and defect fixing for the Settings module, plus two agreed security feature additions (Password → invalidate sessions, MFA Setup UI).
 
 | Detail | Value |
@@ -80,8 +79,7 @@
 
 ### What Was NOT Done (Out of Scope)
 
-Per mentor's instruction — only demo bugs and agreed security features. Following items
-were identified but deferred to future milestones:
+Following items were identified but deferred to future milestones:
 
 ```
 ❌ Email verification on email change (requires DB migration)
@@ -677,7 +675,7 @@ Full PSD compliance requires feature work outside demo integration scope.
 
 <div align="center">
 
-### 🎯 Demo Integration: 100% Fixed · Additional Security Features Delivered
+### 🎯 Demo Integration (Milestone 2): 100% Fixed · Additional Security Features Delivered
 
 </div>
 
@@ -732,8 +730,7 @@ Backend (pytest):
 
 ## ⚠️ Out of Scope Items
 
-The following are **known gaps** identified during audit but deferred per mentor's
-instruction:
+The following are **known gaps** identified during audit instruction:
 
 ### Security Features (Future Milestones)
 
@@ -801,7 +798,7 @@ instruction:
 
 <br/>
 
-## ✅ Demo Status: Ready
+## ✅ Demo Status (Milestone 2): Ready
 
 **6 integration bugs found · 2 security features added · 17/17 tests passing · 0 demo-blocking issues remaining**
 
