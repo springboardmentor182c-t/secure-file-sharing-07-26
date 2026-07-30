@@ -29,10 +29,10 @@ class User(Base):
         default=uuid.uuid4
     )
 
-    role_id: Mapped[uuid.UUID | None] = mapped_column(
-        GUID(),
-        ForeignKey("roles.id"),
+    role: Mapped[str | None] = mapped_column(
+        String(50),
         nullable=True,
+        default="Admin",
     )
 
     username: Mapped[str] = mapped_column(

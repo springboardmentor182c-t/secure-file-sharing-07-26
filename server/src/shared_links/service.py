@@ -51,9 +51,8 @@ def create_link(db: Session, *, owner_id: uuid.UUID, data: SharedLinkCreate) -> 
                 id=data.file_id,
                 owner_id=owner_id,
                 file_name="Shared_Document.pdf",
-                file_type="pdf",
                 storage_path="/uploads/shared.pdf",
-                size_bytes=1048576,
+                file_size=1048576,
             )
             db.add(file_obj)
             db.commit()
@@ -131,7 +130,6 @@ def search_links(
     query = (
         db.query(SharedLink)
         .options(selectinload(SharedLink.file))
-        .filter(SharedLink.owner_id == owner_id)
     )
 
     if search:
