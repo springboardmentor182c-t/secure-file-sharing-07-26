@@ -1,94 +1,136 @@
+from sqlalchemy import text
+
+from src.database.core import SessionLocal
+from .models import (
+    DashboardResponse,
+    Summary,
+    WeeklyActivity,
+    StorageType,
+    RecentFile,
+    RecentActivity,
+)
+
+
 def get_dashboard_data():
-    return {
-        "summary": {
-            "total_files": 12847,
-            "new_files_this_week": 134,
+    db = SessionLocal()
 
-            "storage_used": "42.8 GB",
-            "storage_limit": "50 GB",
+    try:
+        # ---------------- Summary ----------------
+        stats = db.execute(
+            text("""
+                SELECT item_key, value
+                FROM dashboard_stats
+                ORDER BY display_order
+            """)
+        ).mappings().all()
 
-            "active_shares": 284,
-            "new_shares_today": 12,
+        stats_dict = {row["item_key"]: row["value"] for row in stats}
 
-            "security_events": 3,
-            "critical_events": 1,
-        },
+        storage = db.execute(
+            text("""
+                SELECT used_label, total_label
+                FROM dashboard_storage_summary
+                LIMIT 1
+            """)
+        ).mappings().first()
 
-        "weekly_activity": {
-            "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-            "uploads": [30, 35, 22, 41, 55, 15, 10],
-            "downloads": [12, 18, 9, 24, 31, 8, 5],
-        },
+        summary = Summary(
+            total_files=int(str(stats_dict.get("total-files", "0")).replace(",", "")),
+            new_files_this_week=0,          # Not available in DB
+            storage_used=storage["used_label"],
+            storage_limit=storage["total_label"],
+            active_shares=int(str(stats_dict.get("active-shares", "0")).replace(",", "")),
+            new_shares_today=0,             # Not available in DB
+            security_events=0,              # Not available in DB
+            critical_events=0,              # Not available in DB
+        )
 
-        "storage_by_type": [
-            {"name": "Documents", "value": 38},
-            {"name": "Videos", "value": 22},
-            {"name": "Images", "value": 18},
-            {"name": "Archives", "value": 14},
-            {"name": "Other", "value": 8},
-        ],
+        # ---------------- Weekly Activity ----------------
+        trends = db.execute(
+            text("""
+                SELECT day, uploads, shared
+                FROM dashboard_upload_trends
+                ORDER BY display_order
+            """)
+        ).mappings().all()
 
-        "recent_files": [
-            {
-                "id": 1,
-                "name": "Q3-Financial-Report.pdf",
-                "size": "2.4 MB",
-                "uploaded_at": "Today 10:32 AM",
-            },
-            {
-                "id": 2,
-                "name": "Product-Roadmap-2025.pptx",
-                "size": "8.1 MB",
-                "uploaded_at": "Today 09:15 AM",
-            },
-            {
-                "id": 3,
-                "name": "client-database-backup.zip",
-                "size": "124.7 MB",
-                "uploaded_at": "Yesterday 4:48 PM",
-            },
-            {
-                "id": 4,
-                "name": "design-mockups-v3.fig",
-                "size": "34.2 MB",
-                "uploaded_at": "Yesterday 2:10 PM",
-            },
-            {
-                "id": 5,
-                "name": "employee-contracts-2024.docx",
-                "size": "1.1 MB",
-                "uploaded_at": "Jul 3, 2025",
-            },
-        ],
+        weekly_activity = WeeklyActivity(
+            days=[r["day"] for r in trends],
+            uploads=[r["uploads"] for r in trends],
+            downloads=[r["shared"] for r in trends],   # Using shared values
+        )
 
-        "recent_activity": [
-            {
-                "id": 1,
-                "username": "Sarah Mitchell",
-                "action": "Downloaded",
-                "time": "Today 10:32 AM",
-                "status": "success",
-            },
-            {
-                "id": 2,
-                "username": "James Okafor",
-                "action": "Uploaded",
-                "time": "Today 09:15 AM",
-                "status": "success",
-            },
-            {
-                "id": 3,
-                "username": "Unknown",
-                "action": "Login Failed",
-                "time": "Today 08:47 AM",
-                "status": "failed",
-            },
-            {
-                "id": 4,
-                "username": "Priya Nair",
-                "action": "Shared Link",
-                "time": "Yesterday 4:48 PM",
-                "status": "warning",
-            },
-        ],
-    }
+        # ---------------- Storage by Type ----------------
+        storage_types = db.execute(
+            text("""
+                SELECT name, value
+                FROM dashboard_file_type_distribution
+                ORDER BY display_order
+            """)
+        ).mappings().all()
+
+        storage_by_type = [
+            StorageType(
+                name=row["name"],
+                value=row["value"],
+            )
+            for row in storage_types
+        ]
+
+        # ---------------- Recent Files ----------------
+        files = db.execute(
+            text("""
+                SELECT
+                    id,
+                    name,
+                    size,
+                    last_modified
+                FROM dashboard_recent_files
+                ORDER BY display_order
+            """)
+        ).mappings().all()
+
+        recent_files = [
+            RecentFile(
+                id=row["id"],
+                name=row["name"],
+                size=row["size"],
+                uploaded_at=row["last_modified"],
+            )
+            for row in files
+        ]
+
+        # ---------------- Recent Activity ----------------
+        activity = db.execute(
+            text("""
+                SELECT
+                    id,
+                    title,
+                    activity_type,
+                    time
+                FROM dashboard_recent_activity
+                ORDER BY display_order
+            """)
+        ).mappings().all()
+
+        recent_activity = [
+            RecentActivity(
+                id=row["id"],
+                username="System",
+                action=row["title"],
+                time=row["time"],
+                status=row["activity_type"],
+            )
+            for row in activity
+        ]
+
+        return DashboardResponse(
+            summary=summary,
+            weekly_activity=weekly_activity,
+            storage_by_type=storage_by_type,
+            recent_files=recent_files,
+            recent_activity=recent_activity,
+        )
+
+    finally:
+        db.close()

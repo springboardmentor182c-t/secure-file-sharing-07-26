@@ -17,7 +17,6 @@ import Storage from "./pages/Storage";
 // Features
 import Dashboard from "./features/dashboard/Dashboard";
 import NotificationFeature from "./features/notifications/NotificationFeature";
-import Dashboard from "./features/dashboard/Dashboard";
 import ActivityMonitorPage from "./pages/ActivityMonitorPage";
 
 function App() {
@@ -145,7 +144,11 @@ function App() {
         />
         <Route
   path="/admin"
-  element={<AdminDashboard />}
+  element={
+    <PageContainer>
+      <Dashboard />
+    </PageContainer>
+  }
 />
 
         <Route path="/login" element={<Login />} />
