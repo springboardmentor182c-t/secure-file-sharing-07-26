@@ -64,16 +64,26 @@ def get_stats(db: Annotated[Session, Depends(get_db)]):
 @router.get("/monthly-activity", summary="Monthly activity points")
 def get_monthly_activity(db: Annotated[Session, Depends(get_db)]):
     try:
-        count_res = db.execute(text("SELECT count(*) FROM shared_links")).fetchone()
-        active_count = count_res[0] if count_res else 0
-        c1 = max(1, active_count - 2) if active_count > 0 else 0
-        c2 = max(1, active_count - 1) if active_count > 0 else 0
-        return ApiResponse(data=[
-            {"label": "Mar", "created": c1, "access_events": 0},
-            {"label": "Apr", "created": c2, "access_events": 0},
-            {"label": "May", "created": active_count, "access_events": 0},
-            {"label": "Jun", "created": active_count, "access_events": 0},
-            {"label": "Jul", "created": active_count, "access_events": 0},
-        ])
+        rows = db.execute(text("""
+            SELECT 
+                TO_CHAR(created_at, 'Mon') AS month_name,
+                COUNT(*) AS created_count,
+                COALESCE(SUM(views + downloads), 0) AS access_events,
+                TO_CHAR(created_at, 'YYYY-MM') AS sort_key
+            FROM shared_links
+            GROUP BY month_name, sort_key
+            ORDER BY sort_key ASC
+        """)).fetchall()
+
+        if not rows:
+            current_month = datetime.utcnow().strftime("%b")
+            return ApiResponse(data=[{"label": current_month, "created": 0, "access_events": 0}])
+
+        data = [
+            {"label": r[0], "created": r[1], "access_events": r[2]}
+            for r in rows
+        ]
+        return ApiResponse(data=data)
     except Exception:
-        return ApiResponse(data=[{"label": "Jul", "created": 1, "access_events": 0}])
+        current_month = datetime.utcnow().strftime("%b")
+        return ApiResponse(data=[{"label": current_month, "created": 0, "access_events": 0}])
