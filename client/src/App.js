@@ -14,10 +14,13 @@ import Users from "./pages/Users";
 import Activity from "./pages/Activity";
 import Storage from "./pages/Storage";
 
-// Features
+// Featuress
 import Dashboard from "./features/dashboard/Dashboard";
 import NotificationFeature from "./features/notifications/NotificationFeature";
 import ActivityMonitorPage from "./pages/ActivityMonitorPage";
+import Analytics from "./features/analytics/Analytics";
+import NotificationFeature from "./features/notifications/NotificationFeature";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
@@ -42,14 +45,14 @@ function App() {
           }
         />
 
-        <Route
+         <Route
           path="/settings"
           element={
             <PageContainer>
               <Settings />
             </PageContainer>
           }
-        />
+        /> 
 
         <Route
           path="/upload"
@@ -115,6 +118,7 @@ function App() {
         />
 
         <Route path="/login" element={<Login />} />
+         <Route path="/login" element={<Login />} /> 
 
         <Route
           path="/dashboard"
@@ -142,6 +146,16 @@ function App() {
             </PageContainer>
           }
         />
+
+        <Route 
+          path="/analytics" 
+          element={
+            <PageContainer>
+              <Analytics />
+            </PageContainer>
+          }
+        />
+        
         <Route
   path="/admin"
   element={
@@ -151,7 +165,8 @@ function App() {
   }
 />
 
-        <Route path="/login" element={<Login />} />
+        {/* Auth Routes (Without Sidebar/Navbar) */}
+        <Route path="/login" element={<Login />} /> 
         <Route path="/signup" element={<Signup />} />
 
       </Routes>
