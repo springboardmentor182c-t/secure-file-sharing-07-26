@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Activity, Bell, CheckCheck, Download, Eye, Share2, ShieldCheck, Upload, X } from 'lucide-react';
 import { notificationsAPI } from '../utils/api';
+import './Notifications.css';
 
 const TYPE_STYLE = {
   share: { bg: 'rgba(59,130,246,.15)', color: 'var(--blue-400)', Icon: Share2 },
@@ -42,11 +43,16 @@ export default function Notifications() {
   useEffect(() => { load(); }, [load]);
 
   const unread = items.filter((notification) => !notification.is_read);
+  const categoryFor = (notification) => {
+    if (notification.type === 'download') return 'downloads';
+    if (notification.type === 'expiration') return 'expirations';
+    if (notification.type === 'system' || notification.category === 'activity') return 'system';
+    if (notification.category === 'uploads') return 'system';
+    return notification.category;
+  };
   const filtered = filter === 'all'
     ? items
-    : filter === 'unread'
-      ? unread
-      : items.filter((notification) => notification.category === filter);
+    : items.filter((notification) => categoryFor(notification) === filter);
 
   const markRead = async (id) => {
     try {
@@ -81,7 +87,14 @@ export default function Notifications() {
     }
   };
 
-  const filters = ['all', 'unread', 'shares', 'security', 'uploads', 'activity'];
+  const filters = [
+    { value: 'all', label: 'All' },
+    { value: 'shares', label: 'Shares' },
+    { value: 'security', label: 'Security' },
+    { value: 'downloads', label: 'Downloads' },
+    { value: 'expirations', label: 'Expirations' },
+    { value: 'system', label: 'System' },
+  ];
 
   return (
     <div className="fade-in">
@@ -97,17 +110,21 @@ export default function Notifications() {
         )}
       </div>
 
-      <div className="flex gap-2 mb-4" style={{ flexWrap: 'wrap' }}>
-        {filters.map((value) => (
+      <div className="notification-filters" role="tablist" aria-label="Notification categories">
+        {filters.map(({ value, label }) => {
+          const count = value === 'all' ? items.length : items.filter((item) => categoryFor(item) === value).length;
+          return (
           <button
             key={value}
             onClick={() => setFilter(value)}
             className={`btn btn-sm ${filter === value ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ textTransform: 'capitalize' }}
+            role="tab"
+            aria-selected={filter === value}
           >
-            {value} {value === 'unread' && unread.length > 0 ? `(${unread.length})` : ''}
+            {label} <span className="notification-filter-count">{count}</span>
           </button>
-        ))}
+          );
+        })}
       </div>
 
       {error && (
@@ -123,7 +140,7 @@ export default function Notifications() {
         <div className="card text-center" style={{ padding: '48px 24px' }}>
           <Bell size={56} style={{ margin: '0 auto 16px', color: 'var(--text-muted)' }} />
           <div style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 8 }}>
-            {filter === 'unread' ? 'All caught up!' : 'No notifications'}
+            {filter === 'all' ? 'All caught up!' : `No ${filter} notifications`}
           </div>
           <p className="text-secondary text-sm">Real file activity, shares, and security alerts will appear here.</p>
         </div>
@@ -135,7 +152,7 @@ export default function Notifications() {
             return (
               <div
                 key={notification.id}
-                className={`notif-item ${!notification.is_read ? 'unread' : ''}`}
+                className={`notif-item notification-row--${notification.type} ${!notification.is_read ? 'unread' : ''}`}
                 onClick={() => !notification.is_read && markRead(notification.id)}
               >
                 <div className="notif-icon" style={{ background: style.bg, color: style.color }}>

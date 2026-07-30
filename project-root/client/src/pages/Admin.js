@@ -153,7 +153,7 @@ export default function Admin() {
               { name: 'Encryption Service', latency: '45ms' },
               { name: 'Sharing Service', latency: '15ms' },
               { name: 'Analytics Service', latency: '38ms' },
-              { name: 'SQLite DB', latency: '2ms' },
+              { name: 'PostgreSQL Database', latency: '2ms' },
             ].map(s => (
               <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: '.875rem' }}>
                 <div className="flex items-center gap-2">

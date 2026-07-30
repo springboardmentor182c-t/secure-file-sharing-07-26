@@ -180,6 +180,7 @@ const Settings = () => {
 
   // Revoke single session
   const handleSignOutSession = async (id) => {
+    if (!window.confirm('Sign out this device? It will need to authenticate again.')) return;
     setSuccessMsg('');
     setErrorMsg('');
     try {
@@ -193,6 +194,7 @@ const Settings = () => {
 
   // Revoke all other sessions
   const handleSignOutAllOthers = async () => {
+    if (!window.confirm('Sign out every other device? Your current session will remain active.')) return;
     setSuccessMsg('');
     setErrorMsg('');
     try {
