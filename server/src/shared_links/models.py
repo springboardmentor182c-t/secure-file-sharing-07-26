@@ -6,7 +6,7 @@ Pydantic request/response schemas for the Shared Links module.
 SQLAlchemy ORM models, which live under `src/entities/`.)
 """
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Generic, List, Optional, TypeVar
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
@@ -61,7 +61,7 @@ class SharedLinkCreate(BaseModel):
     @classmethod
     def _expiry_must_be_future(cls, v: Optional[datetime]) -> Optional[datetime]:
         if v is not None and v.replace(tzinfo=None) <= datetime.utcnow():
-            raise ValueError("expires_at must be in the future")
+            return datetime.utcnow() + timedelta(days=7)
         return v
 
 

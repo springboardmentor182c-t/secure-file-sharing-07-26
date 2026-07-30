@@ -133,13 +133,20 @@ export async function createSharedLink({ file, recipientEmail, access, expiresAt
     fileRecord = { id: crypto.randomUUID(), file_name: "HzurtMC.jpg" };
   }
 
+  let parsedExpiresAt = null;
+  if (expiresAt) {
+    const d = new Date(expiresAt);
+    d.setHours(23, 59, 59, 999);
+    parsedExpiresAt = d.toISOString();
+  }
+
   const res = await request("/shared-links", {
     method: "POST",
     json: {
       file_id: fileRecord.id,
       recipient_email: recipientEmail,
       permission: (access || "view").toLowerCase(),
-      expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+      expires_at: parsedExpiresAt,
       password: password ? password : null,
       allow_download: !!allowDownload,
     },
