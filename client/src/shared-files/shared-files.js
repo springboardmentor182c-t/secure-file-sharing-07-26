@@ -558,15 +558,44 @@ export function SharedFilesView() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-gray-400 text-xs font-medium">Select or Enter File Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={shareFileName}
-                    onChange={e => setShareFileName(e.target.value)}
-                    placeholder="e.g. Q3_Financial_Audit_Report.pdf"
-                    className="w-full px-3.5 py-2.5 bg-[#1E1F2B] border border-[#34364A] rounded-xl text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-[#7C5CFC] transition-colors"
-                  />
+                  <label className="text-gray-400 text-xs font-medium">Select or Upload File *</label>
+                  <div className="flex items-center gap-2">
+                    <label className="cursor-pointer px-3 py-2 bg-[#7C5CFC]/20 border border-[#7C5CFC]/40 text-[#9E86FF] hover:bg-[#7C5CFC]/30 rounded-xl text-xs font-semibold transition-colors shrink-0 flex items-center gap-1.5">
+                      Choose File
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) {
+                            setShareFileName(f.name);
+                            const szMB = (f.size / (1024 * 1024)).toFixed(1);
+                            setShareFileSize(`${szMB} MB`);
+                            const ext = f.name.rsplit ? f.name.rsplit(".", 1)[1] : f.name.split(".").pop().toLowerCase();
+                            setShareFileType(ext || "pdf");
+                          }
+                        }}
+                      />
+                    </label>
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setShareFileName(e.target.value);
+                          setShareFileSize("2.4 MB");
+                        }
+                      }}
+                      className="w-full px-3 py-2 bg-[#1E1F2B] border border-[#34364A] rounded-xl text-xs text-white focus:outline-none focus:border-[#7C5CFC]"
+                    >
+                      <option value="">-- Or Select Existing File --</option>
+                      <option value="HzurtMC.jpg">HzurtMC.jpg (2.4 MB)</option>
+                      <option value="Q3_Financial_Audit_Report.pdf">Q3_Financial_Audit_Report.pdf (4.2 MB)</option>
+                      <option value="Security_Policy_V2.docx">Security_Policy_V2.docx (1.8 MB)</option>
+                      <option value="kibi.jpg">kibi.jpg (1.1 MB)</option>
+                    </select>
+                  </div>
+                  {shareFileName && (
+                    <p className="text-[11px] text-[#9E86FF] font-medium pt-1">Selected File: {shareFileName}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
