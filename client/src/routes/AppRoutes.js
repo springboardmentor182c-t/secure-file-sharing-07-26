@@ -17,10 +17,14 @@ import { SecurityView } from "../pages/security/security";
 import { AuditLogsView } from "../pages/AuditLogs/AuditLogs";
 import { AnalyticsView } from "../analytics/analytics";
 
+import PublicSharePage from "../pages/PublicSharePage";
+
 function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/share/:id" element={<PublicSharePage />} />
+
         <Route element={<MainLayout />}>
           <Route path="/" element={<Dashboard />} />
 

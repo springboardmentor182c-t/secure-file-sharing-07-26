@@ -15,7 +15,7 @@ from src.shared_links.models import PaginationMeta
 
 _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://localhost/share")
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:5173/share")
 
 
 # ---------------------------------------------------------------------------

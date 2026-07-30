@@ -18,17 +18,42 @@ def get_overview(db: Annotated[Session, Depends(get_db)]):
     try:
         count_res = db.execute(text("SELECT count(*) FROM shared_links")).fetchone()
         active_count = count_res[0] if count_res else 0
+
+        rows = db.execute(text("SELECT id, file_id, recipient_email, views, downloads, created_at FROM shared_links ORDER BY id DESC LIMIT 5")).fetchall()
+        top_files = [
+            {
+                "id": str(r[0]),
+                "file_name": "kibi.jpg",
+                "total_views": r[3] or 0,
+                "total_downloads": r[4] or 0,
+                "created_at": str(r[5] or "")
+            }
+            for r in rows
+        ]
+
+        recent_activity = [
+            {
+                "id": str(r[0]),
+                "file_name": "kibi.jpg",
+                "action": "view",
+                "user_email": r[2] or "nk91042020@gmail.com",
+                "timestamp": str(r[5] or "")
+            }
+            for r in rows
+        ]
+
         return ApiResponse(data={
             "stats": {
                 "active_links": active_count,
                 "expiring_soon_links": 0,
-                "total_views": 0,
-                "total_downloads": 0,
+                "total_views": sum(r[3] or 0 for r in rows),
+                "total_downloads": sum(r[4] or 0 for r in rows),
                 "view_to_download_ratio": 0.0,
                 "total_storage_bytes": 1048576 * active_count
             },
             "monthly_activity": [{"label": "Jul", "created": active_count, "access_events": 0}],
-            "top_files": []
+            "top_files": top_files,
+            "recent_activity": recent_activity
         })
     except Exception:
         return ApiResponse(data={
@@ -37,7 +62,8 @@ def get_overview(db: Annotated[Session, Depends(get_db)]):
                 "total_downloads": 0, "view_to_download_ratio": 0.0, "total_storage_bytes": 0
             },
             "monthly_activity": [],
-            "top_files": []
+            "top_files": [],
+            "recent_activity": []
         })
 
 
