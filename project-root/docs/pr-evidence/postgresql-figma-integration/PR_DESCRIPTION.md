@@ -20,7 +20,7 @@ All screenshots below were taken from authenticated local builds at the same `81
 
 | Before: fixed desktop sidebar | After: tablet navigation drawer |
 | --- | --- |
-| ![Before - the fixed sidebar consumes a large part of the tablet viewport](https://raw.githubusercontent.com/springboardmentor182c-t/secure-file-sharing-07-26/codex/postgresql-figma-integration/project-root/docs/pr-evidence/postgresql-figma-integration/01-dashboard-before.jpg) | ![After - the sidebar is replaced by a menu button and content uses the full viewport](https://raw.githubusercontent.com/springboardmentor182c-t/secure-file-sharing-07-26/codex/postgresql-figma-integration/project-root/docs/pr-evidence/postgresql-figma-integration/01-dashboard-after.jpg) |
+| ![Before - the fixed sidebar consumes a large part of the tablet viewport](https://raw.githubusercontent.com/springboardmentor182c-t/secure-file-sharing-07-26/Abhishek/postgresql-figma-integration/project-root/docs/pr-evidence/postgresql-figma-integration/01-dashboard-before.jpg) | ![After - the sidebar is replaced by a menu button and content uses the full viewport](https://raw.githubusercontent.com/springboardmentor182c-t/secure-file-sharing-07-26/Abhishek/postgresql-figma-integration/project-root/docs/pr-evidence/postgresql-figma-integration/01-dashboard-after.jpg) |
 
 **Before:** the 260 px desktop sidebar remained visible at tablet width. Dashboard cards and content were compressed into the remaining space.
 
@@ -30,7 +30,7 @@ All screenshots below were taken from authenticated local builds at the same `81
 
 | Before: basic file activity | After: complete audit-focused view |
 | --- | --- |
-| ![Before - Activity contains basic upload, download, share, and security summaries](https://raw.githubusercontent.com/springboardmentor182c-t/secure-file-sharing-07-26/codex/postgresql-figma-integration/project-root/docs/pr-evidence/postgresql-figma-integration/02-activity-before.jpg) | ![After - Activity and Audit Log includes unique users, flagged and blocked metrics, additional filters, and suspicious-only filtering](https://raw.githubusercontent.com/springboardmentor182c-t/secure-file-sharing-07-26/codex/postgresql-figma-integration/project-root/docs/pr-evidence/postgresql-figma-integration/02-activity-after.jpg) |
+| ![Before - Activity contains basic upload, download, share, and security summaries](https://raw.githubusercontent.com/springboardmentor182c-t/secure-file-sharing-07-26/Abhishek/postgresql-figma-integration/project-root/docs/pr-evidence/postgresql-figma-integration/02-activity-before.jpg) | ![After - Activity and Audit Log includes unique users, flagged and blocked metrics, additional filters, and suspicious-only filtering](https://raw.githubusercontent.com/springboardmentor182c-t/secure-file-sharing-07-26/Abhishek/postgresql-figma-integration/project-root/docs/pr-evidence/postgresql-figma-integration/02-activity-after.jpg) |
 
 **Before:** the page summarized uploads, downloads, and generic security events. Filtering was limited to All, Uploads, Downloads, Shares, and Security, which left sign-in and access audit events difficult to investigate.
 
@@ -40,7 +40,7 @@ All screenshots below were taken from authenticated local builds at the same `81
 
 | Before: generic filters | After: Figma-aligned categories and counts |
 | --- | --- |
-| ![Before - Notifications uses All, Unread, Shares, Security, Uploads, and Activity filters](https://raw.githubusercontent.com/springboardmentor182c-t/secure-file-sharing-07-26/codex/postgresql-figma-integration/project-root/docs/pr-evidence/postgresql-figma-integration/03-notifications-before.jpg) | ![After - Notifications uses counted Shares, Security, Downloads, Expirations, and System categories](https://raw.githubusercontent.com/springboardmentor182c-t/secure-file-sharing-07-26/codex/postgresql-figma-integration/project-root/docs/pr-evidence/postgresql-figma-integration/03-notifications-after.jpg) |
+| ![Before - Notifications uses All, Unread, Shares, Security, Uploads, and Activity filters](https://raw.githubusercontent.com/springboardmentor182c-t/secure-file-sharing-07-26/Abhishek/postgresql-figma-integration/project-root/docs/pr-evidence/postgresql-figma-integration/03-notifications-before.jpg) | ![After - Notifications uses counted Shares, Security, Downloads, Expirations, and System categories](https://raw.githubusercontent.com/springboardmentor182c-t/secure-file-sharing-07-26/Abhishek/postgresql-figma-integration/project-root/docs/pr-evidence/postgresql-figma-integration/03-notifications-after.jpg) |
 
 **Before:** notification filters used a generic Unread/Uploads/Activity grouping and did not show per-category totals.
 
