@@ -82,8 +82,8 @@ def _digest_row(db: Session, user_id: int) -> NotificationPreference:
     return row
 
 
-def get_notification_preferences(db: Session, user_id: int) -> dict:
-    digest = _digest_row(db, user_id)
+def _load_channel_prefs(db: Session, user_id: int) -> dict:
+    """Internal helper: loads existing channel prefs and seeds missing ones without committing."""
     rows = {
         row.activity: row
         for row in db.query(NotificationChannelPreference).filter(
@@ -96,6 +96,12 @@ def get_notification_preferences(db: Session, user_id: int) -> dict:
             row = NotificationChannelPreference(user_id=user_id, activity=activity, **default)
             db.add(row)
             rows[activity] = row
+    return rows
+
+
+def get_notification_preferences(db: Session, user_id: int) -> dict:
+    digest = _digest_row(db, user_id)
+    rows = _load_channel_prefs(db, user_id)
     db.commit()
     return {
         **{activity: {"in_app": rows[activity].in_app, "email": rows[activity].email} for activity in ACTIVITIES},
@@ -104,21 +110,18 @@ def get_notification_preferences(db: Session, user_id: int) -> dict:
 
 
 def update_notification_preferences(db: Session, user_id: int, data: NotificationPreferences) -> dict:
+    # FIX ISS-S5: single commit path — was previously committing twice (once here,
+    # once inside get_notification_preferences). Consolidated into one atomic transaction.
     digest = _digest_row(db, user_id)
     digest.digest_frequency = data.digest_frequency
-    existing = {
-        row.activity: row
-        for row in db.query(NotificationChannelPreference).filter(
-            NotificationChannelPreference.user_id == user_id
-        )
-    }
+    rows = _load_channel_prefs(db, user_id)
     for activity in ACTIVITIES:
         values = getattr(data, activity)
-        row = existing.get(activity)
-        if not row:
-            row = NotificationChannelPreference(user_id=user_id, activity=activity)
-            db.add(row)
+        row = rows[activity]
         row.in_app = values.in_app
         row.email = values.email
     db.commit()
-    return get_notification_preferences(db, user_id)
+    return {
+        **{activity: {"in_app": rows[activity].in_app, "email": rows[activity].email} for activity in ACTIVITIES},
+        "digest_frequency": digest.digest_frequency or "daily",
+    }

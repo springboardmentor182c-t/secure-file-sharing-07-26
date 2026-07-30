@@ -76,6 +76,11 @@ export const authAPI = {
   resetPassword: (token, new_password) => api.post('/api/auth/reset-password', { token, new_password }),
   oauthToken: (provider, code) => api.post('/api/auth/oauth/token', { provider, code }),
   updateProfile: (data) => api.patch('/api/users/me', data),
+
+  // NEW: MFA Setup Flow (proper OTP-verified enable/disable)
+  mfaSetup: () => api.post('/api/auth/mfa/setup'),
+  mfaVerifySetup: (code) => api.post('/api/auth/mfa/verify-setup', { code }),
+  mfaDisableWithPassword: (password) => api.post('/api/auth/mfa/disable-with-password', { password }),
 };
 
 // ── Files ─────────────────────────────────────────────────────────────────

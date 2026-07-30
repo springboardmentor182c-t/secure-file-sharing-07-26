@@ -1,8 +1,43 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { settingsAPI } from '../utils/api';
 import { Eye, EyeOff, Laptop, Smartphone, Monitor } from 'lucide-react';
+import MFACard from './MFACard';  // NEW: MFA setup component
 import './Settings.css';
+
+// FIX ISS-S2: extract backend error message helper
+const getApiErrorMessage = (err, fallback) => {
+  return (
+    err?.response?.data?.detail ||
+    err?.response?.data?.message ||
+    err?.message ||
+    fallback
+  );
+};
+
+// FIX ISS-S6: format ISO date to human-readable "time ago"
+const formatLastActive = (isoString) => {
+  if (!isoString) return 'Unknown';
+  try {
+    const then = new Date(isoString);
+    const now = new Date();
+    const diffMs = now - then;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHr = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHr / 24);
+
+    if (diffSec < 60) return 'Just now';
+    if (diffMin < 60) return `${diffMin} minute${diffMin !== 1 ? 's' : ''} ago`;
+    if (diffHr < 24) return `${diffHr} hour${diffHr !== 1 ? 's' : ''} ago`;
+    if (diffDay < 30) return `${diffDay} day${diffDay !== 1 ? 's' : ''} ago`;
+    return then.toLocaleDateString(undefined, {
+      year: 'numeric', month: 'short', day: 'numeric',
+    });
+  } catch {
+    return isoString;
+  }
+};
 
 const Settings = () => {
   const { user, setUser } = useAuth();
@@ -44,33 +79,50 @@ const Settings = () => {
   });
   const [digestFrequency, setDigestFrequency] = useState('daily');
 
-  // Load initial data
+  // FIX ISS-S4: separate one-time loads from user-dependent hydration
+  // Load initial data ONCE on mount (not on every user context change)
   useEffect(() => {
     // Load profile details
     settingsAPI.getProfile().then(({ data }) => {
-      setFullName(user?.name || data.name);
-      setEmailAddress(user?.email || data.email);
-      setOrganization(data.organization || 'TrustShare Corp');
-      setAvatarUrl(user?.avatar_url || data.avatar_url || null);
-    }).catch(() => {
-      // Fallback
-      setFullName(user?.name || '');
-      setEmailAddress(user?.email || '');
-      setOrganization('TrustShare Corp');
+      setFullName(data.name || '');
+      setEmailAddress(data.email || '');
+      setOrganization(data.organization || '');
+      setAvatarUrl(data.avatar_url || null);
+    }).catch((err) => {
+      // FIX ISS-S1: surface errors instead of swallowing them
+      setErrorMsg(getApiErrorMessage(err, 'Failed to load profile.'));
     });
 
     // Load active sessions
     setLoadingSessions(true);
-    settingsAPI.getSessions().then(({ data }) => {
-      setSessions(data);
-    }).catch(() => {}).finally(() => setLoadingSessions(false));
+    settingsAPI.getSessions()
+      .then(({ data }) => setSessions(data))
+      .catch((err) => {
+        // FIX ISS-S1: surface sessions load errors
+        setErrorMsg(getApiErrorMessage(err, 'Failed to load active sessions.'));
+      })
+      .finally(() => setLoadingSessions(false));
 
     // Load notification preferences
     settingsAPI.getNotificationPreferences().then(({ data }) => {
       const { digest_frequency, ...rest } = data;
       setNotifPrefs(rest);
       setDigestFrequency(digest_frequency);
-    }).catch(() => {});
+    }).catch((err) => {
+      // FIX ISS-S1: surface notification prefs load errors
+      setErrorMsg(getApiErrorMessage(err, 'Failed to load notification preferences.'));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // FIX ISS-S4: run once on mount only, not on user change
+
+  // FIX ISS-S4: sync form fields when user context changes (login, refresh)
+  // WITHOUT re-fetching from API
+  useEffect(() => {
+    if (user) {
+      setFullName((prev) => prev || user.name || '');
+      setEmailAddress((prev) => prev || user.email || '');
+      setAvatarUrl((prev) => prev || user.avatar_url || null);
+    }
   }, [user]);
 
   // Clear feedback messages on tab change
@@ -122,23 +174,25 @@ const Settings = () => {
         name: fullName,
         email: emailAddress,
         organization,
-        avatar_url: avatarUrl
+        avatar_url: avatarUrl,
       };
       const { data } = await settingsAPI.updateProfile(updateData);
-      
-      // Update global user context so sidebar/header updates instantly
+
+      // FIX ISS-S3: sync ALL updated fields to global user context including organization
       if (setUser) {
-        setUser(prev => ({
+        setUser((prev) => ({
           ...prev,
-          name: fullName,
-          email: emailAddress,
-          avatar_url: avatarUrl
+          name: data.name || fullName,
+          email: data.email || emailAddress,
+          organization: data.organization !== undefined ? data.organization : organization,
+          avatar_url: data.avatar_url !== undefined ? data.avatar_url : avatarUrl,
         }));
       }
 
-      setSuccessMsg(data.message || 'Profile settings updated successfully!');
+      setSuccessMsg('Profile updated successfully!');
     } catch (err) {
-      setErrorMsg('Failed to update profile.');
+      // FIX ISS-S2: surface actual backend error
+      setErrorMsg(getApiErrorMessage(err, 'Failed to update profile.'));
     }
   };
 
@@ -164,17 +218,25 @@ const Settings = () => {
     }
 
     try {
-      const { data } = await settingsAPI.changePassword({
+      await settingsAPI.changePassword({
         current_password: currentPassword,
-        new_password: newPassword
+        new_password: newPassword,
       });
-      setSuccessMsg(data.message || 'Password changed successfully!');
+      setSuccessMsg(
+        'Password changed successfully! Other devices have been signed out for security.'
+      );
       // Reset inputs
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+
+      // Refresh sessions list to reflect the security cleanup
+      settingsAPI.getSessions()
+        .then(({ data }) => setSessions(data))
+        .catch(() => { });
     } catch (err) {
-      setErrorMsg('Failed to update password. Please check your credentials.');
+      // FIX ISS-S2: surface actual backend error (e.g. "Current password is incorrect")
+      setErrorMsg(getApiErrorMessage(err, 'Failed to update password.'));
     }
   };
 
@@ -184,10 +246,11 @@ const Settings = () => {
     setErrorMsg('');
     try {
       await settingsAPI.logoutSession(id);
-      setSessions(prev => prev.filter(s => s.id !== id));
-      setSuccessMsg('Logged out of session successfully.');
+      setSessions((prev) => prev.filter((s) => s.id !== id));
+      setSuccessMsg('Signed out of session successfully.');
     } catch (err) {
-      setErrorMsg('Failed to sign out session.');
+      // FIX ISS-S2: surface backend error
+      setErrorMsg(getApiErrorMessage(err, 'Failed to sign out session.'));
     }
   };
 
@@ -197,21 +260,22 @@ const Settings = () => {
     setErrorMsg('');
     try {
       await settingsAPI.logoutAllSessions();
-      setSessions(prev => prev.filter(s => s.is_current));
-      setSuccessMsg('Logged out of all other sessions successfully.');
+      setSessions((prev) => prev.filter((s) => s.is_current));
+      setSuccessMsg('Signed out of all other sessions successfully.');
     } catch (err) {
-      setErrorMsg('Failed to sign out other sessions.');
+      // FIX ISS-S2: surface backend error
+      setErrorMsg(getApiErrorMessage(err, 'Failed to sign out other sessions.'));
     }
   };
 
   // Toggle notification rows
   const handleTogglePref = (activityKey, channel) => {
-    setNotifPrefs(prev => ({
+    setNotifPrefs((prev) => ({
       ...prev,
       [activityKey]: {
         ...prev[activityKey],
-        [channel]: !prev[activityKey][channel]
-      }
+        [channel]: !prev[activityKey][channel],
+      },
     }));
   };
 
@@ -222,7 +286,7 @@ const Settings = () => {
     try {
       const data = {
         ...notifPrefs,
-        digest_frequency: digestFrequency
+        digest_frequency: digestFrequency,
       };
       const { data: res } = await settingsAPI.updateNotificationPreferences(data);
       const { digest_frequency, ...savedPreferences } = res;
@@ -230,7 +294,8 @@ const Settings = () => {
       setDigestFrequency(digest_frequency);
       setSuccessMsg('Notification preferences saved successfully!');
     } catch (err) {
-      setErrorMsg('Failed to update notification preferences.');
+      // FIX ISS-S2: surface backend error
+      setErrorMsg(getApiErrorMessage(err, 'Failed to update notification preferences.'));
     }
   };
 
@@ -239,7 +304,7 @@ const Settings = () => {
     if (!name) return 'TS';
     return name
       .split(' ')
-      .map(n => n[0])
+      .map((n) => n[0])
       .join('')
       .substring(0, 2)
       .toUpperCase();
@@ -251,7 +316,7 @@ const Settings = () => {
       case 'phone':
         return <Smartphone size={18} />;
       case 'tablet':
-        return <Laptop size={18} />; // generic representation
+        return <Laptop size={18} />;
       case 'desktop':
         return <Monitor size={18} />;
       default:
@@ -313,7 +378,7 @@ const Settings = () => {
               <div
                 className="avatar-preview-container"
                 style={{
-                  background: !avatarUrl ? 'linear-gradient(135deg, #2563eb, #4f46e5)' : 'var(--bg-input)'
+                  background: !avatarUrl ? 'linear-gradient(135deg, #2563eb, #4f46e5)' : 'var(--bg-input)',
                 }}
               >
                 {avatarUrl ? (
@@ -322,7 +387,7 @@ const Settings = () => {
                   <span className="avatar-initials">{getInitials(fullName)}</span>
                 )}
               </div>
-              
+
               <div className="avatar-actions">
                 <input
                   type="file"
@@ -392,89 +457,97 @@ const Settings = () => {
 
       {/* ── SECURITY TAB ───────────────────────────────────────── */}
       {activeTab === 'security' && (
-        <div className="settings-card">
-          <div className="settings-card-header">
-            <h2 className="settings-card-title">Change Password</h2>
-            <p className="settings-card-subtitle">Use a strong password you don't use elsewhere.</p>
+        <>
+          <div className="settings-card">
+            <div className="settings-card-header">
+              <h2 className="settings-card-title">Change Password</h2>
+              <p className="settings-card-subtitle">Use a strong password you don't use elsewhere. Changing your password will sign you out on other devices.</p>
+            </div>
+
+            <form onSubmit={handleUpdatePassword}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="currentPassword">Current Password</label>
+                <div className="password-input-wrapper">
+                  <input
+                    id="currentPassword"
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    className="form-input"
+                    placeholder="Enter current password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="password-visibility-btn"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    aria-label={showCurrentPassword ? "Hide password" : "Show password"}
+                  >
+                    {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="newPassword">New Password</label>
+                <div className="password-input-wrapper">
+                  <input
+                    id="newPassword"
+                    type={showNewPassword ? 'text' : 'password'}
+                    className="form-input"
+                    placeholder="Minimum 8 characters"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="password-visibility-btn"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    aria-label={showNewPassword ? "Hide password" : "Show password"}
+                  >
+                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="confirmPassword">Confirm Password</label>
+                <div className="password-input-wrapper">
+                  <input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    className="form-input"
+                    placeholder="Verify new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="password-visibility-btn"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <button type="submit" className="btn btn-primary">
+                  Update Password
+                </button>
+              </div>
+            </form>
           </div>
 
-          <form onSubmit={handleUpdatePassword}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="currentPassword">Current Password</label>
-              <div className="password-input-wrapper">
-                <input
-                  id="currentPassword"
-                  type={showCurrentPassword ? 'text' : 'password'}
-                  className="form-input"
-                  placeholder="Enter current password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  className="password-visibility-btn"
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  aria-label={showCurrentPassword ? "Hide password" : "Show password"}
-                >
-                  {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="newPassword">New Password</label>
-              <div className="password-input-wrapper">
-                <input
-                  id="newPassword"
-                  type={showNewPassword ? 'text' : 'password'}
-                  className="form-input"
-                  placeholder="Minimum 8 characters"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  className="password-visibility-btn"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  aria-label={showNewPassword ? "Hide password" : "Show password"}
-                >
-                  {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="confirmPassword">Confirm Password</label>
-              <div className="password-input-wrapper">
-                <input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  className="form-input"
-                  placeholder="Verify new password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  className="password-visibility-btn"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <button type="submit" className="btn btn-primary">
-                Update Password
-              </button>
-            </div>
-          </form>
-        </div>
+          {/* NEW: MFA Setup Card */}
+          <MFACard
+            onSuccess={(msg) => { setSuccessMsg(msg); setErrorMsg(''); }}
+            onError={(msg) => { setErrorMsg(msg); setSuccessMsg(''); }}
+          />
+        </>
       )}
 
       {/* ── SESSIONS TAB ───────────────────────────────────────── */}
@@ -485,7 +558,7 @@ const Settings = () => {
               <h2 className="settings-card-title">Active Sessions</h2>
               <p className="settings-card-subtitle">Devices currently signed into your account.</p>
             </div>
-            {sessions.filter(s => !s.is_current).length > 0 && (
+            {sessions.filter((s) => !s.is_current).length > 0 && (
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
@@ -502,7 +575,12 @@ const Settings = () => {
             </div>
           ) : (
             <div className="sessions-list">
-              {sessions.map(s => (
+              {sessions.length === 0 && (
+                <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  No active sessions found.
+                </div>
+              )}
+              {sessions.map((s) => (
                 <div key={s.id} className="session-item">
                   <div className="session-info-left">
                     <div className="session-icon-box">
@@ -514,7 +592,10 @@ const Settings = () => {
                         {s.is_current && <span className="session-badge-current">Current</span>}
                       </div>
                       <span className="session-details">
-                        {s.browser_name} • {s.location} • {s.ip_address} • {s.last_active}
+                        {/* FIX ISS-S6: human-readable last_active + skip empty values */}
+                        {[s.browser_name, s.location, s.ip_address, formatLastActive(s.last_active)]
+                          .filter(Boolean)
+                          .join(' • ')}
                       </span>
                     </div>
                   </div>
@@ -559,13 +640,13 @@ const Settings = () => {
               { key: 'link_expirations', label: 'Link Expirations', desc: 'When your shared links are about to expire' },
               { key: 'access_changes', label: 'Access Changes', desc: 'When your access permissions are modified' },
               { key: 'system_updates', label: 'System Updates', desc: 'Important news and updates about TrustShare' },
-            ].map(row => (
+            ].map((row) => (
               <div key={row.key} className="notification-row">
                 <div className="notification-info">
                   <span className="notification-name">{row.label}</span>
                   <span className="notification-desc">{row.desc}</span>
                 </div>
-                
+
                 <div className="notification-toggle-cell">
                   <label className="toggle">
                     <input
@@ -596,10 +677,10 @@ const Settings = () => {
           {/* Frequency Selector */}
           <div className="digest-section">
             <h3 className="digest-title">Email Digest Frequency</h3>
-            <p className="digest-subtitle">Select how often you would like to receive general notifications digests.</p>
-            
+            <p className="digest-subtitle">Select how often you would like to receive general notification digests.</p>
+
             <div className="digest-options">
-              {['instant', 'daily', 'weekly', 'never'].map(freq => (
+              {['instant', 'daily', 'weekly', 'never'].map((freq) => (
                 <button
                   key={freq}
                   type="button"
