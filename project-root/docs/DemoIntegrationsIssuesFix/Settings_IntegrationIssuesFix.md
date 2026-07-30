@@ -7,7 +7,7 @@
 *Demo Integration Verification · Issue Detection · Defect Fix · Security Feature Additions*
 <br/>
 
-![Fix Branch](https://img.shields.io/badge/Branch-Group--D--IntegrationIssuesFix%2FSettings-007AFF?style=for-the-badge&logo=git&logoColor=white)
+![Fix Branch](https://img.shields.io/badge/Branch-Group--D--IntegrationIssuesFix%2FSettings--v2-007AFF?style=for-the-badge&logo=git&logoColor=white)
 ![Status](https://img.shields.io/badge/Demo_Status-Ready-34C759?style=for-the-badge&logo=checkmarx&logoColor=white)
 ![Tests](https://img.shields.io/badge/Tests-17%2F17_Passing-34C759?style=for-the-badge&logo=jest&logoColor=white)
 ![Issues Fixed](https://img.shields.io/badge/Issues_Fixed-8%2F8-34C759?style=for-the-badge&logo=bugcrowd&logoColor=white)
