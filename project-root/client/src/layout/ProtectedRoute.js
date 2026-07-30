@@ -3,6 +3,9 @@ import { Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 
+// FIX ISS-L4: Moved inline CSS to ProtectedRoute.css
+import "./ProtectedRoute.css";
+
 export default function ProtectedRoute({ children, adminOnly = false }) {
   const { user, loading } = useAuth();
 
@@ -26,75 +29,15 @@ export default function ProtectedRoute({ children, adminOnly = false }) {
         >
           Loading TrustShare...
         </motion.p>
-
-        <style>{`
-          .protected-loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            height: 100vh;
-            background: #f8fafc;
-            transition: background 0.3s ease;
-          }
-
-          body.dark .protected-loading {
-            background: #0b1220;
-          }
-
-          .protected-loading-spinner {
-            position: relative;
-            width: 48px;
-            height: 48px;
-          }
-
-          .spinner-ring {
-            position: absolute;
-            inset: 0;
-            border: 3px solid transparent;
-            border-top-color: #6366f1;
-            border-radius: 50%;
-            animation: spinnerRotate 1s linear infinite;
-          }
-
-          .spinner-ring-delay {
-            border-top-color: #3b82f6;
-            animation-duration: 1.5s;
-            animation-direction: reverse;
-            opacity: 0.5;
-          }
-
-          @keyframes spinnerRotate {
-            to { transform: rotate(360deg); }
-          }
-
-          .protected-loading-text {
-            font-size: 13px;
-            font-weight: 500;
-            color: #64748b;
-            letter-spacing: -0.1px;
-            margin: 0;
-            transition: color 0.3s ease;
-          }
-
-          body.dark .protected-loading-text {
-            color: #94a3b8;
-          }
-
-          @media (prefers-reduced-motion: reduce) {
-            .spinner-ring {
-              animation-duration: 3s;
-            }
-          }
-        `}</style>
       </div>
     );
   }
 
   if (!user) return <Navigate to="/login" replace />;
-  if (adminOnly && user.role !== "admin")
+
+  if (adminOnly && user.role !== "admin") {
     return <Navigate to="/dashboard" replace />;
+  }
 
   return children;
 }

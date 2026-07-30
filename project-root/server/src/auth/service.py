@@ -179,8 +179,16 @@ def _build_token_response(user: User, db: Session = None, request=None) -> Token
             )
             db.add(session_row)
             db.commit()
-        except Exception:
-            # Don't fail login if session saving fails; just continue
+        except Exception as _session_err:
+            # FIX ISS-D11: log the failure so we can debug session issues
+            # (don't fail login itself if session saving breaks)
+            try:
+                print(
+                    f"[SESSION SAVE ERROR] {type(_session_err).__name__}: {_session_err}",
+                    flush=True,
+                )
+            except Exception:
+                pass
             db.rollback()
 
     return TokenResponse(

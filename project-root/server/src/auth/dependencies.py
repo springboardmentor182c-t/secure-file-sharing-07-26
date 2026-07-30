@@ -32,7 +32,11 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    to_encode.update({"exp": expire, "type": "access"})
+    # FIX A: preserve caller-supplied "type" (e.g. "mfa_pending", "password_recovery").
+    # Previously we used to_encode.update({"exp": ..., "type": "access"}) which
+    # silently overwrote any type the caller passed in, breaking MFA + reset flows.
+    to_encode["exp"] = expire
+    to_encode.setdefault("type", "access")
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -59,12 +63,33 @@ def get_current_user(
     db: Session = Depends(get_db),
 ) -> User:
     payload = decode_token(token)
-    user_id: int = payload.get("sub")
+
+    # FIX ISS-D5: reject non-access tokens (mfa_pending, refresh, etc.)
+    token_type = payload.get("type", "access")
+    if token_type != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user_id = payload.get("sub")
     if user_id is None:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
         )
-    user = db.query(User).filter(User.id == int(user_id)).first()
+
+    # FIX ISS-D4: safely cast sub to int to prevent 500 errors
+    try:
+        user_id_int = int(user_id)
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+        )
+
+    user = db.query(User).filter(User.id == user_id_int).first()
     if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
