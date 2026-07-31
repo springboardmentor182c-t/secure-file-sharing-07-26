@@ -1,4 +1,4 @@
-import { LayoutDashboard, Folder, Link2, Trash2, Shield, ClipboardList, ShieldAlert, Settings, User, HardDrive, LogOut,Clock  } from "lucide-react";
+import { LayoutDashboard, Folder, Link2, Trash2, Shield, ClipboardList, ShieldAlert, Settings, User, HardDrive, LogOut,Clock,Sparkles  } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 export default function Sidebar({ users, stats }) {
@@ -10,6 +10,8 @@ export default function Sidebar({ users, stats }) {
     { name: "My Files", path: "/files", icon: Folder },
     { name: "Shared Files", path: "/shared-files", icon: Link2 },
     { name: "Recent", path: "/recent", icon: Clock },
+
+    { name: "AI Summary", path: "/ai-summary", icon: Sparkles },
 
     { name: "Trash", path: "/trash", icon: Trash2 },
   ];

@@ -10,6 +10,8 @@ from src.entities.file_category import FileCategory
 
 from src.entities.role import Role
 
+from src.entities.file_summary import FileSummary        
+
 __all__ = [
     "Base",
     "User",
@@ -20,4 +22,5 @@ __all__ = [
     "Notification",
     "FileShare",
     "FileCategory",
+    "FileSummary",
 ]
