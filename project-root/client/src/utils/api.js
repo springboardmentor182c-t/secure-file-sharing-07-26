@@ -465,14 +465,46 @@ export const adminAPI = {
 export const auditAPI = {
 
 
-  list:(limit=50)=>
+  list:(params = {}) =>
     api.get(
       "/api/audit/",
       {
-        params:{
-          limit
-        }
+        params,
       }
+    ),
+
+
+  stats:() =>
+    api.get("/api/audit/stats"),
+
+
+  exportCsv:(params = {}) =>
+    api.get(
+      "/api/audit/export",
+      {
+        params,
+        responseType:"blob",
+      }
+    ),
+
+
+  listBlockedIps:() =>
+    api.get("/api/audit/blocked-ips"),
+
+
+  blockIp:(ip_address, reason)=>
+    api.post(
+      "/api/audit/blocked-ips",
+      {
+        ip_address,
+        reason,
+      }
+    ),
+
+
+  unblockIp:(ip)=>
+    api.delete(
+      `/api/audit/blocked-ips/${ip}`
     ),
 
 };

@@ -14,5 +14,6 @@ class AuditLog(Base):
     resource_id = Column(String, nullable=True)
     resource_name = Column(String, nullable=True)
     ip_address = Column(String, nullable=True)
+    user_agent = Column(String, nullable=True)         # raw UA string; parsed into a device label
     level = Column(String, default="info")             # info | warn | error | success
     created_at = Column(DateTime(timezone=True), server_default=func.now())
