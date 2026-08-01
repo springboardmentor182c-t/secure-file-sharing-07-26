@@ -375,6 +375,10 @@ def count_files_in_folder(db: Session, *, owner_id: uuid.UUID, folder_id: uuid.U
 
 
 def create_folder(db: Session, *, owner_id: uuid.UUID, name: str, parent_id: Optional[uuid.UUID]) -> Folder:
+    owner = db.get(User, owner_id)
+    if owner is None:
+        raise NotFoundError(f"User {owner_id} not found")
+
     _assert_folder_owned(db, parent_id, owner_id)
 
     existing = (
