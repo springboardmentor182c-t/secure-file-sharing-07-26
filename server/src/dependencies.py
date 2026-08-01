@@ -11,17 +11,28 @@ via `POST /users` for local dev, or by a real signup once Auth lands).
 """
 import uuid
 
-from fastapi import Header
+from fastapi import Depends, Header
+from sqlalchemy.orm import Session
 from typing_extensions import Annotated
 
-from src.exceptions import UnauthorizedError
+from src.database.core import get_db
+from src.entities.user import User
+from src.exceptions import NotFoundError, UnauthorizedError
 
 
-def get_current_user_id(x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None) -> uuid.UUID:
+def get_current_user_id(
+    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
+    db: Session = Depends(get_db),
+) -> uuid.UUID:
     if not x_user_id:
         raise UnauthorizedError("Missing X-User-Id header")
 
     try:
-        return uuid.UUID(x_user_id)
+        user_id = uuid.UUID(x_user_id)
     except ValueError:
         raise UnauthorizedError("X-User-Id header must be a valid UUID")
+
+    if db.get(User, user_id) is None:
+        raise NotFoundError(f"User {user_id} not found")
+
+    return user_id

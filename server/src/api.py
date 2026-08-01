@@ -28,10 +28,10 @@ from src.trash.api import router as trash_router
 
 
 def register_routes(app: FastAPI) -> None:
+    app.include_router(recent_router)
     app.include_router(files_router)
     app.include_router(folders_router)
     app.include_router(dashboard_router)
-    app.include_router(recent_router)
     app.include_router(shared_router)
     app.include_router(trash_router)
 
