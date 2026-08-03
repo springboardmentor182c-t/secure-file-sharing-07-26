@@ -1,128 +1,63 @@
-# TrustShare - Secure File-Sharing System
+# Auth Module
 
-This repository currently contains the Dashboard module for TrustShare.
+A standalone user-authentication module: sign up, sign in, TOTP-based
+multi-factor authentication, and password recovery. FastAPI + PostgreSQL
+on the backend, React (JS) + Tailwind on the frontend.
 
-Official stack:
+## Files
 
-- React frontend
-- FastAPI backend APIs
-- PostgreSQL database
-
-The implemented backend scope is intentionally limited to dashboard overview data. It does not include authentication, file management, sharing workflows, encryption workflows, notification delivery, admin dashboard, analytics, or settings modules.
-
-## Project Structure
-
-```text
-client/
-  src/features/dashboard/
-  src/pages/Dashboard.jsx
-
-server/
-  app/api/v1/dashboard/
-  app/models/dashboard.py
-  app/database/session.py
-  app/core/config.py
+```
+backend/
+  main.py          # models, schemas, security helpers, and all routes
+  schema.sql        # Postgres tables (users, password_reset_tokens)
+  requirements.txt
+  .env.example
+frontend/
+  src/
+    api.js           # fetch wrapper for the backend
+    AuthContext.jsx   # holds the session, exposes login/register/logout
+    pages/Auth.jsx     # shared UI + sign in, sign up, forgot/reset, MFA screens
+    pages/Dashboard.jsx # post-login page with MFA enrollment
+    App.jsx            # routes
 ```
 
-## PostgreSQL Setup
-
-Create a PostgreSQL database and user for local development:
-
-```sql
-CREATE DATABASE trustshare;
-CREATE USER trustshare WITH PASSWORD 'trustshare';
-GRANT ALL PRIVILEGES ON DATABASE trustshare TO trustshare;
-```
-
-Create `server/.env` from `server/.env.example`:
-
-```env
-DATABASE_URL=postgresql+psycopg://trustshare:trustshare@localhost:5432/trustshare
-DASHBOARD_SEED_ON_STARTUP=true
-BACKEND_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-```
-
-The FastAPI app creates dashboard tables on startup and seeds dashboard development data when `DASHBOARD_SEED_ON_STARTUP=true`.
-
-You can also seed manually:
+## Backend
 
 ```bash
-cd server
-python -m scripts.seed_dashboard
-```
-
-## FastAPI Server
-
-Install backend dependencies:
-
-```bash
-cd server
-python -m venv .venv
-.venv\Scripts\activate
+cd backend
+python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env        # edit DATABASE_URL and JWT_SECRET
+createdb authdb              # or use psql -f schema.sql once the db exists
+uvicorn main:app --reload    # tables are also auto-created on startup
 ```
 
-Run the API:
+## Frontend
 
 ```bash
-uvicorn app.main:app --reload
-```
-
-Health check:
-
-```text
-GET http://localhost:8000/health
-```
-
-Dashboard API endpoints:
-
-```text
-GET /api/v1/dashboard/summary
-GET /api/v1/dashboard/recent-files
-GET /api/v1/dashboard/recent-activity
-GET /api/v1/dashboard/notifications
-GET /api/v1/dashboard/storage
-GET /api/v1/dashboard/security-status
-GET /api/v1/dashboard/charts
-GET /api/v1/dashboard/team-activity
-```
-
-## React Frontend
-
-Create `client/.env` from `client/.env.example`:
-
-```env
-VITE_API_BASE_URL=http://localhost:8000
-```
-
-Install and run:
-
-```bash
-cd client
+cd frontend
 npm install
-npm run dev
+cp .env.example .env
+npm run dev                  # http://localhost:5173
 ```
 
-Open:
+## Endpoints
 
-```text
-http://localhost:5173
-```
+| Method | Path                    | Purpose                              |
+|--------|-------------------------|---------------------------------------|
+| POST   | /auth/register          | Create an account                     |
+| POST   | /auth/login             | Sign in (returns `mfa_required` flag) |
+| POST   | /auth/mfa/verify        | Complete login with a TOTP code       |
+| POST   | /auth/mfa/setup         | Generate a TOTP secret (authed)       |
+| POST   | /auth/mfa/enable        | Confirm code, turn MFA on (authed)    |
+| POST   | /auth/mfa/disable       | Turn MFA off (authed)                 |
+| GET    | /auth/me                | Current user (authed)                 |
+| POST   | /auth/logout            | Logout (authed)                       |
+| POST   | /auth/forgot-password   | Request a reset token                 |
+| POST   | /auth/reset-password    | Set a new password with the token     |
 
-The dashboard first calls the FastAPI endpoints. If the backend is unavailable during development, the frontend falls back to local dashboard mock data from `client/src/features/dashboard/data/mockDashboardData.js`.
+## Notes
 
-## Dashboard Integration
-
-Use the page wrapper inside the shared app router:
-
-```jsx
-import Dashboard from './pages/Dashboard';
-```
-
-Or mount the feature directly inside a teammate-owned layout:
-
-```jsx
-import Dashboard from './features/dashboard/Dashboard';
-```
-
-The Dashboard component does not include global sidebar, header, routing, authentication, or unrelated modules.
+- Passwords are hashed with bcrypt; access/refresh/MFA tokens are signed JWTs.
+- `forgot-password` returns the raw reset token in the response for local
+  testing only — wire it to a real email provider before deploying.
