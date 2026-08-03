@@ -1,0 +1,57 @@
+.recent-files{
+    background:#fff;
+    padding:20px;
+    border-radius:14px;
+    box-shadow:0 2px 12px rgba(0,0,0,.08);
+}
+
+.recent-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:18px;
+}
+
+.recent-header h3{
+    font-size:18px;
+}
+
+.view-all{
+    border:none;
+    background:none;
+    color:#635BFF;
+    font-weight:600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:4px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+thead{
+    background:#f8f8fb;
+}
+
+th{
+    text-align:left;
+    padding:14px;
+}
+
+td{
+    padding:18px 14px;
+    border-bottom:1px solid #f1f1f1;
+}
+
+tbody tr:hover{
+    background:#fafafa;
+}
+
+.file-name{
+    display:flex;
+    align-items:center;
+    gap:14px;
+}

@@ -2,6 +2,7 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 from sqlalchemy import text
 
 from src.database.core import Base, engine
@@ -19,7 +20,21 @@ from src.api import api_router
 from src.sharing.controller import router as sharing_router
 from src.sharing import model  # noqa: F401
 
+<<<<<<< HEAD
 # Notifications
+=======
+# Feature-specific module imports for analytics
+from src.analytics.controller import router as analytics_router
+from src.analytics import model as analytics_model  # noqa: F401
+
+# Retrieve the frontend URL from environment variables
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
+# Initialize FastAPI
+app = FastAPI(title="TrustShare API", version="1.0.0")
+
+# Configure CORS
+>>>>>>> origin/main-group-C
 from app.api.v1.notifications.routes import router as notification_router
 
 # Activity Monitor
@@ -33,6 +48,7 @@ from src.entities.user import User  # noqa: F401
 from src.entities.system_health import SystemHealth  # noqa: F401
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+FRONTEND_URL_ALT = os.getenv("FRONTEND_URL_ALT", "http://localhost:5173")
 
 app = FastAPI(
     title="TrustShare API",
@@ -43,15 +59,26 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
         FRONTEND_URL,
+        FRONTEND_URL_ALT,
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+<<<<<<< HEAD
+=======
+app.include_router(api_router)
+
+
+@app.get("/")
+def root():
+    return {
+        "message": "Secure File Sharing Platform API is running"
+    }
+
+>>>>>>> origin/main-group-C
 
 @app.on_event("startup")
 def on_startup():
@@ -85,6 +112,7 @@ app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(api_router)
 app.include_router(sharing_router)
+app.include_router(analytics_router)
 app.include_router(notification_router)
 
 
