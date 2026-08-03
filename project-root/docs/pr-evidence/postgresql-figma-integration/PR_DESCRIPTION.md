@@ -2,15 +2,24 @@
 
 ## Summary
 
-This PR retains the UI and behavior updates identified while comparing the application with the TrustShare Figma prototype. Analytics remains owned by its existing implementation and its application code is not changed by this PR.
+This PR retains the UI and behavior updates identified while comparing the application with the TrustShare Figma prototype. Analytics remains owned by its existing implementation and its application code is not changed by this PR; the runtime is corrected so that implementation can run against PostgreSQL.
 
 ## PostgreSQL runtime
 
 The backend Compose environment now starts PostgreSQL 16, waits for its health check, and gives the backend a PostgreSQL connection URL. This allows the existing Analytics module to execute its PostgreSQL `SPLIT_PART` query without changing that module's code. SQLite remains isolated to unit tests.
 
+## Final runtime and integration fixes
+
+- Added the missing frontend Dockerfile and Docker ignore files so the complete stack builds reproducibly.
+- Replaced the Docker backend's reload command with a stable Uvicorn process; reload was scanning mounted local cache files and could terminate the watcher.
+- Added the frontend `REACT_APP_API_URL` configuration so signup, login, and all API-backed modules call port `8000` instead of posting to the React server on port `3000`.
+- Replaced the container-local Ollama default (`localhost:11434`) with the desktop Ollama gateway (`host.docker.internal:11434`) and configured `qwen2.5:1.5b`.
+- Verified that the desktop Ollama provider responds from inside the backend container and generates summaries successfully; existing fallback summaries remain available when an AI provider is unavailable.
+- Removed no working Analytics implementation. The previous SQLite path was removed from the runtime configuration, while SQLite test setup remains available for isolated unit tests.
+
 ## Before and after
 
-All screenshots below were taken from authenticated local builds at the same `812 x 958` browser viewport. The **Before** column is the previously running application on `localhost:3000`; the **After** column is this branch on `localhost:3001`.
+All screenshots below were taken from authenticated local builds at the same `812 x 958` browser viewport. The **Before** column is the previously running application on `localhost:3000`; the **After** column is the corrected branch build on `localhost:3000`.
 
 ### 1. Responsive application shell
 
@@ -51,6 +60,8 @@ All screenshots below were taken from authenticated local builds at the same `81
 ## Validation
 
 - Targeted Activity, Notifications, and Settings tests passed.
+- PostgreSQL-backed Docker smoke tests passed for Dashboard, Files, Activity, Notifications, Settings, and Analytics; each returned `200` for an authenticated user.
+- Ollama connectivity and Qwen summary generation passed from inside the backend container.
 - Frontend production build passed.
 - Browser checks passed at desktop, `812 x 958`, and `390 x 844` viewports.
 
