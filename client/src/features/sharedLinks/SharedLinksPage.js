@@ -8,10 +8,10 @@ import SharedLinksTable from "./components/SharedLinksTable";
 import CreateLinkModal from "./components/CreateLinkModal";
 import EditLinkModal from "./components/EditLinkModal";
 import DeleteConfirmationModal from "./components/DeleteConfirmationModal";
-import ToastContainer from "./components/Toast";
+import ToastContainer from "../../components/common/Toast";
 
 import useSharedLinks from "./hooks/useSharedLinks";
-import useToast from "./hooks/useToast";
+import useToast from "../../hooks/useToast";
 import { LinkIcon, EyeIcon, DownloadIcon, ClockIcon } from "../../layout/icons";
 
 export default function SharedLinksPage() {

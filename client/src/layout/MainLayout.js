@@ -21,15 +21,27 @@ function MainLayout() {
   const location = useLocation();
 
   useEffect(() => {
-    const API_BASE_URL = import.meta.env.VITE_API_URL;
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-    fetch(`${API_BASE_URL}/api/users/me`)
+    fetch(`${API_BASE_URL}/users`)
       .then(res => {
         if (!res.ok) throw new Error("Failed to load user profile");
         return res.json();
       })
       .then(data => {
-        setUser(data);
+        const usersList = Array.isArray(data) ? data : data?.data || [];
+        const current = usersList.find((u) => u.role?.toLowerCase().includes("admin")) || usersList[0];
+        if (current) {
+          const initials = (current.full_name || current.name || "Guest User")
+            .split(" ")
+            .map((part) => part[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase();
+          setUser({ name: current.full_name || current.name || "Guest User", role: current.role || "Viewer", initials: initials || "GU" });
+        } else {
+          setUser({ name: "Guest User", role: "Viewer", initials: "GU" });
+        }
       })
       .catch(err => {
         console.error("Error loading user session:", err);

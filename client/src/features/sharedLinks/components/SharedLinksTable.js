@@ -1,8 +1,8 @@
 import React from "react";
 import TableRow from "./TableRow";
-import Pagination from "./Pagination";
+import Pagination from "../../../components/common/Pagination";
 import EmptyState from "./EmptyState";
-import LoadingSkeleton from "./LoadingSkeleton";
+import LoadingSkeleton from "../../../components/common/LoadingSkeleton";
 import { ChevronDownIcon } from "../../../layout/icons";
 
 const SORT_OPTIONS = [

@@ -1,15 +1,17 @@
-// Temporary stand-in for real authentication.
+// Temporary stand-in for real authentication - shared by every feature
+// (Shared Links, My Files, ...) so the whole app uses ONE identity, not a
+// separate fake one per module.
 //
 // The Auth module (client/src/features/authentication, server/src/auth)
 // isn't implemented yet - login.js, getUsers.js, LoginForm.js are all
-// still empty stubs. Every Shared Links request needs a real
+// still empty stubs. Every authenticated request needs a real
 // `X-User-Id: <uuid>` header (the backend has no fallback user anymore -
-// see server/src/shared_links/dependencies.py), so until real login/JWT
-// exists we bootstrap ONE real user row the first time the app runs and
-// remember its id in localStorage.
+// see server/src/dependencies.py), so until real login/JWT exists we
+// bootstrap ONE real user row the first time the app runs and remember its
+// id in localStorage.
 //
 // This is NOT fake/mock data - it's a real row created through the
-// backend's own dev-only `POST /users` endpoint (server/src/shared_links/
+// backend's own temporary `POST /users` endpoint (server/src/shared_links/
 // dev_data_service.py), the same seam the whole team is already using.
 // The moment the Auth teammate's login flow lands, delete this file and
 // pull the user id from the real session instead - nothing else in the

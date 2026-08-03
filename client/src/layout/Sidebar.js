@@ -1,29 +1,10 @@
-import { LayoutDashboard, Folder, Link2, Trash2, Shield, ClipboardList, ShieldAlert, Settings, User, HardDrive, LogOut,Clock  } from "lucide-react";
+import { HardDrive, LogOut } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { sidebarMenu } from "../data/sidebarMenu";
 
-export default function Sidebar({ users, stats }) {
+function Sidebar({ users, stats }) {
   const admin = users?.find((u) => u.role === "Admin");
   const location = useLocation();
-
-  const mainLinks = [
-    { name: "Dashboard", path: "/", icon: LayoutDashboard },
-    { name: "My Files", path: "/files", icon: Folder },
-    { name: "Shared Files", path: "/shared-files", icon: Link2 },
-    { name: "Recent", path: "/recent", icon: Clock },
-
-    { name: "Trash", path: "/trash", icon: Trash2 },
-  ];
-
-  const securityLinks = [
-    { name: "Monitoring", path: "/monitoring", icon: Shield },
-    { name: "Audit Logs", path: "/audit", icon: ClipboardList },
-    { name: "Security", path: "/security", icon: ShieldAlert },
-  ];
-
-  const accountLinks = [
-    { name: "Settings", path: "/settings", icon: Settings },
-    { name: "Profile", path: "/profile", icon: User },
-  ];
 
   const NavItem = ({ name, path, icon: Icon }) => {
     const isActive = location.pathname === path;
@@ -59,26 +40,16 @@ export default function Sidebar({ users, stats }) {
           </div>
         </div>
 
-        <p className="text-gray-500 text-xs px-4 mb-2 mt-4">MAIN</p>
-        <div className="space-y-1">
-          {mainLinks.map((link) => (
-            <NavItem key={link.name} {...link} />
-          ))}
-        </div>
-
-        <p className="text-gray-500 text-xs px-4 mb-2 mt-6">SECURITY</p>
-        <div className="space-y-1">
-          {securityLinks.map((link) => (
-            <NavItem key={link.name} {...link} />
-          ))}
-        </div>
-
-        <p className="text-gray-500 text-xs px-4 mb-2 mt-6">ACCOUNT</p>
-        <div className="space-y-1">
-          {accountLinks.map((link) => (
-            <NavItem key={link.name} {...link} />
-          ))}
-        </div>
+        {sidebarMenu.map((section) => (
+          <div key={section.title}>
+            <p className="text-gray-500 text-xs px-4 mb-2 mt-6">{section.title}</p>
+            <div className="space-y-1">
+              {section.items.map((link) => (
+                <NavItem key={link.name} {...link} />
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="px-4 pb-4">
@@ -88,20 +59,35 @@ export default function Sidebar({ users, stats }) {
               <HardDrive size={16} className="text-purple-400" />
               Storage
             </div>
-            <span className="text-gray-400 text-xs">
-              {stats ? `${Math.round(storagePercent)}%` : "..."}
+
+            <span
+              className="
+                text-xs
+                text-gray-400
+              "
+            >
+              82%
             </span>
           </div>
           <div className="w-full bg-gray-800 rounded-full h-2 mb-2">
             <div
-              className="bg-purple-500 h-2 rounded-full"
-              style={{ width: `${storagePercent}%` }}
+              className="
+                h-full
+                w-4/5
+                rounded-full
+                bg-[#7C5CFC]
+              "
             />
           </div>
-          <p className="text-gray-500 text-xs">
-            {stats
-              ? `${stats.total_storage_gb.toFixed(0)} GB / ${stats.total_storage_limit_gb} GB Used`
-              : "Loading..."}
+
+          <p
+            className="
+              mt-3
+              text-xs
+              text-gray-400
+            "
+          >
+            412 GB / 500 GB Used
           </p>
         </div>
 
@@ -142,7 +128,7 @@ export default function Sidebar({ users, stats }) {
                 font-bold
               "
             >
-              X
+              V
             </div>
             <div>
               <h3
@@ -152,7 +138,7 @@ export default function Sidebar({ users, stats }) {
                   text-white
                 "
               >
-                XYZ
+                Vamshi
               </h3>
 
               <p
@@ -161,7 +147,7 @@ export default function Sidebar({ users, stats }) {
                   text-gray-400
                 "
               >
-                Engineering Lead
+                Student
               </p>
             </div>
           </div>
@@ -173,3 +159,4 @@ export default function Sidebar({ users, stats }) {
   );
 }
 
+export default Sidebar;
