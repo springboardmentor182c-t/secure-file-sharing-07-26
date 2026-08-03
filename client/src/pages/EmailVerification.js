@@ -52,7 +52,7 @@ const EmailVerification = () => {
             try {
 
                 const response = await axios.get(
-                    "http://localhost:8000/auth/verify-email",
+                    `${process.env.REACT_APP_API_URL}/auth/verify-email`,
                     {
                         params: {
                             token: token

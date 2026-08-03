@@ -26,6 +26,7 @@ body {
 /* =========================
    MAIN LAYOUT
 ========================= */
+
 .layout {
     display: flex;
     height: 100vh;
@@ -35,6 +36,7 @@ body {
 /* =========================
    FIXED SIDEBAR
 ========================= */
+
 .sidebar {
     position: fixed;
     top: 0;
@@ -52,6 +54,7 @@ body {
 }
 
 /* Logo */
+
 .logo-section {
     display: flex;
     align-items: center;
@@ -71,7 +74,8 @@ body {
     font-weight: bold;
 }
 
-/* Menu */
+/* Sidebar Menu */
+
 .sidebar-menu {
     display: flex;
     flex-direction: column;
@@ -114,6 +118,7 @@ body {
 /* =========================
    MAIN SECTION
 ========================= */
+
 .mainSection {
     margin-left: 240px;
     width: calc(100% - 240px);
@@ -126,6 +131,7 @@ body {
 /* =========================
    NAVBAR
 ========================= */
+
 .navbar {
     position: fixed;
     top: 0;
@@ -138,7 +144,7 @@ body {
     justify-content: space-between;
     padding: 0 30px;
     border-bottom: 1px solid #eee;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     z-index: 999;
 }
 
@@ -196,6 +202,8 @@ body {
     justify-content: center;
 }
 
+/* Profile */
+
 .profile {
     display: flex;
     align-items: center;
@@ -226,6 +234,7 @@ body {
 /* =========================
    PAGE CONTENT
 ========================= */
+
 .pageContainer {
     margin-top: 70px;
     height: calc(100vh - 70px);
@@ -237,6 +246,7 @@ body {
 }
 
 /* Scrollbars */
+
 .sidebar::-webkit-scrollbar,
 .pageContainer::-webkit-scrollbar {
     width: 6px;

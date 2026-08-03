@@ -16,16 +16,18 @@ import EmailVerification from "./pages/EmailVerification";
 import TwoFactorAuth from "./pages/TwoFactorAuth";
 import SessionExpired from "./pages/SessionExpired";
 
-// Dashboard Pages
+// Pages
 import Home from "./pages/Home";
 import AdminHome from "./pages/AdminHome";
 import Settings from "./pages/Settings";
 import Securesharing from "./pages/Securesharing";
 import ActivityMonitorPage from "./pages/ActivityMonitorPage";
+import AdminDashboard from "./pages/AdminDashboard";
 
 // Features
 import Dashboard from "./features/dashboard/Dashboard";
 import NotificationFeature from "./features/notifications/NotificationFeature";
+import Analytics from "./features/analytics/Analytics";
 
 // Layout
 import PageContainer from "./layout/PageContainer";
@@ -38,6 +40,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+
         {/* Default */}
         <Route
           path="/"
@@ -45,45 +48,14 @@ function App() {
         />
 
         {/* Authentication */}
-        <Route
-          path="/login"
-          element={<Login />}
-        />
-
-        <Route
-          path="/signup"
-          element={<Signup />}
-        />
-
-        <Route
-          path="/forgot-password"
-          element={<ForgotPassword />}
-        />
-
-        <Route
-          path="/reset-password"
-          element={<ResetPassword />}
-        />
-
-        <Route
-          path="/otp-verification"
-          element={<OTPVerification />}
-        />
-
-        <Route
-          path="/email-verification"
-          element={<EmailVerification />}
-        />
-
-        <Route
-          path="/two-factor"
-          element={<TwoFactorAuth />}
-        />
-
-        <Route
-          path="/session-expired"
-          element={<SessionExpired />}
-        />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/otp-verification" element={<OTPVerification />} />
+        <Route path="/email-verification" element={<EmailVerification />} />
+        <Route path="/two-factor" element={<TwoFactorAuth />} />
+        <Route path="/session-expired" element={<SessionExpired />} />
 
         {/* Home */}
         <Route
@@ -155,7 +127,19 @@ function App() {
           }
         />
 
-        {/* Admin */}
+        {/* Analytics */}
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <PageContainer>
+                <Analytics />
+              </PageContainer>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin Authentication */}
         <Route
           path="/admin"
           element={
@@ -165,11 +149,24 @@ function App() {
           }
         />
 
-        {/* Invalid Routes */}
+        {/* Admin Dashboard */}
+        <Route
+          path="/admin-dashboard"
+          element={
+            <ProtectedRoute>
+              <PageContainer>
+                <AdminDashboard />
+              </PageContainer>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Invalid Route */}
         <Route
           path="*"
           element={<Navigate to="/login" replace />}
         />
+
       </Routes>
     </BrowserRouter>
   );
