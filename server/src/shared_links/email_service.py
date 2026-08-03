@@ -14,7 +14,7 @@ from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 
 logger = logging.getLogger("app.email")
 
-MAIL_ENABLED = os.getenv("MAIL_ENABLED", "false").lower() == "true"
+MAIL_ENABLED = os.getenv("MAIL_ENABLED", "false").lower() == "true" and False  # Disabled for now
 
 
 def _mail_config() -> ConnectionConfig:
