@@ -16,6 +16,7 @@ import { SharedFilesView } from "../shared-files/shared-files";
 import { SecurityView } from "../pages/security/security";
 import { AuditLogsView } from "../pages/AuditLogs/AuditLogs";
 import { AnalyticsView } from "../analytics/analytics";
+import Notifications from "../pages/Notifications/Notifications";
 
 import PublicSharePage from "../pages/PublicSharePage";
 
@@ -41,6 +42,7 @@ function AppRoutes() {
           <Route path="/security" element={<SecurityView />} />
           <Route path="/audit" element={<AuditLogsView />} />
 
+          <Route path="/notifications" element={<Notifications />} />
           <Route path="/settings" element={<Settings />} />
 
           <Route path="/profile" element={<Profile />} />

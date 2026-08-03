@@ -1,4 +1,4 @@
-import { LayoutDashboard, Folder, Link2, Trash2, ShieldAlert, Settings, User, HardDrive, LogOut, Clock, BarChart3, Share2 } from "lucide-react";
+import { LayoutDashboard, Folder, Link2, Trash2, ShieldAlert, Settings, User, HardDrive, LogOut, Clock, BarChart3, Share2, Bell } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 export default function Sidebar({ users, stats, currentUser }) {
@@ -22,6 +22,7 @@ export default function Sidebar({ users, stats, currentUser }) {
   ];
 
   const accountLinks = [
+    { name: "Notifications", path: "/notifications", icon: Bell },
     { name: "Settings", path: "/settings", icon: Settings },
     { name: "Profile", path: "/profile", icon: User },
   ];
