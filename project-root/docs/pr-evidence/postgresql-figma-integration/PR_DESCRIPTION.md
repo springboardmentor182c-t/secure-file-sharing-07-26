@@ -2,7 +2,11 @@
 
 ## Summary
 
-This PR retains the UI and behavior updates identified while comparing the application with the TrustShare Figma prototype. Analytics remains owned by its existing implementation and is not changed by this PR.
+This PR retains the UI and behavior updates identified while comparing the application with the TrustShare Figma prototype. Analytics remains owned by its existing implementation and its application code is not changed by this PR.
+
+## PostgreSQL runtime
+
+The backend Compose environment now starts PostgreSQL 16, waits for its health check, and gives the backend a PostgreSQL connection URL. This allows the existing Analytics module to execute its PostgreSQL `SPLIT_PART` query without changing that module's code. SQLite remains isolated to unit tests.
 
 ## Before and after
 
