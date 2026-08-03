@@ -1,11 +1,4 @@
 ﻿import pytest
-import os
-
-# Unit tests intentionally use an isolated SQLite database. Set this before
-# importing the application because app creation initializes the database.
-os.environ["DATABASE_URL"] = "sqlite:///./test.db"
-os.environ["REQUIRE_POSTGRESQL"] = "false"
-
 from src.api import app
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine

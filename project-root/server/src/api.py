@@ -4,7 +4,6 @@ load_dotenv()
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.exc import SQLAlchemyError
 
 from src.activity.controller import router as activity_router
 from src.admin.controller import router as admin_router
@@ -13,11 +12,7 @@ from src.audit.controller import router as audit_router
 from src.auth.controller import router as auth_router
 from src.dashboard.controller import router as dashboard_router
 from src.database.init_db import init_db
-from src.exceptions import (
-    AppException,
-    app_exception_handler,
-    database_exception_handler,
-)
+from src.exceptions import AppException, app_exception_handler
 from src.files.controller import router as files_router
 from src.folders.controller import router as folders_router
 from src.notifications.controller import router as notifications_router
@@ -71,7 +66,6 @@ def create_app() -> FastAPI:
 
     # ── Exception handlers ────────────────────────────────────────────────────
     app.add_exception_handler(AppException, app_exception_handler)
-    app.add_exception_handler(SQLAlchemyError, database_exception_handler)
 
     # ── Routers ───────────────────────────────────────────────────────────────
     app.include_router(auth_router,           prefix="/api/auth",           tags=["Auth"])
