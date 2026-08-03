@@ -2,7 +2,9 @@
 
 ## Summary
 
-This PR retains the UI and behavior updates identified while comparing the application with the TrustShare Figma prototype. Analytics remains owned by its existing implementation and its application code is not changed by this PR; the runtime is corrected so that implementation can run against PostgreSQL.
+This PR aligns the Activity, Notifications, Settings, and responsive application shell with the TrustShare Figma prototype, then makes the local Docker stack run reliably with PostgreSQL and desktop Ollama.
+
+**Scope clarification:** the Analytics application module is unchanged. Its runtime dependencies are configured correctly, but no Analytics source code or UI behavior is being replaced here.
 
 ## PostgreSQL runtime
 
@@ -15,11 +17,11 @@ The backend Compose environment now starts PostgreSQL 16, waits for its health c
 - Added the frontend `REACT_APP_API_URL` configuration so signup, login, and all API-backed modules call port `8000` instead of posting to the React server on port `3000`.
 - Replaced the container-local Ollama default (`localhost:11434`) with the desktop Ollama gateway (`host.docker.internal:11434`) and configured `qwen2.5:1.5b`.
 - Verified that the desktop Ollama provider responds from inside the backend container and generates summaries successfully; existing fallback summaries remain available when an AI provider is unavailable.
-- Removed no working Analytics implementation. The previous SQLite path was removed from the runtime configuration, while SQLite test setup remains available for isolated unit tests.
+- No working Analytics implementation was removed or replaced. SQLite was removed only as a Compose/runtime database; SQLite test setup remains available for isolated unit tests. The existing AI fallback remains available when Ollama is unavailable.
 
 ## Before and after
 
-All screenshots below were taken from authenticated local builds at the same `812 x 958` browser viewport. The **Before** column is the previously running application on `localhost:3000`; the **After** column is the corrected branch build on `localhost:3000`.
+All screenshots below were taken from authenticated local builds at the same `812 x 958` browser viewport. The **Before** column is the previously running application; the **After** column is the corrected branch build.
 
 ### 1. Responsive application shell
 
