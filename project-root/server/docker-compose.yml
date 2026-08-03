@@ -27,7 +27,7 @@ services:
     depends_on:
       database:
         condition: service_healthy
-    command: uvicorn src.api:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn src.api:app --host 0.0.0.0 --port 8000
 
   frontend:
     build:
