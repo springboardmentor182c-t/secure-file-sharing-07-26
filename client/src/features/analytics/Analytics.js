@@ -44,7 +44,6 @@ const Analytics = () => {
 
     useEffect(() => {
         fetchSummaryData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [globalFilter]);
 
     const handleRefreshData = () => {
