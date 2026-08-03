@@ -386,6 +386,72 @@ def disable_mfa(
     return service.disable_mfa(db, current_user)
 
 
+# MFA Setup Flow (Proper OTP-verified enable/disable)
+
+@router.post("/mfa/setup")
+def mfa_setup(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Step 1 of enabling MFA: send OTP to user's registered email.
+    User must then call /mfa/verify-setup with the OTP to actually enable.
+    """
+    if current_user.mfa_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MFA is already enabled",
+        )
+    service.generate_otp(
+        current_user.id,
+        to_email=current_user.email,
+        user_name=current_user.name,
+    )
+    return {
+        "status": "otp_sent",
+        "message": "Verification code sent to your registered email",
+    }
+
+
+@router.post("/mfa/verify-setup", response_model=models.UserOut)
+def mfa_verify_setup(
+    body: models.VerifyMFASetupRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Step 2 of enabling MFA: verify OTP and flip mfa_enabled=true.
+    """
+    if current_user.mfa_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MFA is already enabled",
+        )
+    if not service.verify_otp_code(current_user.id, body.code, db=db):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code",
+        )
+    return service.enable_mfa(db, current_user)
+
+
+@router.post("/mfa/disable-with-password", response_model=models.UserOut)
+def mfa_disable_with_password(
+    body: models.DisableMFARequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Secure MFA disable: requires password confirmation to prevent
+    unauthorized MFA disabling if session token is stolen.
+    """
+    from src.auth.dependencies import verify_password
+    if not verify_password(body.password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect password",
+        )
+    return service.disable_mfa(db, current_user)
+
 # Change Password (teammate's Settings module)
 
 @router.post("/change-password")
