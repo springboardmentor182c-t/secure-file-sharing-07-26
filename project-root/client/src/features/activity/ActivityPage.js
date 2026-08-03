@@ -4,7 +4,9 @@ import {
   Clock3,
   Download,
   FileText,
+  Eye,
   KeyRound,
+  LogIn,
   RefreshCw,
   Search,
   Share2,
@@ -17,7 +19,7 @@ import {
 import { getActivities } from "./activityService";
 import "./ActivityPage.css";
 
-const FILTERS = ["All", "Uploads", "Downloads", "Shares", "Security"];
+const FILTERS = ["All", "Uploads", "Downloads", "Shares", "Viewed", "Login", "Failed"];
 
 const normalizeAction = (action = "") => action.toUpperCase();
 
@@ -28,6 +30,8 @@ function getActionMeta(action, level = "info") {
   if (normalized.includes("DOWNLOAD")) return { Icon: Download, tone: "purple", label: "Download" };
   if (normalized.includes("SHARE")) return { Icon: Share2, tone: "blue", label: "Share" };
   if (normalized.includes("DELETE")) return { Icon: Trash2, tone: "danger", label: "Delete" };
+  if (normalized.includes("LOGIN")) return { Icon: LogIn, tone: level === "error" ? "danger" : "success", label: "Login" };
+  if (normalized.includes("VIEW") || normalized.includes("ACCESS")) return { Icon: Eye, tone: "blue", label: "Viewed" };
   if (normalized.includes("KEY_ROTATION")) return { Icon: KeyRound, tone: "warning", label: "Security" };
   if (normalized.includes("SUMMARY")) return { Icon: Sparkles, tone: "purple", label: "AI summary" };
   if (["warn", "warning", "error", "critical"].includes(level)) {
@@ -62,6 +66,7 @@ export default function ActivityPage() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
   const [days, setDays] = useState("all");
+  const [suspiciousOnly, setSuspiciousOnly] = useState(false);
 
   const loadActivities = useCallback(async (showLoader = false) => {
     if (showLoader) setRefreshing(true);
@@ -89,27 +94,26 @@ export default function ActivityPage() {
 
     return activities.filter((item) => {
       const action = normalizeAction(item.action);
-      const meta = getActionMeta(item.action, item.level);
       const matchesFilter = filter === "All" || (
         (filter === "Uploads" && action.includes("UPLOAD")) ||
         (filter === "Downloads" && action.includes("DOWNLOAD")) ||
         (filter === "Shares" && action.includes("SHARE")) ||
-        (filter === "Security" && (meta.label === "Security" || meta.tone === "danger"))
+        (filter === "Viewed" && (action.includes("VIEW") || action.includes("ACCESS"))) ||
+        (filter === "Login" && action.includes("LOGIN")) ||
+        (filter === "Failed" && ["warn", "warning", "error", "critical"].includes(item.level))
       );
+      const matchesSuspicious = !suspiciousOnly || ["warn", "warning", "error", "critical"].includes(item.level);
       const matchesDate = !cutoff || new Date(item.created_at).getTime() >= cutoff;
       const searchable = `${item.action || ""} ${item.resource_name || ""} ${item.resource_type || ""}`.toLowerCase();
-      return matchesFilter && matchesDate && (!needle || searchable.includes(needle));
+      return matchesFilter && matchesSuspicious && matchesDate && (!needle || searchable.includes(needle));
     });
-  }, [activities, days, filter, query]);
+  }, [activities, days, filter, query, suspiciousOnly]);
 
   const stats = useMemo(() => ({
     total: activities.length,
-    uploads: activities.filter((item) => normalizeAction(item.action).includes("UPLOAD")).length,
-    downloads: activities.filter((item) => normalizeAction(item.action).includes("DOWNLOAD")).length,
-    security: activities.filter((item) => {
-      const meta = getActionMeta(item.action, item.level);
-      return meta.label === "Security" || meta.tone === "danger";
-    }).length,
+    users: activities.length ? 1 : 0,
+    flagged: activities.filter((item) => ["warn", "warning"].includes(item.level)).length,
+    blocked: activities.filter((item) => ["error", "critical"].includes(item.level)).length,
   }), [activities]);
 
   const exportReport = () => {
@@ -140,8 +144,8 @@ export default function ActivityPage() {
       <header className="activity-header">
         <div>
           <span className="activity-eyebrow"><Activity size={14} /> Personal audit trail</span>
-          <h1 id="activity-title">Activity</h1>
-          <p>Review the file and security actions recorded for your account.</p>
+          <h1 id="activity-title">Activity &amp; Audit Log</h1>
+          <p>Review the complete file and security audit trail for your account.</p>
         </div>
         <div className="activity-header-actions">
           <span className="activity-live"><span aria-hidden="true" /> Updates every 30 seconds</span>
@@ -153,9 +157,9 @@ export default function ActivityPage() {
 
       <div className="activity-stats" aria-label="Activity totals">
         <StatCard icon={Clock3} label="Total events" value={stats.total} tone="blue" />
-        <StatCard icon={Upload} label="Uploads" value={stats.uploads} tone="success" />
-        <StatCard icon={Download} label="Downloads" value={stats.downloads} tone="purple" />
-        <StatCard icon={ShieldAlert} label="Security events" value={stats.security} tone="danger" />
+        <StatCard icon={Activity} label="Unique users" value={stats.users} tone="success" />
+        <StatCard icon={ShieldAlert} label="Flagged events" value={stats.flagged} tone="warning" />
+        <StatCard icon={ShieldAlert} label="Blocked attempts" value={stats.blocked} tone="danger" />
       </div>
 
       <div className="activity-toolbar card">
@@ -199,6 +203,10 @@ export default function ActivityPage() {
             {item}
           </button>
         ))}
+        <label className="activity-suspicious-toggle">
+          <input type="checkbox" checked={suspiciousOnly} onChange={(event) => setSuspiciousOnly(event.target.checked)} />
+          <span>Suspicious only</span>
+        </label>
       </div>
 
       {error && (
@@ -244,6 +252,10 @@ export default function ActivityPage() {
                     <strong>{timestamp.date}</strong>
                     <span>{timestamp.time}</span>
                   </time>
+                  <div className="activity-location">{item.ip_address || "Local session"}</div>
+                  <span className={`activity-status ${["warn", "warning", "error", "critical"].includes(item.level) ? "is-flagged" : "is-success"}`}>
+                    {["warn", "warning", "error", "critical"].includes(item.level) ? "Flagged" : "Success"}
+                  </span>
                 </article>
               );
             })}

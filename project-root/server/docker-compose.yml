@@ -1,21 +1,47 @@
-version: "3.9"
-
 services:
+  database:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-trustshare}
+      POSTGRES_USER: ${POSTGRES_USER:-trustshare}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trustshare}
+    ports:
+      - "5432:5432"
+    volumes:
+      - trustshare_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-trustshare} -d ${POSTGRES_DB:-trustshare}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
   backend:
     build: .
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./app.db
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-trustshare}:${POSTGRES_PASSWORD:-trustshare}@database:5432/${POSTGRES_DB:-trustshare}
+      REQUIRE_POSTGRESQL: "true"
+      AI_SUMMARY_PROVIDER: ollama
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: qwen2.5:1.5b
     volumes:
       - .:/app
-    command: uvicorn src.api:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      database:
+        condition: service_healthy
+    command: uvicorn src.api:app --host 0.0.0.0 --port 8000
 
   frontend:
     build:
       context: ../client
       dockerfile: Dockerfile
+    environment:
+      REACT_APP_API_URL: http://127.0.0.1:8000
     ports:
       - "3000:3000"
     depends_on:
       - backend
+
+volumes:
+  trustshare_postgres:

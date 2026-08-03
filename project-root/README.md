@@ -19,6 +19,18 @@ python -m src.main
 cd client
 npm start
 
+## PostgreSQL development environment
+
+TrustShare uses PostgreSQL for development, integration, and production. SQLAlchemy is the application data layer and connects to PostgreSQL through `psycopg2`.
+
+```powershell
+cd project-root/server
+Copy-Item .env.example .env
+docker compose up --build
+```
+
+The Compose stack starts PostgreSQL 16, waits for its health check, and then starts FastAPI. Override `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` outside source control when shared credentials are required. SQLite remains available only to isolated unit tests.
+
 ## AI-powered file summaries
 
 Authorised users can generate summaries from **My Files** and **Shared With Me** without sending plaintext to the browser. Supported formats are `.txt`, `.md`, `.pdf`, `.docx`, `.pptx`, `.csv`, and `.xlsx`. Image-only PDFs return an explicit OCR-not-enabled message.
@@ -31,7 +43,7 @@ flowchart LR
   Storage --> Memory[In-memory decryption and extraction]
   Memory --> Chunks[Bounded overlapping chunks]
   Chunks --> Provider[Ollama / optional Hugging Face / fallback]
-  Provider --> Database[SQLAlchemy summary record in SQLite/PostgreSQL]
+  Provider --> Database[SQLAlchemy summary record in PostgreSQL]
   Database --> React
 ```
 
@@ -68,7 +80,7 @@ New jobs return `202`; identical completed results return `200` with `cached: tr
 
 ### Database and tests
 
-This repository does not use Alembic. `FileSummary` is registered with the existing `Base.metadata.create_all()` initialization and uses portable SQLAlchemy types compatible with SQLite and PostgreSQL.
+This repository does not use Alembic. Models are registered with the existing `Base.metadata.create_all()` initialization. Use a fresh database when schema definitions change until versioned migrations are introduced.
 
 ```powershell
 cd server

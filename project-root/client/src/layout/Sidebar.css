@@ -164,7 +164,7 @@
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.20);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .sidebar-collapse-btn,
   .sidebar-expand-btn {
     display: none;
@@ -507,7 +507,7 @@
   z-index: 998;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .sidebar-modern {
     transform: translateX(-100%);
   }
