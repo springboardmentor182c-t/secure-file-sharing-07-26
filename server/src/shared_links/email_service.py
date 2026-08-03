@@ -66,6 +66,23 @@ def _send(to_email: str, *, subject: str, html: str) -> None:
         logger.exception("Failed to send email to %s", to_email)
 
 
+def _share_notification_html(file_name: str, share_url: str, permission: str) -> str:
+    return f"""
+    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: auto; padding: 24px; background: #1e1f2b; color: #ffffff; border-radius: 16px;">
+      <h2 style="color: #7c5cfc; margin-top: 0;">🔒 Secure File Shared With You</h2>
+      <p style="color: #cbd5e1;">You have been granted <strong>{permission}</strong> access to <strong>{file_name}</strong> via TrustShare.</p>
+      <div style="margin: 24px 0; text-align: center;">
+        <a href="{share_url}" style="background: #7c5cfc; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Access Shared File</a>
+      </div>
+      <p style="color: #94a3b8; font-size: 12px; margin-bottom: 0;">Protected by TrustShare Zero-Knowledge Encryption • <a href="{share_url}" style="color: #93c5fd;">{share_url}</a></p>
+    </div>
+    """
+
+
+def send_share_notification(*, to_email: str, file_name: str, share_url: str, permission: str = "View") -> None:
+    _send(to_email, subject=f'🔒 File Shared: "{file_name}"', html=_share_notification_html(file_name, share_url, permission))
+
+
 def send_expiry_warning(*, to_email: str, file_name: str, share_url: str, hours_left: int) -> None:
     _send(to_email, subject=f'Your link for "{file_name}" expires soon',
           html=_expiry_warning_html(file_name, share_url, hours_left))

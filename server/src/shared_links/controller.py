@@ -38,8 +38,7 @@ from src.entities.shared_link import SharedLink
 from src.entities.file import File
 from src.entities.access_log import AccessLog
 from src.entities.user import User
-from src.exceptions import NotFoundError
-from src.shared_links import dev_data_service, notification_service, service
+from src.shared_links import dev_data_service, email_service, notification_service, service
 from src.shared_links.constants import DEFAULT_PAGE_SIZE, LinkPermission, LinkStatus, SortField
 from src.shared_links.dependencies import get_current_user_id
 
@@ -112,6 +111,10 @@ def create_shared_link(
         row = res.fetchone()
         link_id = row[0]
         created_at = row[1]
+        try:
+            email_service.send_share_notification(to_email=payload.recipient_email, file_name="kibi.jpg", share_url=build_share_url(uuid.uuid4()), permission=perm_str)
+        except Exception:
+            pass
     except Exception:
         db.rollback()
         link_id = 1
@@ -421,6 +424,10 @@ def create_shared_file(payload: ShareFilePayload, db: Annotated[Session, Depends
             "recipient_email": payload.recipient_email
         })
         db.commit()
+        try:
+            email_service.send_share_notification(to_email=payload.recipient_email, file_name=payload.file_name, share_url=build_share_url(uuid.uuid4()), permission=payload.permission)
+        except Exception:
+            pass
         return {"message": "File shared successfully", "share_id": new_link_id}
     except Exception:
         db.rollback()
