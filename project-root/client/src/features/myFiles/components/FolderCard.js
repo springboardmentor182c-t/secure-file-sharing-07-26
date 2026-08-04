@@ -1,8 +1,14 @@
-export default function FolderCard({ id, title, subtitle, color, onDelete }) {
+export default function FolderCard({ id, title, subtitle, color, onDelete, onOpen }) {
   const gradientColor = color || 'from-[#E0F2FE] to-[#DBEAFE]';
 
   return (
-    <article className={`group relative rounded-3xl border border-[#E2E8F0] bg-gradient-to-br ${gradientColor} p-5 shadow-sm shadow-slate-100 transition hover:-translate-y-0.5 hover:shadow-md`}>
+    <article
+      className={`group relative cursor-pointer rounded-3xl border border-[#E2E8F0] bg-gradient-to-br ${gradientColor} p-5 shadow-sm shadow-slate-100 transition hover:-translate-y-0.5 hover:shadow-md`}
+      onClick={() => onOpen?.({ id, name: title })}
+      onKeyDown={(event) => event.key === 'Enter' && onOpen?.({ id, name: title })}
+      role="button"
+      tabIndex={0}
+    >
       <div className="flex items-center justify-between gap-3">
         <div className="rounded-2xl bg-white/80 p-3 text-[#3730A3] shadow-sm shadow-slate-100">📁</div>
         <div className="flex items-center gap-2">
@@ -12,7 +18,7 @@ export default function FolderCard({ id, title, subtitle, color, onDelete }) {
           {onDelete && id && (
             <button
               type="button"
-              onClick={() => onDelete(id)}
+              onClick={(event) => { event.stopPropagation(); onDelete(id); }}
               className="rounded-full p-1 text-slate-400 opacity-0 transition group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-600"
               title="Delete Folder"
             >

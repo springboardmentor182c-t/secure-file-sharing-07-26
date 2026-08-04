@@ -25,7 +25,7 @@ import {
 // FIX ISS-L2: Added adminOnly flag to Admin item
 const NAV_ITEMS = [
   { to: "/dashboard",      label: "Dashboard",      icon: LayoutDashboard },
-  { to: "/files",          label: "My Files",       icon: FolderOpen },
+  { to: "/my-files",       label: "My Files",       icon: FolderOpen },
   { to: "/sharing",        label: "Sharing",        icon: Share2 },
   { to: "/shared-with-me", label: "Shared with Me", icon: UsersRound },
   { to: "/activity",       label: "Activity",       icon: Activity },

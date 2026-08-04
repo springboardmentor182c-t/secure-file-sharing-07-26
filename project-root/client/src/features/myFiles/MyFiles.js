@@ -15,6 +15,7 @@ export default function MyFiles() {
     isLoading,
     uploading,
     uploadProgress,
+    folderPath,
     setSelectedCategory,
     setSearchQuery,
     uploadFiles,
@@ -22,6 +23,9 @@ export default function MyFiles() {
     deleteFile,
     deleteFolder,
     downloadFile,
+    openFolder,
+    goToFolder,
+    goToRoot,
   } = useMyFilesData();
 
   const fileInputRef = useRef(null);
@@ -141,6 +145,16 @@ export default function MyFiles() {
           </div>
         </div>
 
+        <nav className="mt-5 flex flex-wrap items-center gap-2 text-sm text-[#64748B]" aria-label="Folder path">
+          <button type="button" onClick={goToRoot} className="font-semibold text-[#4F46E5] hover:text-[#3730A3]">My Files</button>
+          {folderPath.map((folder, index) => (
+            <div className="flex items-center gap-2" key={folder.id}>
+              <span>/</span>
+              <button type="button" onClick={() => goToFolder(index)} className="font-semibold text-[#4F46E5] hover:text-[#3730A3]">{folder.name}</button>
+            </div>
+          ))}
+        </nav>
+
         {/* Search Bar */}
         <div className="mt-6">
           <SearchBar
@@ -191,7 +205,7 @@ export default function MyFiles() {
           <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#64748B]">Folders ({folderCards.length})</h2>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {folderCards.map((folder) => (
-              <FolderCard key={folder.id} {...folder} onDelete={handleDeleteFolder} />
+              <FolderCard key={folder.id} {...folder} onDelete={handleDeleteFolder} onOpen={openFolder} />
             ))}
           </div>
         </section>

@@ -11,14 +11,16 @@ export function useMyFilesData() {
   const [searchQuery, setSearchQuery] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [folderPath, setFolderPath] = useState([]);
+  const activeFolder = folderPath[folderPath.length - 1];
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
       const [filesRes, foldersRes] = await Promise.allSettled([
-        filesAPI.list(),
-        foldersAPI.list(),
+        filesAPI.list(activeFolder?.id),
+        foldersAPI.list(activeFolder?.id),
       ]);
 
       if (filesRes.status === 'fulfilled') {
@@ -39,7 +41,7 @@ export function useMyFilesData() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [activeFolder?.id]);
 
   useEffect(() => {
     loadData();
@@ -85,7 +87,7 @@ export function useMyFilesData() {
       for (const file of fileList) {
         const formData = new FormData();
         formData.append('file', file);
-        await filesAPI.upload(formData, (pct) => setUploadProgress(pct));
+        await filesAPI.upload(formData, (pct) => setUploadProgress(pct), activeFolder?.id);
       }
       await loadData();
       events.emit(EVENTS.FILE_UPLOADED);
@@ -103,7 +105,7 @@ export function useMyFilesData() {
   const createFolder = async (folderName) => {
     if (!folderName || !folderName.trim()) return;
     try {
-      await foldersAPI.create(folderName.trim());
+      await foldersAPI.create(folderName.trim(), activeFolder?.id);
       await loadData();
     } catch (err) {
       console.error('Create folder failed:', err);
@@ -147,6 +149,18 @@ export function useMyFilesData() {
     window.URL.revokeObjectURL(url);
   };
 
+  const openFolder = (folder) => {
+    setFolderPath((current) => [...current, folder]);
+    setSelectedCategory('all');
+    setSearchQuery('');
+  };
+
+  const goToFolder = (index) => {
+    setFolderPath((current) => current.slice(0, index + 1));
+    setSelectedCategory('all');
+    setSearchQuery('');
+  };
+
   return {
     files,
     folders,
@@ -164,6 +178,7 @@ export function useMyFilesData() {
     error,
     uploading,
     uploadProgress,
+    folderPath,
     setSelectedCategory,
     setSearchQuery,
     refetch: loadData,
@@ -172,5 +187,8 @@ export function useMyFilesData() {
     deleteFile,
     deleteFolder,
     downloadFile,
+    openFolder,
+    goToFolder,
+    goToRoot: () => setFolderPath([]),
   };
 }
