@@ -69,6 +69,7 @@ function AppShell() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard"      element={<Dashboard />} />
         <Route path="/files"          element={<Files />} />
+        <Route path="/my-files"       element={<Files />} />
         <Route path="/sharing"        element={<Sharing />} />
         <Route path="/shared-with-me" element={<SharedWithMe />} />
         <Route path="/activity"       element={<Activity />} />
