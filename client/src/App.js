@@ -19,6 +19,7 @@ import NotificationFeature from "./features/notifications/NotificationFeature";
 import ActivityMonitorPage from "./pages/ActivityMonitorPage";
 import Analytics from "./features/analytics/Analytics";
 import AdminDashboard from "./pages/AdminDashboard";
+import Profile from './features/profile/Profile';
 
 function App() {
   return (
@@ -152,6 +153,15 @@ function App() {
               <Analytics />
             </PageContainer>
           }
+        />
+
+        <Route
+         path="/profile"
+         element={
+           <PageContainer>
+            <Profile />
+           </PageContainer>
+          } 
         />
         
         <Route

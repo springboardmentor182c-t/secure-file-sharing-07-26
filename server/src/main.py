@@ -24,11 +24,15 @@ from src.sharing import model  # noqa: F401
 from src.analytics.controller import router as analytics_router
 from src.analytics import model as analytics_model  # noqa: F401
 
-# Retrieve the frontend URL from environment variables
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+from src.users.controller import router as user_router
+
 
 # Initialize FastAPI
 app = FastAPI(title="TrustShare API", version="1.0.0")
+
+# Load environment variables
+load_dotenv()
+
 
 # Configure CORS
 from app.api.v1.notifications.routes import router as notification_router
@@ -52,8 +56,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-app.include_router(api_router)
 
 
 @app.get("/")
@@ -83,11 +85,12 @@ def on_startup():
 
 # Register Routers
 app.include_router(admin_router)
-
+app.include_router(api_router)
 app.include_router(api_router)
 app.include_router(sharing_router)
 app.include_router(analytics_router)
 app.include_router(notification_router)
+app.include_router(user_router)
 
 
 # Health Check
