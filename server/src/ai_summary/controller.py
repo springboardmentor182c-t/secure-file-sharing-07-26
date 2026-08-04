@@ -56,7 +56,12 @@ async def generate_summary(
         return GenerateSummaryResponse(status="pending", message="Summary generation already in progress")
 
     service.start_generation(file_id)
-    background_tasks.add_task(service.process_summary, file_id, file)
+    background_tasks.add_task(
+        service.process_summary,
+        file_id,
+        file.storage_path,
+        file.encrypted_path,
+    )
 
     return GenerateSummaryResponse(status="pending", message="Summary generation started")
 
