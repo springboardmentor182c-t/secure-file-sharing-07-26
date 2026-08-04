@@ -2,26 +2,20 @@ import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PageContainer from "./layout/PageContainer";
 
-// Pages & Features
+// Pages
 import Home from "./pages/Home";
 import Settings from "./pages/Settings";
 import Securesharing from "./pages/Securesharing";
 import Security from "./pages/Security";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import Dashboard from "./features/dashboard/Dashboard";
-
-// Activity Monitor
 import ActivityMonitorPage from "./pages/ActivityMonitorPage";
-
-// Analytics
-import Analytics from "./features/analytics/Analytics";
-
-// Notifications
-import NotificationFeature from "./features/notifications/NotificationFeature";
-
-// Admin
 import AdminDashboard from "./pages/AdminDashboard";
+
+// Features
+import Dashboard from "./features/dashboard/Dashboard";
+import Analytics from "./features/analytics/Analytics";
+import NotificationFeature from "./features/notifications/NotificationFeature";
 
 function App() {
   return (
