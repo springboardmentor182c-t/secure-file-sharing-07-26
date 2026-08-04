@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from src.todos.controller import router as file_router
+from src.dashboard import router as dashboard_router
 from src.activity_monitor.controller import router as activity_router
 
 
@@ -9,7 +10,6 @@ from src.activity_monitor.controller import router as activity_router
 # =====================================================
 
 api_router = APIRouter()
-
 
 # =====================================================
 # HEALTH CHECK
@@ -32,6 +32,13 @@ def health_check():
 api_router.include_router(
     file_router
 )
+
+
+# =====================================================
+# DASHBOARD
+# =====================================================
+
+api_router.include_router(dashboard_router)
 
 
 # =====================================================

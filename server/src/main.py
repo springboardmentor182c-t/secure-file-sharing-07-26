@@ -2,6 +2,7 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 from sqlalchemy import text
 
 # =====================================================
@@ -32,13 +33,17 @@ from src.sharing import model  # noqa: F401
 # File Management models
 from src.todos import models as file_models  # noqa: F401
 
+# Feature-specific module imports for analytics
+from src.analytics.controller import router as analytics_router
+from src.analytics import model as analytics_model  # noqa: F401
+
 
 # =====================================================
 # ROUTERS
 # =====================================================
 
 # Main API router
-# Contains File Management, Activity Monitor and Health
+# Contains File Management, Activity Monitor, Dashboard and Health
 from src.api import api_router
 
 # Admin
@@ -62,6 +67,8 @@ FRONTEND_URL = os.getenv(
     "http://localhost:3000"
 )
 
+FRONTEND_URL_ALT = os.getenv("FRONTEND_URL_ALT", "http://localhost:5173")
+
 
 # =====================================================
 # FASTAPI APPLICATION
@@ -69,7 +76,7 @@ FRONTEND_URL = os.getenv(
 
 app = FastAPI(
     title="TrustShare API",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 
@@ -84,6 +91,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:3001",
         "http://127.0.0.1:3000",
+        FRONTEND_URL_ALT,
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -152,6 +160,7 @@ app.include_router(
 # Main API:
 # - File Management
 # - Activity Monitor
+# - Dashboard
 # - Health
 app.include_router(
     api_router
@@ -161,6 +170,9 @@ app.include_router(
 app.include_router(
     sharing_router
 )
+
+# Analytics
+app.include_router(analytics_router)
 
 # Notifications
 app.include_router(
