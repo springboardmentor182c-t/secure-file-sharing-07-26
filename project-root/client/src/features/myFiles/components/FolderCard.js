@@ -1,9 +1,8 @@
-export default function FolderCard({ id, title, subtitle, color, onDelete, onOpen }) {
-  const gradientColor = color || 'from-[#E0F2FE] to-[#DBEAFE]';
+export default function FolderCard({ id, title, subtitle, onDelete, onOpen }) {
 
   return (
     <article
-      className={`my-files-surface my-files-folder group relative cursor-pointer rounded-3xl border border-[#E2E8F0] bg-gradient-to-br ${gradientColor} p-5 shadow-sm shadow-slate-100 transition hover:-translate-y-0.5 hover:shadow-md`}
+      className="my-files-card my-files-folder group relative cursor-pointer p-5 transition hover:-translate-y-0.5"
       onClick={() => onOpen?.({ id, name: title })}
       onKeyDown={(event) => event.key === 'Enter' && onOpen?.({ id, name: title })}
       role="button"

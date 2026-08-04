@@ -35,13 +35,13 @@ export default function FileCard({ file, onDelete, onDownload }) {
   const tags = Array.isArray(file?.tags) ? file.tags : [];
 
   return (
-    <article className="my-files-surface group relative rounded-3xl border border-[#E2E8F0] bg-white p-5 shadow-sm shadow-slate-100 transition hover:-translate-y-0.5 hover:shadow-md">
+    <article className="my-files-card group relative p-5 transition hover:-translate-y-0.5">
       <div className="flex items-start justify-between gap-3">
-        <div className="inline-flex h-11 w-11 items-center justify-center rounded-3xl bg-[#EEF2FF] text-xl">
+        <div className="my-files-file-icon inline-flex h-11 w-11 items-center justify-center text-xl">
           {getFileIcon(file)}
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded-full border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#475569]">
+          <span className="my-files-type-chip px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]">
             {category}
           </span>
           {onDelete && (

@@ -468,7 +468,7 @@ body.dark .page-wrapper{
 
 /* Match the quieter dashboard cards in dark mode. */
 body.dark .my-files-page .my-files-surface {
-  border-color:var(--border-subtle)!important;
+  border-color:#26354a!important;
   box-shadow:none!important;
 }
 
@@ -476,14 +476,51 @@ body.dark .my-files-page .my-files-surface:hover {
   box-shadow:none!important;
 }
 
-body.dark .my-files-page article.my-files-surface > div:first-child > div:first-child {
-  background:rgba(59,130,246,0.14)!important;
+.my-files-card {
+  background:var(--bg-card);
+  border:1px solid var(--border-subtle);
+  border-radius:16px;
+  box-shadow:none;
+}
+
+.my-files-file-icon {
+  background:rgba(59,130,246,0.14);
+  border-radius:12px;
+}
+
+.my-files-type-chip {
+  background:var(--bg-hover);
+  border:1px solid var(--border-subtle);
+  border-radius:999px;
+  color:var(--text-secondary);
+}
+
+body.dark .my-files-page .my-files-card {
+  background:#111b2d;
+  border-color:#26354a;
+  box-shadow:none;
+}
+
+body.dark .my-files-page .my-files-file-icon {
+  background:rgba(59,130,246,0.14);
+}
+
+body.dark .my-files-page .my-files-type-chip {
+  background:#172338;
+  border-color:#2a3a52;
+  color:#aab8ca;
+}
+
+body.dark .my-files-page .my-files-folder > div:first-child > div:first-child,
+body.dark .my-files-page .my-files-folder > div:first-child > div:nth-child(2) > span {
   box-shadow:none!important;
 }
 
-body.dark .my-files-page article.my-files-surface > div:first-child > div:nth-child(2) > span {
-  background:rgba(148,163,184,0.12)!important;
-  border-color:transparent!important;
-  box-shadow:none!important;
-  color:#cbd5e1!important;
+body.dark .my-files-page .my-files-folder > div:first-child > div:first-child {
+  background:rgba(59,130,246,0.14)!important;
+}
+
+body.dark .my-files-page .my-files-folder > div:first-child > div:nth-child(2) > span {
+  background:#172338!important;
+  color:#aab8ca!important;
 }
