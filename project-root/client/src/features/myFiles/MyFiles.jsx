@@ -21,6 +21,7 @@ export default function MyFiles() {
     createFolder,
     deleteFile,
     deleteFolder,
+    downloadFile,
   } = useMyFilesData();
 
   const fileInputRef = useRef(null);
@@ -75,6 +76,14 @@ export default function MyFiles() {
       showNotification('Folder deleted.');
     } catch (err) {
       showNotification('Failed to delete folder.', true);
+    }
+  };
+
+  const handleDownload = async (file) => {
+    try {
+      await downloadFile(file);
+    } catch (err) {
+      showNotification('File download failed. Please try again.', true);
     }
   };
 
@@ -134,7 +143,11 @@ export default function MyFiles() {
 
         {/* Search Bar */}
         <div className="mt-6">
-          <SearchBar value={searchQuery} onChange={setSearchQuery} />
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            onUpload={() => fileInputRef.current?.click()}
+          />
         </div>
       </header>
 
@@ -208,7 +221,12 @@ export default function MyFiles() {
       ) : filteredFiles.length > 0 ? (
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filteredFiles.map((file) => (
-            <FileCard key={file.id} file={file} onDelete={handleDeleteFile} />
+            <FileCard
+              key={file.id}
+              file={file}
+              onDelete={handleDeleteFile}
+              onDownload={handleDownload}
+            />
           ))}
         </section>
       ) : (

@@ -20,6 +20,7 @@ import OAuthCallback from './pages/OAuthCallback';
 // Protected pages
 import Dashboard from './pages/Dashboard';
 import Files from './pages/Files';
+import MyFiles from './pages/MyFiles';
 import Sharing from './pages/Sharing';
 import SharedWithMe from './pages/SharedWithMe';
 import Activity from './features/activity/ActivityPage';
@@ -70,7 +71,7 @@ function AppShell() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard"      element={<Dashboard />} />
         <Route path="/files"          element={<Files />} />
-        <Route path="/my-files"       element={<Files />} />
+        <Route path="/my-files"       element={<MyFiles />} />
         <Route path="/sharing"        element={<Sharing />} />
         <Route path="/shared-with-me" element={<SharedWithMe />} />
         <Route path="/activity"       element={<Activity />} />

@@ -11,7 +11,7 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "sqlite:///./trustshare.db",
+    "postgresql+psycopg2://trustshare:trustshare@localhost:5432/trustshare",
 )
 
 def is_postgresql_url(url: str) -> bool:
@@ -29,21 +29,16 @@ validate_database_url(
     os.getenv("REQUIRE_POSTGRESQL", "false").lower() in {"1", "true", "yes"},
 )
 
-try:
-    if "sqlite" in DATABASE_URL:
-        engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-    else:
-        engine = create_engine(
-            DATABASE_URL,
-            pool_pre_ping=True,
-            connect_args={"connect_timeout": 3},
-            echo=False,
-        )
-        with engine.connect() as conn:
-            pass
-except Exception:
-    DATABASE_URL = "sqlite:///./trustshare.db"
+if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,
+        pool_size=10,
+        max_overflow=20,
+        echo=False,
+    )
 
 SessionLocal = sessionmaker(
     autocommit=False,

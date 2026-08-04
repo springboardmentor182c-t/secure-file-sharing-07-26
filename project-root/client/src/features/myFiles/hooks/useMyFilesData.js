@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { filesAPI, foldersAPI } from '../../../utils/api';
+import { events, EVENTS } from '../../../utils/events';
 
 export function useMyFilesData() {
   const [files, setFiles] = useState([]);
@@ -87,6 +88,8 @@ export function useMyFilesData() {
         await filesAPI.upload(formData, (pct) => setUploadProgress(pct));
       }
       await loadData();
+      events.emit(EVENTS.FILE_UPLOADED);
+      events.emit(EVENTS.STORAGE_CHANGED);
     } catch (err) {
       console.error('File upload failed:', err);
       throw err;
@@ -113,6 +116,8 @@ export function useMyFilesData() {
     try {
       await filesAPI.delete(id);
       setFiles((prev) => prev.filter((f) => f.id !== id));
+      events.emit(EVENTS.FILE_DELETED, id);
+      events.emit(EVENTS.STORAGE_CHANGED);
     } catch (err) {
       console.error('Delete file failed:', err);
       throw err;
@@ -128,6 +133,18 @@ export function useMyFilesData() {
       console.error('Delete folder failed:', err);
       throw err;
     }
+  };
+
+  const downloadFile = async (file) => {
+    const response = await filesAPI.download(file.id);
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file.name || file.original_name || 'download';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   };
 
   return {
@@ -154,5 +171,6 @@ export function useMyFilesData() {
     createFolder,
     deleteFile,
     deleteFolder,
+    downloadFile,
   };
 }

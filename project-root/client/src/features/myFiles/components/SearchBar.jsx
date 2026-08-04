@@ -1,4 +1,4 @@
-export default function SearchBar({ value, onChange }) {
+export default function SearchBar({ value, onChange, onUpload }) {
   return (
     <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
       <label className="relative block">
@@ -14,6 +14,7 @@ export default function SearchBar({ value, onChange }) {
       </label>
       <button
         type="button"
+        onClick={onUpload}
         className="rounded-2xl bg-[#4F46E5] px-4 py-3 text-sm font-semibold text-white shadow-sm shadow-[#4F46E515] transition hover:bg-[#4338CA]"
       >
         Upload

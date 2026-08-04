@@ -13,7 +13,6 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, UploadFile, status
 
 from src.entities.file import File
-from src.entities.folder import Folder
 from src.entities.user import User
 from src.entities.audit_log import AuditLog
 from src.security.exceptions import KeyManagementError
