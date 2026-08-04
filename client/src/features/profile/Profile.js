@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios'; // Make sure axios is imported
+import axios from 'axios'; 
 import ProfileHeader from './components/ProfileHeader';
 import PersonalInfoTab from './components/PersonalInfoTab';
 import PasswordTab from './components/PasswordTab';
@@ -26,7 +26,7 @@ const Profile = () => {
         const fetchUserData = async () => {
             try {
                 const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-                // Fetching from your secure backend endpoint we created
+                
                 const response = await axios.get(`${baseUrl}/api/v1/users/me`);
                 
                 setUserData({
