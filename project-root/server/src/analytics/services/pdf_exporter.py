@@ -565,8 +565,15 @@ def _cover_footer(canvas_obj, doc):
 
 
 def _build_recent_activity_section(styles, recent_activity: dict) -> list:
-    """Builds recent activity table — used in both File and Security PDFs."""
-    elements = []
+    """
+    Builds recent activity table — used in both File and Security PDFs.
+    
+    FIX ISS-7: Updated dict keys to match serialized activity format
+    from get_recent_activity() which now returns dicts with keys:
+    event_type, user_id, file_id, ip_address, time, created_at
+    (NOT "user", "file", "action", "date" — those were wrong keys)
+    """
+    elements   = []
     activities = recent_activity.get("activities", []) or []
 
     if not activities:
@@ -574,44 +581,40 @@ def _build_recent_activity_section(styles, recent_activity: dict) -> list:
 
     elements.extend(
         _build_section_header(
-            styles, "Recent Activity", "Latest events across the workspace"
+            styles,
+            "Recent Activity",
+            "Latest events across the workspace",
         )
     )
 
     rows = []
     for activity in activities[:15]:
+        # All activities are now dicts (ISS-1 fix ensures this)
         if isinstance(activity, dict):
-            event = activity.get("event_type", "") or activity.get("action", "")
-            user = activity.get("user", "")
-            file = activity.get("file", "")
-            time = str(activity.get("time", "") or activity.get("date", ""))
+            event   = activity.get("event_type", "")
+            user    = str(activity.get("user_id",  "") or "System")
+            file    = str(activity.get("file_id",  "") or "—")
+            time    = activity.get("time", "") or activity.get("created_at", "")
         else:
-            event = getattr(activity, "event_type", "") or getattr(
-                activity, "action", ""
+            # Fallback for any edge case
+            event   = getattr(activity, "event_type", "")
+            user    = str(getattr(activity, "user_id",  "") or "System")
+            file    = str(getattr(activity, "file_id",  "") or "—")
+            time    = getattr(activity, "time", "") or str(
+                getattr(activity, "created_at", "")
             )
-            user = getattr(activity, "user", "")
-            file = getattr(activity, "file", "")
-            time = str(getattr(activity, "time", "") or getattr(activity, "date", ""))
 
-        # If user/file are objects, try to get their names
-        if hasattr(user, "name"):
-            user = user.name
-        if hasattr(file, "original_name"):
-            file = file.original_name
-
-        rows.append(
-            [
-                str(event)[:20],
-                str(user)[:20] if user else "System",
-                str(file)[:35] if file else "—",
-                str(time)[:20],
-            ]
-        )
+        rows.append([
+            str(event)[:20],
+            str(user)[:20],
+            str(file)[:35],
+            str(time)[:20],
+        ])
 
     if rows:
         elements.append(
             _build_table(
-                ["Event", "User", "File", "When"],
+                ["Event", "User ID", "File ID", "When"],
                 rows,
                 col_widths=[3 * cm, 3.5 * cm, 6.5 * cm, 3.5 * cm],
                 zebra=True,
@@ -620,7 +623,6 @@ def _build_recent_activity_section(styles, recent_activity: dict) -> list:
         elements.append(Spacer(1, 0.4 * cm))
 
     return elements
-
 
 def generate_file_analytics_pdf(
     data: Dict[str, Any],

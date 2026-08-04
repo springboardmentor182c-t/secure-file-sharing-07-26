@@ -1,7 +1,7 @@
 import os
 from io import BytesIO
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -9,11 +9,41 @@ from src.auth.dependencies import get_current_user
 from src.database.core import get_db
 from src.entities.user import User
 from src.files.service import get_file_path
-from src.shared_with_me.models import SharedFilesResponse
-from src.shared_with_me.service import get_downloadable_shared_file, list_shared_files
+from src.shared_with_me.models import DirectShareCreate, DirectShareOut, DirectSharesResponse, SharedFilesResponse
+from src.shared_with_me.service import (
+    get_downloadable_shared_file,
+    grant_direct_share,
+    list_direct_shares,
+    list_shared_files,
+    revoke_direct_share,
+)
 
 
 router = APIRouter()
+
+
+@router.get("/direct", response_model=DirectSharesResponse)
+def direct_shares(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return list_direct_shares(db, current_user.id)
+
+
+@router.post("/direct", response_model=DirectShareOut, status_code=status.HTTP_201_CREATED)
+def create_direct_share(
+    data: DirectShareCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return grant_direct_share(db, data, current_user.id)
+
+
+@router.delete("/direct/{permission_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_direct_share(
+    permission_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    revoke_direct_share(db, permission_id, current_user.id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/", response_model=SharedFilesResponse)

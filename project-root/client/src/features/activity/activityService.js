@@ -1,37 +1,6 @@
-const API_BASE_URL = `${process.env.REACT_APP_API_BASE_URL}/api/activity`;
+import { activityAPI } from "../../utils/api";
 
-export async function getActivities() {
-  const response = await fetch(`${API_BASE_URL}/`);
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch activities");
-  }
-
-  return response.json();
-}
-
-export async function getUserActivities(userId) {
-  const response = await fetch(`${API_BASE_URL}/user/${userId}`);
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch user activities");
-  }
-
-  return response.json();
-}
-
-export async function addActivity(activityData) {
-  const response = await fetch(`${API_BASE_URL}/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(activityData),
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to add activity");
-  }
-
-  return response.json();
+export async function getActivities(limit = 100) {
+  const response = await activityAPI.list(limit);
+  return response.data;
 }

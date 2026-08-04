@@ -101,7 +101,8 @@ def signup(
     db: Session = Depends(get_db),
 ):
     ip = _get_client_ip(request)
-    return service.register_user(db, data, ip_address=ip)
+    # FIX ISS-D6: pass request so session tracking works for new signups
+    return service.register_user(db, data, request=request, ip_address=ip)
 
 
 @router.get("/me", response_model=models.UserOut)
@@ -110,7 +111,11 @@ def me(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/refresh", response_model=models.TokenResponse)
-def refresh(body: models.RefreshRequest, db: Session = Depends(get_db)):
+def refresh(
+    body: models.RefreshRequest,
+    request: Request,                       # FIX ISS-D2: accept request
+    db: Session = Depends(get_db),
+):
     payload = decode_token(body.refresh_token)
     if payload.get("type") != "refresh":
         raise HTTPException(
@@ -124,11 +129,25 @@ def refresh(body: models.RefreshRequest, db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
         )
-    return service._build_token_response(user)
+    # FIX ISS-D2: pass db and request so session row is tracked
+    return service._build_token_response(user, db=db, request=request)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(current_user: User = Depends(get_current_user)):
+def logout(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # FIX ISS-D1: Actually invalidate the user's active session rows
+    try:
+        from src.entities.login_session import LoginSession
+        db.query(LoginSession).filter(
+            LoginSession.user_id == current_user.id,
+            LoginSession.is_current == True,
+        ).update({"is_current": False})
+        db.commit()
+    except Exception:
+        db.rollback()
     return None
 
 
@@ -162,7 +181,8 @@ def verify_otp(
             detail="Invalid or expired OTP code",
         )
 
-    return service._build_token_response(user)
+    # FIX ISS-D3: pass db and request for session tracking after MFA success
+    return service._build_token_response(user, db=db, request=request)
 
 
 @router.post("/resend-otp")
@@ -282,7 +302,8 @@ async def google_callback(
             detail="Account suspended",
         )
 
-    token_resp = service._build_token_response(user)
+    # FIX ISS-D7: pass db and request for session tracking on OAuth login
+    token_resp = service._build_token_response(user, db=db, request=request)
     redirect_url = (
         f"{FRONTEND_URL}/oauth-callback"
         f"?access_token={token_resp.access_token}"
@@ -336,7 +357,8 @@ async def microsoft_callback(
             detail="Account suspended",
         )
 
-    token_resp = service._build_token_response(user)
+    # FIX ISS-D7: pass db and request for session tracking on OAuth login
+    token_resp = service._build_token_response(user, db=db, request=request)
     redirect_url = (
         f"{FRONTEND_URL}/oauth-callback"
         f"?access_token={token_resp.access_token}"
@@ -363,6 +385,72 @@ def disable_mfa(
 ):
     return service.disable_mfa(db, current_user)
 
+
+# MFA Setup Flow (Proper OTP-verified enable/disable)
+
+@router.post("/mfa/setup")
+def mfa_setup(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Step 1 of enabling MFA: send OTP to user's registered email.
+    User must then call /mfa/verify-setup with the OTP to actually enable.
+    """
+    if current_user.mfa_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MFA is already enabled",
+        )
+    service.generate_otp(
+        current_user.id,
+        to_email=current_user.email,
+        user_name=current_user.name,
+    )
+    return {
+        "status": "otp_sent",
+        "message": "Verification code sent to your registered email",
+    }
+
+
+@router.post("/mfa/verify-setup", response_model=models.UserOut)
+def mfa_verify_setup(
+    body: models.VerifyMFASetupRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Step 2 of enabling MFA: verify OTP and flip mfa_enabled=true.
+    """
+    if current_user.mfa_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MFA is already enabled",
+        )
+    if not service.verify_otp_code(current_user.id, body.code, db=db):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code",
+        )
+    return service.enable_mfa(db, current_user)
+
+
+@router.post("/mfa/disable-with-password", response_model=models.UserOut)
+def mfa_disable_with_password(
+    body: models.DisableMFARequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Secure MFA disable: requires password confirmation to prevent
+    unauthorized MFA disabling if session token is stolen.
+    """
+    from src.auth.dependencies import verify_password
+    if not verify_password(body.password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect password",
+        )
+    return service.disable_mfa(db, current_user)
 
 # Change Password (teammate's Settings module)
 

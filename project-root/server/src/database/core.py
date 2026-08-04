@@ -9,7 +9,25 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./trustshare.db")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "sqlite:///./trustshare.db",
+)
+
+def is_postgresql_url(url: str) -> bool:
+    return url.startswith(("postgresql://", "postgresql+psycopg2://", "postgresql+psycopg://"))
+
+def validate_database_url(url: str, require_postgresql: bool = False) -> None:
+    if require_postgresql and not is_postgresql_url(url):
+        raise RuntimeError(
+            "TrustShare requires PostgreSQL for integration and production. "
+            "Set DATABASE_URL to a postgresql+psycopg2:// URL."
+        )
+
+validate_database_url(
+    DATABASE_URL,
+    os.getenv("REQUIRE_POSTGRESQL", "false").lower() in {"1", "true", "yes"},
+)
 
 try:
     if "sqlite" in DATABASE_URL:

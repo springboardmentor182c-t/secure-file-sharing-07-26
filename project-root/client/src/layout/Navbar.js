@@ -52,12 +52,11 @@ function getNotificationIcon(notification) {
   return <RiNotification3Line className="notification-type-icon" />;
 }
 
-// NAVBAR — merged: teammate's props (setSidebarOpen, darkMode) + your features (connectionStatus, keyboard nav, mark all read)
+// FIX ISS-L3: Removed unused darkMode and setDarkMode props
+// Theme is controlled via useTheme() hook — props were dead parameters
 export default function Navbar({
   unreadCount = 0,
   setSidebarOpen,
-  darkMode,
-  setDarkMode,
   connectionStatus,
 }) {
   const [query, setQuery] = useState("");

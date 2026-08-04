@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { filesAPI, foldersAPI } from '../utils/api';
 import { events, EVENTS } from '../utils/events';
+import FileSummaryPanel from '../features/fileSummary/components/FileSummaryPanel';
 
 const FILE_ICON = (mime = '') => {
   if (mime.startsWith('image/')) return { icon: '🖼️', color: '#8b5cf6' };
@@ -33,6 +34,7 @@ export default function Files() {
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [folderName, setFolderName] = useState('');
   const [toast, setToast] = useState(null);
+  const [summaryFile, setSummaryFile] = useState(null);
   const inputRef = useRef();
 
   const load = () => {
@@ -226,6 +228,7 @@ export default function Files() {
                       <span className="text-muted text-sm" style={{ alignSelf: 'center' }}>{fmt(f.size)}</span>
                       <span className="text-muted text-xs" style={{ alignSelf: 'center' }}>{f.mimetype?.split('/')[1]?.toUpperCase() || 'FILE'}</span>
                       <div className="file-actions" style={{ opacity: 1, alignSelf: 'center' }}>
+                        <button className="btn btn-ghost btn-icon btn-sm" title="Generate AI Summary" aria-label={`Generate AI summary for ${f.original_name}`} onClick={e => { e.stopPropagation(); setSummaryFile(f); }}>✨</button>
                         <button className="btn btn-ghost btn-icon btn-sm" title="Download" onClick={e => { e.stopPropagation(); handleDownload(f); }}>⬇️</button>
                         <button className="btn btn-ghost btn-icon btn-sm" title="Delete" onClick={e => { e.stopPropagation(); handleDelete(f.id); }}>🗑️</button>
                       </div>
@@ -244,6 +247,7 @@ export default function Files() {
                       <div className="text-xs text-muted mb-3">{fmt(f.size)}</div>
                       {f.encrypted && <span className="badge badge-emerald" style={{ fontSize: '.625rem' }}>🔐</span>}
                       <div className="flex gap-1 justify-center mt-3">
+                        <button className="btn btn-ghost btn-icon btn-sm" title="Generate AI Summary" aria-label={`Generate AI summary for ${f.original_name}`} onClick={() => setSummaryFile(f)}>✨</button>
                         <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDownload(f)}>⬇️</button>
                         <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(f.id)}>🗑️</button>
                       </div>
@@ -255,6 +259,7 @@ export default function Files() {
           </div>
         </>
       )}
+      {summaryFile && <FileSummaryPanel file={summaryFile} onClose={() => setSummaryFile(null)} />}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useMemo } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
@@ -22,6 +22,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+// FIX ISS-L2: Added adminOnly flag to Admin item
 const NAV_ITEMS = [
   { to: "/dashboard",      label: "Dashboard",      icon: LayoutDashboard },
   { to: "/files",          label: "My Files",       icon: FolderOpen },
@@ -30,7 +31,7 @@ const NAV_ITEMS = [
   { to: "/activity",       label: "Activity",       icon: Activity },
   { to: "/notifications",  label: "Notifications",  icon: Bell, badge: true },
   { to: "/analytics",      label: "Analytics",      icon: BarChart3 },
-  { to: "/admin",          label: "Admin",          icon: Shield },
+  { to: "/admin",          label: "Admin",          icon: Shield, adminOnly: true },
   { to: "/settings",       label: "Settings",       icon: Settings },
 ];
 
@@ -45,6 +46,14 @@ export default function Sidebar({
   const navigate = useNavigate();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userTriggerRef = useRef(null);
+
+  // FIX ISS-L2: Filter navigation based on user role
+  // Admin link only visible to admin users — UI improvement
+  // Backend still enforces authorization via require_admin dependency
+  const visibleNavItems = useMemo(
+    () => NAV_ITEMS.filter(item => !item.adminOnly || user?.role === "admin"),
+    [user]
+  );
 
   const initials =
     user?.name
@@ -145,9 +154,9 @@ export default function Sidebar({
           )}
         </div>
 
-        {/* Navigation */}
+        {/* Navigation — uses filtered visibleNavItems */}
         <nav className="sidebar-nav">
-          {NAV_ITEMS.map((item) => {
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
             return (
               <NavLink
@@ -179,7 +188,7 @@ export default function Sidebar({
           })}
         </nav>
 
-        {/* Footer — User section with dropdown */}
+        {/* Footer — User section */}
         <div className="sidebar-footer">
           <button
             ref={userTriggerRef}
@@ -241,7 +250,7 @@ export default function Sidebar({
         </motion.button>
       )}
 
-      {/* User dropdown menu (portal) */}
+      {/* User dropdown menu */}
       <UserDropdownMenu
         open={userMenuOpen}
         onClose={() => setUserMenuOpen(false)}

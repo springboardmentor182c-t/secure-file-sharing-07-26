@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -16,10 +17,13 @@ from src.files.controller import router as files_router
 from src.folders.controller import router as folders_router
 from src.notifications.controller import router as notifications_router
 from src.search.controller import router as search_router
+from src.settings.controller import router as settings_router
 from src.shared_with_me.controller import router as shared_with_me_router
 from src.shares.controller import router as shares_router
 from src.todos.controller import router as todos_router
 from src.users.controller import router as users_router
+from src.security.controller import router as security_router
+from src.file_summaries.controller import router as file_summaries_router
 
 
 def create_app() -> FastAPI:
@@ -33,6 +37,16 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
     )
+
+    # ── HTTPS Redirect Middleware (production only) ────────────────────────────
+    # PSD 4.ii: HTTPS/TLS Communication
+    # In production (ENVIRONMENT=production), all HTTP requests are
+    # automatically redirected to HTTPS.
+    # In development, HTTP is allowed (localhost does not need TLS).
+    _env = os.getenv("ENVIRONMENT", "development").lower().strip()
+    if _env in ("production", "prod"):
+        from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
+        app.add_middleware(HTTPSRedirectMiddleware)
 
     origins = [
         "http://localhost:5173",
@@ -59,6 +73,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router,           prefix="/api/auth",           tags=["Auth"])
     app.include_router(users_router,          prefix="/api/users",          tags=["Users"])
     app.include_router(files_router,          prefix="/api/files",          tags=["Files"])
+    app.include_router(file_summaries_router, prefix="/api/files",          tags=["File summaries"])
     app.include_router(folders_router,        prefix="/api/folders",        tags=["Folders"])
     app.include_router(shares_router,         prefix="/api/shares",         tags=["Sharing"])
     app.include_router(notifications_router,  prefix="/api/notifications",  tags=["Notifications"])
@@ -68,7 +83,9 @@ def create_app() -> FastAPI:
     app.include_router(shared_with_me_router, prefix="/api/shared-with-me", tags=["Shared with me"])
     app.include_router(admin_router,          prefix="/api/admin",          tags=["Admin"])
     app.include_router(activity_router,       prefix="/api/activity",       tags=["Activity"])
+    app.include_router(settings_router,       prefix="/api/settings",       tags=["Settings"])
     app.include_router(todos_router,          prefix="/api/todos",          tags=["Todos"])
+    app.include_router(security_router,       prefix="/api/security",       tags=["Security"])
 
     # ── Health check ──────────────────────────────────────────────────────────
     @app.get("/health", tags=["System"])

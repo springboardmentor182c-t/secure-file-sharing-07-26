@@ -6,6 +6,16 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+// FIX ISS-D9: only wipe auth-related keys, preserve theme/settings/etc.
+const AUTH_STORAGE_KEYS = ['access_token', 'refresh_token', 'user'];
+
+const clearAuthStorage = () => {
+  AUTH_STORAGE_KEYS.forEach((k) => {
+    localStorage.removeItem(k);
+    sessionStorage.removeItem(k);
+  });
+};
+
 // ── Request interceptor: attach JWT ────────────────────────────────────────
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
@@ -20,25 +30,29 @@ api.interceptors.response.use(
     const originalRequest = err.config;
     if (err.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const refreshToken = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token');
+
+      // FIX ISS-D10: detect original storage so refresh writes back to same one
+      const usedLocalStorage = !!localStorage.getItem('refresh_token');
+      const refreshToken =
+        localStorage.getItem('refresh_token') ||
+        sessionStorage.getItem('refresh_token');
+
       if (refreshToken) {
         try {
           const { data } = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
             refresh_token: refreshToken,
           });
-          const storage = localStorage.getItem('refresh_token') ? localStorage : sessionStorage;
+          const storage = usedLocalStorage ? localStorage : sessionStorage;
           storage.setItem('access_token', data.access_token);
           storage.setItem('refresh_token', data.refresh_token);
           originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
           return api(originalRequest);
         } catch {
-          localStorage.clear();
-          sessionStorage.clear();
+          clearAuthStorage();       // FIX ISS-D9
           window.location.href = '/login';
         }
       } else {
-        localStorage.clear();
-        sessionStorage.clear();
+        clearAuthStorage();         // FIX ISS-D9
         window.location.href = '/login';
       }
     }
@@ -62,6 +76,11 @@ export const authAPI = {
   resetPassword: (token, new_password) => api.post('/api/auth/reset-password', { token, new_password }),
   oauthToken: (provider, code) => api.post('/api/auth/oauth/token', { provider, code }),
   updateProfile: (data) => api.patch('/api/users/me', data),
+
+  // NEW: MFA Setup Flow (proper OTP-verified enable/disable)
+  mfaSetup: () => api.post('/api/auth/mfa/setup'),
+  mfaVerifySetup: (code) => api.post('/api/auth/mfa/verify-setup', { code }),
+  mfaDisableWithPassword: (password) => api.post('/api/auth/mfa/disable-with-password', { password }),
 };
 
 // ── Files ─────────────────────────────────────────────────────────────────
@@ -76,6 +95,14 @@ export const filesAPI = {
   download: (id) =>
     api.get(`/api/files/${id}/download`, { responseType: 'blob' }),
   delete: (id) => api.delete(`/api/files/${id}`),
+};
+
+export const fileSummaryAPI = {
+  create: (fileId, options) => api.post(`/api/files/${fileId}/summaries`, options),
+  list: (fileId) => api.get(`/api/files/${fileId}/summaries`),
+  get: (fileId, summaryId) => api.get(`/api/files/${fileId}/summaries/${summaryId}`),
+  regenerate: (fileId, summaryId) => api.post(`/api/files/${fileId}/summaries/${summaryId}/regenerate`),
+  delete: (fileId, summaryId) => api.delete(`/api/files/${fileId}/summaries/${summaryId}`),
 };
 
 // ── Folders ───────────────────────────────────────────────────────────────
@@ -150,6 +177,9 @@ export const dashboardAPI = {
 export const sharedWithMeAPI = {
   list: () => api.get('/api/shared-with-me/'),
   download: (fileId) => api.get(`/api/shared-with-me/${fileId}/download`, { responseType: 'blob' }),
+  listDirect: () => api.get('/api/shared-with-me/direct'),
+  shareDirect: (data) => api.post('/api/shared-with-me/direct', data),
+  revokeDirect: (permissionId) => api.delete(`/api/shared-with-me/direct/${permissionId}`),
 };
 
 // ── Admin ─────────────────────────────────────────────────────────────────
@@ -163,6 +193,12 @@ export const auditAPI = {
   list: (limit = 50) => api.get('/api/audit/', { params: { limit } }),
 };
 
+// Current user's activity feed. The shared Axios client supplies the JWT and
+// environment-based API URL, so this feature never hardcodes a host.
+export const activityAPI = {
+  list: (limit = 100) => api.get('/api/activity/', { params: { limit } }),
+};
+
 // ── Search ───────────────────────────────────────────────────────────────
 export const searchAPI = {
   search: (query) =>
@@ -173,29 +209,28 @@ export const searchAPI = {
 
 // ── Settings (API Placeholders) ──────────────────────────────────────────
 export const settingsAPI = {
-  getProfile: () => api.get("/settings/profile"),
+  getProfile: () => api.get("/api/settings/profile"),
 
   updateProfile: (data) =>
-    api.put("/settings/profile", data),
+    api.put("/api/settings/profile", data),
 
   changePassword: (data) =>
-    api.post("/settings/change-password", data),
+    api.post("/api/settings/change-password", data),
 
   getSessions: () =>
-    api.get("/settings/sessions"),
+    api.get("/api/settings/sessions"),
 
   logoutSession: (id) =>
-    api.delete(`/settings/sessions/${id}`),
+    api.delete(`/api/settings/sessions/${id}`),
 
   logoutAllSessions: () =>
-    api.delete("/settings/sessions"),
+    api.delete("/api/settings/sessions"),
 
   getNotificationPreferences: () =>
-    api.get("/settings/notifications"),
+    api.get("/api/settings/notifications"),
 
   updateNotificationPreferences: (data) =>
-    api.put("/settings/notifications", data),
+    api.put("/api/settings/notifications", data),
 };
 
 export default api;
-

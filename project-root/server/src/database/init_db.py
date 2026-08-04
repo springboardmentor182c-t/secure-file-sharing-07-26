@@ -14,7 +14,9 @@ from src.entities.file_permission import FilePermission  # noqa
 from src.entities.audit_log import AuditLog  # noqa
 from src.entities.notification import Notification  # noqa
 from src.entities.login_session import LoginSession  # noqa
+from src.entities.file_summary import FileSummary  # noqa
 from src.entities.notification_pref import NotificationPreference  # noqa
+from src.entities.notification_channel_pref import NotificationChannelPreference  # noqa
 
 # Import analytics models so tables are created
 from src.analytics.models.analytics_event import AnalyticsEvent  # noqa

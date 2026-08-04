@@ -196,7 +196,7 @@ export default function DashboardOverview({ dashboardData, user }) {
                 ['Upload file', Upload, '/files'],
                 ['Browse files', FolderOpen, '/files'],
                 ['Create share', Share2, '/sharing'],
-                ['Security', ShieldCheck, '/admin'],
+                ['Security', ShieldCheck, '/settings'],
               ].map(([label, Icon, route]) => (
                 <button
                   className="dashboard-action"
@@ -334,7 +334,7 @@ export default function DashboardOverview({ dashboardData, user }) {
                 Encrypted files
               </span>
               <strong className="is-positive">
-                {files.filter((file) => file.encrypted).length}
+                {analytics.encrypted_files}
               </strong>
             </div>
           </section>
