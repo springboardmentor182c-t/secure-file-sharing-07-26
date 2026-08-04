@@ -7,9 +7,21 @@ import {
 } from "react-icons/fi";
 
 const PermissionsTab = ({ file }) => {
-  const ownerName = file?.owner || file?.uploaded_by || "You";
+  const ownerName = file?.owner || file?.uploaded_by || "Owner";
   const fileName = file?.name || file?.file_name || "this file";
-  const permissionSummary = file?.permission_summary || "Full Access";
+  const permissionSummary =
+    file?.permission_summary ||
+    file?.permissions?.summary ||
+    "";
+  const sharedUsers = Array.isArray(file?.shared_users)
+    ? file.shared_users.map((user) =>
+        typeof user === "string"
+          ? { name: user, role: "Shared" }
+          : user
+      )
+    : [];
+
+  const hasPermissionData = Boolean(permissionSummary || sharedUsers.length);
 
   return (
     <div className="permissions-container">
@@ -29,7 +41,7 @@ const PermissionsTab = ({ file }) => {
           </div>
 
           <span className="permission-badge owner">
-            {permissionSummary}
+            {permissionSummary || "Managed by server"}
           </span>
         </div>
 
@@ -42,7 +54,7 @@ const PermissionsTab = ({ file }) => {
           </div>
 
           <span className="permission-status allowed">
-            Allowed
+            {permissionSummary ? "Allowed" : "Pending"}
           </span>
         </div>
 
@@ -53,7 +65,7 @@ const PermissionsTab = ({ file }) => {
           </div>
 
           <span className="permission-status allowed">
-            Allowed
+            {permissionSummary ? "Allowed" : "Pending"}
           </span>
         </div>
 
@@ -64,7 +76,7 @@ const PermissionsTab = ({ file }) => {
           </div>
 
           <span className="permission-status allowed">
-            Allowed
+            {permissionSummary ? "Allowed" : "Pending"}
           </span>
         </div>
 
@@ -74,39 +86,47 @@ const PermissionsTab = ({ file }) => {
 
         <h4>Shared Users</h4>
 
-        <div className="shared-user">
+        {hasPermissionData ? (
+          sharedUsers.length > 0 ? (
+            sharedUsers.map((user, index) => (
+              <div className="shared-user" key={user?.id || `${user?.name || "shared"}-${index}`}>
+                <div className="shared-avatar">
+                  {(user?.name || user?.username || ownerName)
+                    .charAt(0)
+                    .toUpperCase() || "U"}
+                </div>
 
-          <div className="shared-avatar">
-            {fileName.charAt(0).toUpperCase() || "F"}
-          </div>
+                <div className="shared-details">
+                  <strong>{user?.name || user?.username || ownerName}</strong>
+                  <p>{user?.role || user?.permission || "Shared access"}</p>
+                </div>
 
-          <div className="shared-details">
-            <strong>{ownerName}</strong>
-            <p>Primary access to {fileName}</p>
-          </div>
+                <span className="permission-status view">
+                  {user?.role || "Shared"}
+                </span>
+              </div>
+            ))
+          ) : (
+            <div className="shared-user">
+              <div className="shared-avatar">
+                {fileName.charAt(0).toUpperCase() || "F"}
+              </div>
 
-          <span className="permission-status view">
-            Viewer
-          </span>
+              <div className="shared-details">
+                <strong>{ownerName}</strong>
+                <p>{permissionSummary || "Access details are managed for this file"}</p>
+              </div>
 
-        </div>
-
-        <div className="shared-user">
-
-          <div className="shared-avatar">
-            ME
-          </div>
-
-          <div className="shared-details">
-            <strong>You</strong>
-            <p>Manage access and collaboration</p>
-          </div>
-
-          <span className="permission-status edit">
-            Editor
-          </span>
-
-        </div>
+              <span className="permission-status view">
+                Managed
+              </span>
+            </div>
+          )
+        ) : (
+          <p className="permission-empty">
+            No permission details are available yet for this file.
+          </p>
+        )}
 
       </div>
 

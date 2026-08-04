@@ -3,7 +3,12 @@
 // =====================================================
 
 // API Configuration
-export const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
+const readApiBaseUrl = () => {
+  const configuredUrl = process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE_URL;
+  return configuredUrl?.trim() || "";
+};
+
+export const API_URL = readApiBaseUrl();
 
 // User Configuration
 // TODO: Replace with proper authentication context
