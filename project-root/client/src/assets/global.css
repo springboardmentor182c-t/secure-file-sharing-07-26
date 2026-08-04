@@ -465,3 +465,25 @@ body.dark .page-wrapper{
 .my-files-page .my-files-search-bar > span:not(.sr-only) {
   display:none;
 }
+
+/* Match the quieter dashboard cards in dark mode. */
+body.dark .my-files-page .my-files-surface {
+  border-color:var(--border-subtle)!important;
+  box-shadow:none!important;
+}
+
+body.dark .my-files-page .my-files-surface:hover {
+  box-shadow:none!important;
+}
+
+body.dark .my-files-page article.my-files-surface > div:first-child > div:first-child {
+  background:rgba(59,130,246,0.14)!important;
+  box-shadow:none!important;
+}
+
+body.dark .my-files-page article.my-files-surface > div:first-child > div:nth-child(2) > span {
+  background:rgba(148,163,184,0.12)!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  color:#cbd5e1!important;
+}
