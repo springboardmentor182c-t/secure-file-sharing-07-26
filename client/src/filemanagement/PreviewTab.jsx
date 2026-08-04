@@ -5,11 +5,7 @@ import {
   FiX,
   FiExternalLink,
 } from "react-icons/fi";
-
-const OWNER_ID =
-  "aafe9b9d-0109-46fd-b525-33e24d9ee9b5";
-
-const API_URL = "http://127.0.0.1:8000";
+import { API_URL, OWNER_ID } from "../config";
 
 const PreviewTab = ({ file }) => {
   const [showPreview, setShowPreview] =

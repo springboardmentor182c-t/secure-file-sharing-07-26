@@ -7,6 +7,10 @@ import {
 } from "react-icons/fi";
 
 const PermissionsTab = ({ file }) => {
+  const ownerName = file?.owner || file?.uploaded_by || "You";
+  const fileName = file?.name || file?.file_name || "this file";
+  const permissionSummary = file?.permission_summary || "Full Access";
+
   return (
     <div className="permissions-container">
 
@@ -20,12 +24,12 @@ const PermissionsTab = ({ file }) => {
           </div>
 
           <div>
-            <h4>{file.owner}</h4>
+            <h4>{ownerName}</h4>
             <p>Owner</p>
           </div>
 
           <span className="permission-badge owner">
-            Full Access
+            {permissionSummary}
           </span>
         </div>
 
@@ -73,12 +77,12 @@ const PermissionsTab = ({ file }) => {
         <div className="shared-user">
 
           <div className="shared-avatar">
-            JD
+            {fileName.charAt(0).toUpperCase() || "F"}
           </div>
 
           <div className="shared-details">
-            <strong>John Doe</strong>
-            <p>View Only</p>
+            <strong>{ownerName}</strong>
+            <p>Primary access to {fileName}</p>
           </div>
 
           <span className="permission-status view">
@@ -90,12 +94,12 @@ const PermissionsTab = ({ file }) => {
         <div className="shared-user">
 
           <div className="shared-avatar">
-            EM
+            ME
           </div>
 
           <div className="shared-details">
-            <strong>Emma Watson</strong>
-            <p>Edit Access</p>
+            <strong>You</strong>
+            <p>Manage access and collaboration</p>
           </div>
 
           <span className="permission-status edit">
