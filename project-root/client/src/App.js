@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './layout/ProtectedRoute';
 import Layout from './layout/Layout';
 import ScrollToTop from './layout/ScrollToTop';
@@ -95,33 +96,35 @@ function AppShell() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <Router>
-          <ScrollToTop />
-          <PageTitle />
-          <ThemeToggle />
-          <Routes>
-            {/* Public routes */}
-            <Route path="/login"           element={<Login />} />
-            <Route path="/signup"          element={<Signup />} />
-            <Route path="/verify-otp"      element={<VerifyOtp />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password"  element={<ResetPassword />} />
-            <Route path="/oauth-callback"  element={<OAuthCallback />} />
+    <ThemeProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <Router>
+            <ScrollToTop />
+            <PageTitle />
+            <ThemeToggle />
+            <Routes>
+              {/* Public routes */}
+              <Route path="/login"           element={<Login />} />
+              <Route path="/signup"          element={<Signup />} />
+              <Route path="/verify-otp"      element={<VerifyOtp />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password"  element={<ResetPassword />} />
+              <Route path="/oauth-callback"  element={<OAuthCallback />} />
 
-            {/* Protected app shell */}
-            <Route
-              path="/*"
-              element={
-                <ProtectedRoute>
-                  <AppShell />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </Router>
-      </ToastProvider>
-    </AuthProvider>
+              {/* Protected app shell */}
+              <Route
+                path="/*"
+                element={
+                  <ProtectedRoute>
+                    <AppShell />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </Router>
+        </ToastProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
