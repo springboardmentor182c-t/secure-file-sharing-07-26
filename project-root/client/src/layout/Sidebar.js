@@ -2,6 +2,7 @@ import React, { useRef, useState, useMemo } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
+import { events, EVENTS } from "../utils/events";
 import UserDropdownMenu from "./UserDropdownMenu";
 import "./Sidebar.css";
 
@@ -25,7 +26,7 @@ import {
 // FIX ISS-L2: Added adminOnly flag to Admin item
 const NAV_ITEMS = [
   { to: "/dashboard",      label: "Dashboard",      icon: LayoutDashboard },
-  { to: "/files",          label: "My Files",       icon: FolderOpen },
+  { to: "/my-files",       label: "My Files",       icon: FolderOpen },
   { to: "/sharing",        label: "Sharing",        icon: Share2 },
   { to: "/shared-with-me", label: "Shared with Me", icon: UsersRound },
   { to: "/activity",       label: "Activity",       icon: Activity },
@@ -162,7 +163,10 @@ export default function Sidebar({
               <NavLink
                 key={item.to}
                 to={item.to}
-                onClick={() => setSidebarOpen(false)}
+                onClick={() => {
+                  if (item.to === "/my-files") events.emit(EVENTS.MY_FILES_ROOT);
+                  setSidebarOpen(false);
+                }}
                 data-tooltip={item.label}
                 className={({ isActive }) =>
                   `sidebar-link ${isActive ? "active" : ""}`

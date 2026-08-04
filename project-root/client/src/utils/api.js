@@ -86,8 +86,9 @@ export const authAPI = {
 // ── Files ─────────────────────────────────────────────────────────────────
 export const filesAPI = {
   list: (folderId) => api.get('/api/files/', { params: { folder_id: folderId } }),
-  upload: (formData, onProgress) =>
+  upload: (formData, onProgress, folderId) =>
     api.post('/api/files/upload', formData, {
+      params: folderId ? { folder_id: folderId } : undefined,
       headers: { 'Content-Type': 'multipart/form-data' },
       onUploadProgress: (e) => onProgress && onProgress(Math.round((e.loaded * 100) / e.total)),
     }),

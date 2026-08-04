@@ -6,6 +6,7 @@ import { useLocation } from "react-router-dom";
 const ROUTE_TITLES = {
   "/dashboard":       "Dashboard",
   "/files":           "My Files",
+  "/my-files":        "My Files",
   "/sharing":         "Sharing",
   "/shared-with-me":  "Shared with Me",
   "/activity":        "Activity",

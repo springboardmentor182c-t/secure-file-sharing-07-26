@@ -5,7 +5,6 @@ import re
 import uuid
 import hashlib
 import mimetypes
-
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -162,10 +161,7 @@ def get_file(
     )
 
     if not file:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="File not found",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
 
     # Owner authorization
     if file.owner_id != owner_id:
@@ -197,14 +193,12 @@ def get_file(
         )
 
         db.commit()
-
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not authorized to access this file.",
         )
 
     return file
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 # UPLOAD
@@ -290,7 +284,7 @@ def upload_file(
     # Update user storage
     user = db.query(User).filter(User.id == owner_id).first()
     if user:
-        user.storage_used += file_size
+        user.storage_used = (user.storage_used or 0) + file_size
 
     # Audit log
     _audit(
@@ -347,6 +341,7 @@ def delete_file(
     try:
         delete_encrypted_file(file.stored_name)
     except Exception:
+        # best-effort
         pass
 
     # Delete AES key

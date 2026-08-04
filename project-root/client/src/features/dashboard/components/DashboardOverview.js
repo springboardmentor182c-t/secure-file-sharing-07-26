@@ -72,9 +72,11 @@ function PanelHeader({ action, onAction, title }) {
   );
 }
 
-export default function DashboardOverview({ dashboardData, user }) {
+export default function DashboardOverview({ dashboardData = {}, user }) {
   const navigate = useNavigate();
-  const { analytics, files, notifications } = dashboardData;
+  const analytics = dashboardData?.analytics || {};
+  const files = dashboardData?.files || [];
+  const notifications = dashboardData?.notifications || [];
   const recentFiles = files.slice(0, 6);
   const recentNotifications = notifications.slice(0, 4);
   const uploadTrend = analytics.upload_trend || [];

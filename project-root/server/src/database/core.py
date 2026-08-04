@@ -14,10 +14,8 @@ DATABASE_URL = os.getenv(
     "postgresql+psycopg2://trustshare:trustshare@localhost:5432/trustshare",
 )
 
-
 def is_postgresql_url(url: str) -> bool:
-    return url.startswith(("postgresql://", "postgresql+psycopg2://"))
-
+    return url.startswith(("postgresql://", "postgresql+psycopg2://", "postgresql+psycopg://"))
 
 def validate_database_url(url: str, require_postgresql: bool = False) -> None:
     if require_postgresql and not is_postgresql_url(url):
@@ -26,20 +24,14 @@ def validate_database_url(url: str, require_postgresql: bool = False) -> None:
             "Set DATABASE_URL to a postgresql+psycopg2:// URL."
         )
 
-
 validate_database_url(
     DATABASE_URL,
     os.getenv("REQUIRE_POSTGRESQL", "false").lower() in {"1", "true", "yes"},
 )
 
-# Configure engine based on dialect
 if DATABASE_URL.startswith("sqlite"):
-    engine = create_engine(
-        DATABASE_URL,
-        connect_args={"check_same_thread": False},
-    )
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 else:
-    # PostgreSQL production settings
     engine = create_engine(
         DATABASE_URL,
         pool_pre_ping=True,
