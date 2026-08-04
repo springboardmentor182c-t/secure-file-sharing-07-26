@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 from sqlalchemy import text
 
 from src.entities.audit_log import AuditLog
@@ -34,25 +35,33 @@ from app.api.v1.notifications.routes import router as notification_router
 
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+FRONTEND_URL_ALT = os.getenv("FRONTEND_URL_ALT", "http://localhost:5173")
 
 app = FastAPI(
     title="TrustShare API",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
         FRONTEND_URL,
+        FRONTEND_URL_ALT,
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Startup event
+app.include_router(api_router)
+
+
+@app.get("/")
+def root():
+    return {
+        "message": "Secure File Sharing Platform API is running"
+    }
+
 
 @app.on_event("startup")
 def on_startup():
