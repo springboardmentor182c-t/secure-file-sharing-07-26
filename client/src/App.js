@@ -7,10 +7,7 @@ import {
 
 import PageContainer from "./layout/PageContainer";
 
-// =====================================================
-// GROUP-C PAGES & FEATURES
-// =====================================================
-
+// Group-C pages/features
 import Home from "./pages/Home";
 import Settings from "./pages/Settings";
 import Securesharing from "./pages/Securesharing";
@@ -18,21 +15,15 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 
 import Dashboard from "./features/dashboard/Dashboard";
+import NotificationFeature from "./features/notifications/NotificationFeature";
 import ActivityMonitorPage from "./pages/ActivityMonitorPage";
+import AdminDashboard from "./pages/AdminDashboard";
 
-
-// =====================================================
-// FILE MANAGEMENT
-// =====================================================
-
+// File Management
 import FileManagementPage from "./filemanagement/FileManagementPage";
 import FileDetailsPage from "./filemanagement/FileDetailsPage";
 
-
-// =====================================================
-// FILE MANAGEMENT CSS
-// =====================================================
-
+// File Management CSS
 import "./assets/css/layout.css";
 import "./assets/css/sidebar.css";
 import "./assets/css/header.css";
@@ -41,17 +32,12 @@ import "./assets/css/table.css";
 import "./assets/css/fileDetails.css";
 import "./assets/css/responsive.css";
 
-
 function App() {
   return (
     <BrowserRouter>
-
       <Routes>
 
-        {/* =================================================
-            HOME
-        ================================================= */}
-
+        {/* HOME */}
         <Route
           path="/"
           element={
@@ -61,13 +47,7 @@ function App() {
           }
         />
 
-
-        {/* =================================================
-            DASHBOARD
-        ================================================= */}
-
-        <Route path="/login" element={<Login />} />
-
+        {/* DASHBOARD */}
         <Route
           path="/dashboard"
           element={
@@ -77,11 +57,7 @@ function App() {
           }
         />
 
-
-        {/* =================================================
-            SECURE SHARING
-        ================================================= */}
-
+        {/* SECURE SHARING */}
         <Route
           path="/sharing"
           element={
@@ -91,11 +67,7 @@ function App() {
           }
         />
 
-
-        {/* =================================================
-            NOTIFICATIONS
-        ================================================= */}
-
+        {/* NOTIFICATIONS */}
         <Route
           path="/notifications"
           element={
@@ -105,11 +77,7 @@ function App() {
           }
         />
 
-
-        {/* =================================================
-            ACTIVITY MONITOR
-        ================================================= */}
-
+        {/* ACTIVITY MONITOR */}
         <Route
           path="/activity"
           element={
@@ -118,16 +86,14 @@ function App() {
             </PageContainer>
           }
         />
+
+        {/* ADMIN */}
         <Route
-  path="/admin"
-  element={<AdminDashboard />}
-/>
+          path="/admin"
+          element={<AdminDashboard />}
+        />
 
-
-        {/* =================================================
-            SETTINGS
-        ================================================= */}
-
+        {/* SETTINGS */}
         <Route
           path="/settings"
           element={
@@ -137,30 +103,18 @@ function App() {
           }
         />
 
-
-        {/* =================================================
-            FILE MANAGEMENT
-        ================================================= */}
-
+        {/* FILE MANAGEMENT */}
         <Route
           path="/files"
-          element={
-            <FileManagementPage />
-          }
+          element={<FileManagementPage />}
         />
 
         <Route
           path="/file-details"
-          element={
-            <FileDetailsPage />
-          }
+          element={<FileDetailsPage />}
         />
 
-
-        {/* =================================================
-            AUTHENTICATION
-        ================================================= */}
-
+        {/* AUTHENTICATION */}
         <Route
           path="/login"
           element={<Login />}
@@ -172,10 +126,8 @@ function App() {
         />
 
       </Routes>
-
     </BrowserRouter>
   );
 }
-
 
 export default App;

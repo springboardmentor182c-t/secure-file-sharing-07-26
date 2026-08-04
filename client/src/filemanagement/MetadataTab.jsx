@@ -10,42 +10,42 @@ const MetadataTab = ({ file }) => {
 
         <div className="metadata-item">
           <label>File Name</label>
-          <p>{file.name}</p>
+          <p>{file?.name || file?.file_name || "-"}</p>
         </div>
 
         <div className="metadata-item">
           <label>File Type</label>
-          <p>{file.type}</p>
+          <p>{file?.type || file?.file_extension || "-"}</p>
         </div>
 
         <div className="metadata-item">
           <label>File Size</label>
-          <p>{file.size}</p>
+          <p>{file?.size || "-"}</p>
         </div>
 
         <div className="metadata-item">
           <label>Owner</label>
-          <p>{file.owner}</p>
+          <p>{file?.owner || "-"}</p>
         </div>
 
         <div className="metadata-item">
           <label>Folder</label>
-          <p>{file.folder}</p>
+          <p>{file?.folder_id ? "Folder" : "All Files"}</p>
         </div>
 
         <div className="metadata-item">
           <label>Version</label>
-          <p>{file.version}</p>
+          <p>{file?.version || "-"}</p>
         </div>
 
         <div className="metadata-item">
           <label>Uploaded On</label>
-          <p>{file.uploadDate}</p>
+          <p>{file?.uploaded_at || file?.uploadDate || "-"}</p>
         </div>
 
         <div className="metadata-item">
           <label>Last Modified</label>
-          <p>{file.modified}</p>
+          <p>{file?.modified || file?.updated_at || "-"}</p>
         </div>
 
       </div>

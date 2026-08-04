@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from "react";
 
-import Sidebar from "./Sidebar";
+import Sidebar from "../layout/Sidebar";
 import Header from "./Header";
 import FolderList from "./FolderList";
 import FileTable from "./FileTable";
 import Pagination from "./Pagination";
 import Toolbar from "./Toolbar";
-
-const OWNER_ID = "aafe9b9d-0109-46fd-b525-33e24d9ee9b5";
-const API_URL = "http://127.0.0.1:8000";
+import { API_URL, OWNER_ID } from "../config";
 
 const FileManagementPage = () => {
   const [files, setFiles] = useState([]);
@@ -223,8 +221,6 @@ const FileManagementPage = () => {
               setSortOrder={setSortOrder}
               filterType={filterType}
               setFilterType={setFilterType}
-              files={files}
-              setFiles={setFiles}
               selectedFolder={selectedFolder}
               refreshFiles={fetchFiles}
             />

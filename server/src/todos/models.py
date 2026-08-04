@@ -14,7 +14,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
 from src.database.core import Base
-from src.users.models import User
+
 
 # =====================================================
 # FOLDERS

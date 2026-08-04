@@ -7,7 +7,7 @@
   top: 0;
   left: 0;
 
-  width: 220px;
+  width: 260px;
   height: 100vh;
 
   background: #232120;
@@ -18,9 +18,13 @@
   flex-direction: column;
   justify-content: space-between;
 
-  padding: 20px 14px;
+  padding: 20px 16px;
 
   overflow-y: auto;
+
+  z-index: 1000;
+
+  box-sizing: border-box;
 }
 
 /* ===========================
@@ -183,4 +187,17 @@
     transform: translateX(-100%);
   }
 
+}
+
+/* Fix for sidebar text labels not showing */
+.menu-item span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-footer .menu-item span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

@@ -10,8 +10,6 @@ const Toolbar = ({
   setFilterType,
   sortOrder,
   setSortOrder,
-  files,
-  setFiles,
   selectedFolder,
   refreshFiles,
 }) => {
@@ -87,8 +85,6 @@ const Toolbar = ({
         {/* UPLOAD */}
 
         <UploadButton
-          files={files}
-          setFiles={setFiles}
           selectedFolder={selectedFolder}
           refreshFiles={refreshFiles}
         />

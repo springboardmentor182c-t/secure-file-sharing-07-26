@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { FiUpload } from "react-icons/fi";
-
-const OWNER_ID = "aafe9b9d-0109-46fd-b525-33e24d9ee9b5";
-const API_URL = "http://127.0.0.1:8000";
+import { API_URL, OWNER_ID, MAX_FILE_SIZE, ALLOWED_FILE_TYPES } from "../config";
 
 const UploadButton = ({
   selectedFolder,
@@ -19,6 +17,23 @@ const UploadButton = ({
 
     if (selectedFiles.length === 0) {
       return;
+    }
+
+    // Validate file size
+    for (const file of selectedFiles) {
+      if (file.size > MAX_FILE_SIZE) {
+        alert(`File "${file.name}" exceeds maximum size of 100MB`);
+        return;
+      }
+    }
+
+    // Validate file type
+    for (const file of selectedFiles) {
+      const fileExtension = file.name.split('.').pop().toLowerCase();
+      if (!ALLOWED_FILE_TYPES.includes(fileExtension)) {
+        alert(`File type "${fileExtension}" is not allowed. Allowed types: ${ALLOWED_FILE_TYPES.join(', ')}`);
+        return;
+      }
     }
 
     setUploading(true);

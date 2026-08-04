@@ -13,11 +13,14 @@ def read_activity(db: Session = Depends(get_db)):
     return [
         {
             "id": a.id,
-            "username": a.username,
+            "user_id": a.user_id,
+            "file_id": a.file_id,
             "action": a.action,
-            "file_name": a.file_name,
+            "module": a.module,
+            "description": a.description,
             "resource": a.resource,
             "ip_address": a.ip_address,
+            "device_info": a.device_info,
             "status": a.status,
             "details": a.details,
             "created_at": a.created_at,

@@ -1,5 +1,6 @@
 import uuid
 from pathlib import Path
+import os
 
 from fastapi import (
     APIRouter,
@@ -15,6 +16,13 @@ from sqlalchemy.orm import Session
 
 from src.database.core import get_db
 from src.todos import service
+
+# =====================================================
+# FILE UPLOAD CONFIGURATION
+# =====================================================
+
+MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", "104857600"))  # 100MB default
+ALLOWED_FILE_TYPES = os.getenv("ALLOWED_FILE_TYPES", "pdf,doc,docx,ppt,pptx,xls,xlsx,txt,csv,zip,rar,png,jpg,jpeg,gif").split(",")
 
 
 # =====================================================
@@ -150,6 +158,35 @@ def upload_new_file(
                 raise HTTPException(
                     status_code=400,
                     detail="Invalid folder ID"
+                )
+
+        # =====================================================
+        # VALIDATE FILE SIZE
+        # =====================================================
+        
+        # Read file content to get size
+        file_content = uploaded_file.file.read()
+        file_size = len(file_content)
+        
+        # Reset file pointer for service layer
+        uploaded_file.file.seek(0)
+        
+        if file_size > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File size exceeds maximum allowed size of {MAX_FILE_SIZE / (1024 * 1024)}MB"
+            )
+
+        # =====================================================
+        # VALIDATE FILE TYPE
+        # =====================================================
+        
+        if uploaded_file.filename:
+            file_extension = uploaded_file.filename.split('.')[-1].lower()
+            if file_extension not in ALLOWED_FILE_TYPES:
+                raise HTTPException(
+                    status_code=415,
+                    detail=f"File type '{file_extension}' is not allowed. Allowed types: {', '.join(ALLOWED_FILE_TYPES)}"
                 )
 
         return service.upload_file(
@@ -464,53 +501,3 @@ def delete_existing_file(
         "message": "File deleted successfully"
     }
 
-# =====================================================
-# GET FILE VERSIONS
-# =====================================================
-
-@router.get("/{file_id}/versions")
-def get_versions(
-    file_id: uuid.UUID,
-    owner_id: uuid.UUID,
-    db: Session = Depends(get_db)
-):
-    return service.get_file_versions(
-        db=db,
-        file_id=file_id,
-        owner_id=owner_id
-    )
-
-# =====================================================
-# UPLOAD NEW FILE VERSION
-# =====================================================
-
-@router.post("/{file_id}/versions")
-def upload_file_version(
-    file_id: uuid.UUID,
-    owner_id: uuid.UUID = Form(...),
-    uploaded_file: UploadFile = FastAPIFile(...),
-    db: Session = Depends(get_db)
-):
-    try:
-
-        return service.upload_new_version(
-            db=db,
-            file_id=file_id,
-            owner_id=owner_id,
-            uploaded_file=uploaded_file
-        )
-
-    except HTTPException:
-        raise
-
-    except Exception as e:
-
-        print(
-            "VERSION UPLOAD ERROR:",
-            repr(e)
-        )
-
-        raise HTTPException(
-            status_code=500,
-            detail="Version upload failed"
-        )
