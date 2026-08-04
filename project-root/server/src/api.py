@@ -8,7 +8,7 @@ from src.notifications.controller import router as notifications_router
 from src.audit.controller import router as audit_router
 from src.analytics.controller import router as analytics_router
 from src.admin.controller import router as admin_router
-from src.todos.controller import router as todos_router
+from src.users.controller import router as users_router
 from src.encryption.controller import router as encryption_router
 from src.exceptions import AppException, app_exception_handler
 from src.database.init_db import init_db
@@ -43,6 +43,7 @@ def create_app() -> FastAPI:
 
     # ── Routers ───────────────────────────────────────────────────────────────
     app.include_router(auth_router,          prefix="/api/auth",          tags=["Auth"])
+    app.include_router(users_router,         prefix="/api/users",         tags=["Users"])
     app.include_router(files_router,         prefix="/api/files",         tags=["Files"])
     app.include_router(folders_router,       prefix="/api/folders",       tags=["Folders"])
     app.include_router(shares_router,        prefix="/api/shares",        tags=["Sharing"])
@@ -50,12 +51,25 @@ def create_app() -> FastAPI:
     app.include_router(audit_router,         prefix="/api/audit",         tags=["Audit"])
     app.include_router(analytics_router,     prefix="/api/analytics",     tags=["Analytics"])
     app.include_router(admin_router,         prefix="/api/admin",         tags=["Admin"])
-    app.include_router(todos_router,         prefix="/api/todos",         tags=["Todos"])
     app.include_router(encryption_router,    prefix="/api/encryption",    tags=["Encryption"])
 
     # ── Health check ──────────────────────────────────────────────────────────
     @app.get("/health", tags=["System"])
     def health():
+        return {"status": "ok", "service": "SecureShare API", "version": "2.0.0"}
+
+    @app.get("/", tags=["System"])
+    def root():
+        return {
+            "status": "ok",
+            "service": "SecureShare API",
+            "version": "2.0.0",
+            "message": "API is running",
+        }
+
+    # Backwards-compatible path used by some clients
+    @app.get("/api/health", tags=["System"])
+    def api_health():
         return {"status": "ok", "service": "SecureShare API", "version": "2.0.0"}
 
     return app

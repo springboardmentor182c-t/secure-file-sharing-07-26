@@ -88,8 +88,8 @@ export default function App() {
               }
             />
 
-            {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/files" replace />} />
+            {/* Default redirect to Dashboard */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Router>
       </AuthProvider>

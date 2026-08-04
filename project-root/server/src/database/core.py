@@ -6,7 +6,6 @@ import os
 # Load variables from a .env file (if present) so DATABASE_URL etc. are available
 load_dotenv()
 
-# PostgreSQL by default; override via the DATABASE_URL env var (e.g. SQLite for local dev).
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql+psycopg2://SecureShare:SecureShare@localhost:5432/SecureShareDB",
