@@ -18,6 +18,7 @@ import {
   MoreVertical,
 } from "lucide-react";
 const AdminDashboard = () => {
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_API_URL || "";
   const [activeTab, setActiveTab] = useState("users");
 
   const [dashboard, setDashboard] = useState({});
@@ -33,7 +34,7 @@ const [editEmail, setEditEmail] = useState("");
 const [editRole, setEditRole] = useState("Admin");
 const [search, setSearch] = useState("");
 const [showShareModal, setShowShareModal] = useState(false);
-const shareLink = "http://localhost:3001/shared/admin";
+const shareLink = `${window.location.origin}/shared/admin`;
   useEffect(() => {
     loadDashboard();
     loadUsers();
@@ -41,7 +42,7 @@ const shareLink = "http://localhost:3001/shared/admin";
 
   const loadDashboard = async () => {
     try {
-      const res = await axios.get("http://localhost:8000/admin/dashboard");
+      const res = await axios.get(`${apiBaseUrl}/admin/dashboard`);
       setDashboard(res.data);
     } catch (err) {
       console.log(err);
@@ -50,7 +51,7 @@ const shareLink = "http://localhost:3001/shared/admin";
 
   const loadUsers = async () => {
     try {
-      const res = await axios.get("http://localhost:8000/admin/users");
+      const res = await axios.get(`${apiBaseUrl}/admin/users`);
       setUsers(res.data);
     } catch (err) {
       console.log(err);
@@ -66,7 +67,7 @@ const shareLink = "http://localhost:3001/shared/admin";
 const updateUser = async () => {
   try {
     await axios.put(
-      `http://localhost:8000/admin/users/${editingUser.id}`,
+      `${apiBaseUrl}/admin/users/${editingUser.id}`,
       {
         username: editName,
         email: editEmail,
@@ -85,7 +86,7 @@ const updateUser = async () => {
 };
   const deleteUser = async (id) => {
   try {
-    await axios.delete(`http://localhost:8000/admin/users/${id}`);
+    await axios.delete(`${apiBaseUrl}/admin/users/${id}`);
     loadUsers();
     setOpenMenu(null);
     alert("User deleted successfully");
@@ -96,7 +97,7 @@ const updateUser = async () => {
 };
   const sendInvite = async () => {
   try {
-    await axios.post("http://localhost:8000/admin/users", {
+    await axios.post(`${apiBaseUrl}/admin/users`, {
       username: name,
       email,
       password_hash: "temp_password", // TODO: Implement proper password handling

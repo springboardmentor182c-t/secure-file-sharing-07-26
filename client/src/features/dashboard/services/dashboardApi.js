@@ -1,10 +1,9 @@
 import axios from 'axios';
 import { mockDashboardData } from '../data/mockDashboardData';
-
-const API_BASE_URL = 'http://localhost:8000';
+import { API_URL } from '../../../config';
 
 const dashboardClient = axios.create({
-  baseURL: `${API_BASE_URL}/api/v1/dashboard`,
+  baseURL: `${API_URL}/api/v1/dashboard`,
   timeout: 5000,
 });
 

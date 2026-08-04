@@ -13,7 +13,7 @@ export const API_URL = readApiBaseUrl();
 // User Configuration
 // TODO: Replace with proper authentication context
 // This is a temporary solution for development
-export const OWNER_ID = process.env.REACT_APP_OWNER_ID || "aafe9b9d-0109-46fd-b525-33e24d9ee9b5";
+export const OWNER_ID = process.env.REACT_APP_OWNER_ID?.trim() || "";
 
 // File Upload Configuration
 export const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB

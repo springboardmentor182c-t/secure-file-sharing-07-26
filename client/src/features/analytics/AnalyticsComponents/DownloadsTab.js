@@ -13,7 +13,7 @@ const DownloadsTab = ({ filter }) => {
         setError(false);
         
         
-        const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+        const baseUrl = process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_API_URL || '';
 
         // Live API Endpoint call
         axios.get(`${baseUrl}/api/v1/analytics/downloads?range=${encodeURIComponent(filter || 'Last 30 Days')}`)
