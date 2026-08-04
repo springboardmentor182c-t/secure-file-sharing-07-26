@@ -8,7 +8,7 @@ export default function SearchBar({ value, onChange, onUpload }) {
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder="Search files, folders, and tags"
-          className="w-full rounded-2xl border border-[#E2E8F0] bg-white px-4 py-3 pr-12 text-sm text-[#0F172A] outline-none transition focus:border-[#4F46E5] focus:ring-2 focus:ring-[#c7d2fe]"
+          className="my-files-input w-full rounded-2xl border border-[#E2E8F0] bg-white px-4 py-3 pr-12 text-sm text-[#0F172A] outline-none transition focus:border-[#4F46E5] focus:ring-2 focus:ring-[#c7d2fe]"
         />
         <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#94A3B8]">🔍</span>
       </label>

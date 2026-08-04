@@ -47,6 +47,15 @@ export function useMyFilesData() {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    const returnToRoot = () => {
+      setFolderPath([]);
+      setSelectedCategory('all');
+      setSearchQuery('');
+    };
+    return events.on(EVENTS.MY_FILES_ROOT, returnToRoot);
+  }, []);
+
   // Dynamically generated filter categories based on actual files
   const filterChips = useMemo(() => {
     const categories = new Set();
@@ -189,6 +198,10 @@ export function useMyFilesData() {
     downloadFile,
     openFolder,
     goToFolder,
-    goToRoot: () => setFolderPath([]),
+    goToRoot: () => {
+      setFolderPath([]);
+      setSelectedCategory('all');
+      setSearchQuery('');
+    },
   };
 }

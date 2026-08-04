@@ -426,3 +426,29 @@ body.dark .brand-title{
 body.dark .page-wrapper{
     background:#0f172a;
 }
+
+/* My Files consumes the shared theme tokens instead of fixed light colors. */
+.my-files-page .my-files-surface,
+.my-files-page .my-files-input,
+.my-files-page .my-files-secondary-button,
+.my-files-page .my-files-filter-inactive {
+  background:var(--bg-card)!important;
+  border-color:var(--border-medium)!important;
+  color:var(--text-primary)!important;
+}
+
+.my-files-page .my-files-folder {
+  background:var(--bg-card)!important;
+}
+
+.my-files-page .my-files-title {
+  color:var(--text-primary)!important;
+}
+
+.my-files-page .my-files-muted {
+  color:var(--text-secondary)!important;
+}
+
+.my-files-page .my-files-input::placeholder {
+  color:var(--text-muted);
+}

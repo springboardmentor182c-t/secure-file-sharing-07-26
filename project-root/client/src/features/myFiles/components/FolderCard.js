@@ -3,7 +3,7 @@ export default function FolderCard({ id, title, subtitle, color, onDelete, onOpe
 
   return (
     <article
-      className={`group relative cursor-pointer rounded-3xl border border-[#E2E8F0] bg-gradient-to-br ${gradientColor} p-5 shadow-sm shadow-slate-100 transition hover:-translate-y-0.5 hover:shadow-md`}
+      className={`my-files-surface my-files-folder group relative cursor-pointer rounded-3xl border border-[#E2E8F0] bg-gradient-to-br ${gradientColor} p-5 shadow-sm shadow-slate-100 transition hover:-translate-y-0.5 hover:shadow-md`}
       onClick={() => onOpen?.({ id, name: title })}
       onKeyDown={(event) => event.key === 'Enter' && onOpen?.({ id, name: title })}
       role="button"
@@ -27,8 +27,8 @@ export default function FolderCard({ id, title, subtitle, color, onDelete, onOpe
           )}
         </div>
       </div>
-      <h3 className="mt-5 text-lg font-semibold text-[#0F172A]">{title}</h3>
-      <p className="mt-2 text-sm text-[#475569]">{subtitle}</p>
+      <h3 className="my-files-title mt-5 text-lg font-semibold text-[#0F172A]">{title}</h3>
+      <p className="my-files-muted mt-2 text-sm text-[#475569]">{subtitle}</p>
     </article>
   );
 }

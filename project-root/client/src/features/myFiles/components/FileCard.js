@@ -35,7 +35,7 @@ export default function FileCard({ file, onDelete, onDownload }) {
   const tags = Array.isArray(file?.tags) ? file.tags : [];
 
   return (
-    <article className="group relative rounded-3xl border border-[#E2E8F0] bg-white p-5 shadow-sm shadow-slate-100 transition hover:-translate-y-0.5 hover:shadow-md">
+    <article className="my-files-surface group relative rounded-3xl border border-[#E2E8F0] bg-white p-5 shadow-sm shadow-slate-100 transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-start justify-between gap-3">
         <div className="inline-flex h-11 w-11 items-center justify-center rounded-3xl bg-[#EEF2FF] text-xl">
           {getFileIcon(file)}
@@ -58,7 +58,7 @@ export default function FileCard({ file, onDelete, onDownload }) {
       </div>
 
       <div className="mt-5 space-y-3">
-        <h3 className="truncate text-base font-semibold text-[#0F172A]" title={fileName}>
+        <h3 className="my-files-title truncate text-base font-semibold text-[#0F172A]" title={fileName}>
           {fileName}
         </h3>
         {tags.length > 0 && (
@@ -70,7 +70,7 @@ export default function FileCard({ file, onDelete, onDownload }) {
         )}
       </div>
 
-      <div className="mt-6 flex items-center justify-between gap-3 text-sm text-[#64748B]">
+      <div className="my-files-muted mt-6 flex items-center justify-between gap-3 text-sm text-[#64748B]">
         <p>{displaySize}</p>
         <p>{displayModified}</p>
       </div>

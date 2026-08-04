@@ -18,6 +18,7 @@ class FolderOut(BaseModel):
     owner_id: int
     parent_id: Optional[int]
     created_at: datetime
+    item_count: int = 0
 
     class Config:
         from_attributes = True
@@ -29,7 +30,23 @@ def list_folders(db: Session, owner_id: int, parent_id: int | None = None) -> li
         q = q.filter(Folder.parent_id == parent_id)
     else:
         q = q.filter(Folder.parent_id == None)
-    return q.order_by(Folder.name).all()
+    folders = q.order_by(Folder.name).all()
+    return [
+        FolderOut(
+            id=folder.id,
+            name=folder.name,
+            owner_id=folder.owner_id,
+            parent_id=folder.parent_id,
+            created_at=folder.created_at,
+            item_count=(
+                db.query(File)
+                .filter(File.folder_id == folder.id, File.is_deleted == False)
+                .count()
+                + db.query(Folder).filter(Folder.parent_id == folder.id).count()
+            ),
+        )
+        for folder in folders
+    ]
 
 
 def create_folder(db: Session, data: FolderCreate, owner_id: int) -> FolderOut:
