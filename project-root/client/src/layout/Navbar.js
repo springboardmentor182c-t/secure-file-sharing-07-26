@@ -204,8 +204,8 @@ export default function Navbar({
     setResults(null);
     setActiveIndex(-1);
     const routes = {
-      file: "/files",
-      folder: "/files",
+      file: "/my-files",
+      folder: "/my-files",
       share: "/sharing",
       notification: "/notifications",
     };

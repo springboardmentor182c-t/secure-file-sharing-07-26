@@ -433,7 +433,7 @@ body.dark .page-wrapper{
 .my-files-page .my-files-secondary-button,
 .my-files-page .my-files-filter-inactive {
   background:var(--bg-card)!important;
-  border-color:var(--border-medium)!important;
+  border-color:var(--border-subtle)!important;
   color:var(--text-primary)!important;
 }
 
@@ -451,4 +451,17 @@ body.dark .page-wrapper{
 
 .my-files-page .my-files-input::placeholder {
   color:var(--text-muted);
+}
+
+.my-files-page .my-files-search-clear {
+  color:var(--text-muted);
+}
+
+.my-files-page .my-files-search-clear:hover {
+  background:var(--bg-hover);
+  color:var(--text-primary);
+}
+
+.my-files-page .my-files-search-bar > span:not(.sr-only) {
+  display:none;
 }

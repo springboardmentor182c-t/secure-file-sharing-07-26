@@ -160,6 +160,7 @@ export default function MyFiles() {
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
+            onClear={() => setSearchQuery('')}
             onUpload={() => fileInputRef.current?.click()}
           />
         </div>
