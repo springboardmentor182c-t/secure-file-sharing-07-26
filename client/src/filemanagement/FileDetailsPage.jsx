@@ -4,7 +4,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 
-import Sidebar from "./Sidebar";
+import Sidebar from "../layout/Sidebar";
 import Header from "./Header";
 
 import PreviewTab from "./PreviewTab";

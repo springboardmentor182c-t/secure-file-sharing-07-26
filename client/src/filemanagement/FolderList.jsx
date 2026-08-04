@@ -73,12 +73,15 @@ const FolderList = ({
     }
 
     try {
+      const formData = new FormData();
+      formData.append("owner_id", OWNER_ID);
+      formData.append("folder_name", trimmedName);
+
       const response = await fetch(
-        `${API_URL}/files/folders?owner_id=${OWNER_ID}&folder_name=${encodeURIComponent(
-          trimmedName
-        )}`,
+        `${API_URL}/files/folders`,
         {
           method: "POST",
+          body: formData,
         }
       );
 
@@ -136,12 +139,15 @@ const FolderList = ({
     }
 
     try {
+      const formData = new FormData();
+      formData.append("owner_id", OWNER_ID);
+      formData.append("new_name", trimmedName);
+
       const response = await fetch(
-        `${API_URL}/files/folders/${folder.id}/rename?owner_id=${OWNER_ID}&new_name=${encodeURIComponent(
-          trimmedName
-        )}`,
+        `${API_URL}/files/folders/${folder.id}/rename`,
         {
           method: "PUT",
+          body: formData,
         }
       );
 
@@ -199,10 +205,14 @@ const FolderList = ({
     }
 
     try {
+      const formData = new FormData();
+      formData.append("owner_id", OWNER_ID);
+
       const response = await fetch(
-        `${API_URL}/files/folders/${folder.id}?owner_id=${OWNER_ID}`,
+        `${API_URL}/files/folders/${folder.id}`,
         {
           method: "DELETE",
+          body: formData,
         }
       );
 

@@ -79,10 +79,10 @@ def get_all_folders(
 
 @router.post("/folders")
 def create_new_folder(
-    owner_id: uuid.UUID,
-    folder_name: str,
-    description: str | None = None,
-    parent_folder_id: uuid.UUID | None = None,
+    owner_id: uuid.UUID = Form(...),
+    folder_name: str = Form(...),
+    description: str | None = Form(None),
+    parent_folder_id: uuid.UUID | None = Form(None),
     db: Session = Depends(get_db)
 ):
     return service.create_folder(
@@ -101,8 +101,8 @@ def create_new_folder(
 @router.put("/folders/{folder_id}/rename")
 def rename_existing_folder(
     folder_id: uuid.UUID,
-    owner_id: uuid.UUID,
-    new_name: str,
+    owner_id: uuid.UUID = Form(...),
+    new_name: str = Form(...),
     db: Session = Depends(get_db)
 ):
     return service.rename_folder(
@@ -120,7 +120,7 @@ def rename_existing_folder(
 @router.delete("/folders/{folder_id}")
 def delete_existing_folder(
     folder_id: uuid.UUID,
-    owner_id: uuid.UUID,
+    owner_id: uuid.UUID = Form(...),
     db: Session = Depends(get_db)
 ):
     service.delete_folder(

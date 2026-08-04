@@ -10,7 +10,7 @@
   width: 260px;
   height: 100vh;
 
-  background: #232120;
+  background: linear-gradient(180deg, #2a2422 0%, #211d1b 100%);
 
   color: #fff;
 
@@ -25,6 +25,7 @@
   z-index: 1000;
 
   box-sizing: border-box;
+  box-shadow: 6px 0 24px rgba(0, 0, 0, 0.16);
 }
 
 /* ===========================
@@ -36,11 +37,11 @@
   align-items: center;
   gap: 12px;
 
-  padding-bottom: 22px;
+  padding-bottom: 18px;
 
   border-bottom: 1px solid rgba(255,255,255,.08);
 
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .logo-circle {
@@ -50,11 +51,12 @@
 
   border-radius: 12px;
 
-  background: #7b5d63;
+  background: linear-gradient(135deg, #8b6d62 0%, #6f544d 100%);
 
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
 }
 
 .logo-circle svg {
@@ -107,6 +109,7 @@
   color: #d7cdc7;
 
   transition: all .25s ease;
+  text-decoration: none;
 }
 
 .menu-item svg {
@@ -132,9 +135,10 @@
 
 .menu-item.active {
 
-  background: #7b5d63;
+  background: linear-gradient(135deg, #7f625b 0%, #6c4f49 100%);
 
   color: white;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16);
 }
 
 /* ===========================
@@ -148,6 +152,30 @@
   padding-top: 16px;
 
   margin-top: 12px;
+}
+
+.sidebar .menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 12px;
+  color: #d7cdc7;
+  text-decoration: none;
+  margin-bottom: 6px;
+  transition: all .25s ease;
+}
+
+.sidebar .menu:hover {
+  background: rgba(255,255,255,.08);
+  transform: translateX(3px);
+}
+
+.sidebar .menu.active {
+  background: linear-gradient(135deg, #7f625b 0%, #6c4f49 100%);
+  color: white;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16);
 }
 
 .logout {
