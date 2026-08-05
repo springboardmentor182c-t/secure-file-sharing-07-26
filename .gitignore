@@ -1,7 +1,26 @@
 node_modules/
+<<<<<<< HEAD
+.npm-cache/
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+!client/.env.example
+!server/.env.example
+logs/
+*.log
+.DS_Store
+Thumbs.db
+=======
 .env
 __pycache__/
 .pytest_cache/
 *.pyc
 .vscode/
 
+>>>>>>> b9ef5279aa1a5b45ad52c0779faf72bb7f99af5f

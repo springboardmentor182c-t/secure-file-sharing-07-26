@@ -1,3 +1,12 @@
+<<<<<<< HEAD
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #0f172a;
+  background: #f8fafc;
+=======
 @import "tailwindcss";
 
 :root {
@@ -22,10 +31,13 @@
   color-scheme: light dark;
   color: var(--text);
   background: var(--bg);
+>>>>>>> b9ef5279aa1a5b45ad52c0779faf72bb7f99af5f
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+<<<<<<< HEAD
+=======
 
   @media (max-width: 1024px) {
     font-size: 16px;
@@ -50,10 +62,22 @@
   #social .button-icon {
     filter: invert(1) brightness(2);
   }
+>>>>>>> b9ef5279aa1a5b45ad52c0779faf72bb7f99af5f
 }
 
 body {
   margin: 0;
+<<<<<<< HEAD
+  min-width: 320px;
+  background: #f8fafc;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+=======
 }
 
 h1,
@@ -98,4 +122,5 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+>>>>>>> b9ef5279aa1a5b45ad52c0779faf72bb7f99af5f
 }
