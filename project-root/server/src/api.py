@@ -58,7 +58,11 @@ def create_app() -> FastAPI:
     # automatically redirected to HTTPS.
     # In development, HTTP is allowed (localhost does not need TLS).
     _env = os.getenv("ENVIRONMENT", "development").lower().strip()
-    if _env in ("production", "prod"):
+    # API Gateway terminates public TLS before forwarding to the protected ECS
+    # service through an HTTP ALB. Redirecting inside ECS would otherwise send
+    # users to the private ALB hostname instead of the public gateway URL.
+    _behind_api_gateway = bool(os.getenv("ECS_CONTAINER_METADATA_URI_V4"))
+    if _env in ("production", "prod") and not _behind_api_gateway:
         app.add_middleware(HealthCheckAwareHTTPSRedirectMiddleware)
 
     configured_origins = os.getenv("BACKEND_CORS_ORIGINS", "")
