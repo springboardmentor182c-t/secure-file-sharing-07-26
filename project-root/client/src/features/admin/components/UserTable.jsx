@@ -16,9 +16,7 @@ const UserTable = ({
 
     return matchesSearch && matchesRole;
   });
-  console.log("roleFilter =", roleFilter);
-console.log("users =", users);
-console.log("filteredUsers =", filteredUsers);
+ 
 
   return (
     <div className="user-table-container">
