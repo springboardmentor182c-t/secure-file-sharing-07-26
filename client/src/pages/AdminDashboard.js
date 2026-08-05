@@ -33,7 +33,7 @@ const [editEmail, setEditEmail] = useState("");
 const [editRole, setEditRole] = useState("Admin");
 const [search, setSearch] = useState("");
 const [showShareModal, setShowShareModal] = useState(false);
-const shareLink = "http://localhost:3001/shared/admin";
+const shareLink = `${process.env.REACT_APP_API_URL}/shared/admin`;
   useEffect(() => {
     loadDashboard();
     loadUsers();
@@ -41,7 +41,7 @@ const shareLink = "http://localhost:3001/shared/admin";
 
   const loadDashboard = async () => {
     try {
-      const res = await axios.get("http://localhost:8000/admin/dashboard");
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/admin/dashboard`);
       setDashboard(res.data);
     } catch (err) {
       console.log(err);
@@ -50,7 +50,7 @@ const shareLink = "http://localhost:3001/shared/admin";
 
   const loadUsers = async () => {
     try {
-      const res = await axios.get("http://localhost:8000/admin/users");
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/admin/users`);
       setUsers(res.data);
     } catch (err) {
       console.log(err);
@@ -66,7 +66,7 @@ const shareLink = "http://localhost:3001/shared/admin";
 const updateUser = async () => {
   try {
     await axios.put(
-      `http://localhost:8000/admin/users/${editingUser.id}`,
+      `${process.env.REACT_APP_API_URL}/admin/users/${editingUser.id}`,
       {
         name: editName,
         email: editEmail,
@@ -87,7 +87,7 @@ const updateUser = async () => {
 };
   const deleteUser = async (id) => {
   try {
-    await axios.delete(`http://localhost:8000/admin/users/${id}`);
+    await axios.delete(`${process.env.REACT_APP_API_URL}/admin/users/${id}`);
     loadUsers();
     setOpenMenu(null);
     alert("User deleted successfully");
@@ -98,7 +98,7 @@ const updateUser = async () => {
 };
   const sendInvite = async () => {
   try {
-    await axios.post("http://localhost:8000/admin/users", {
+    await axios.post(`${process.env.REACT_APP_API_URL}/admin/users`, {
       name,
       email,
       role,

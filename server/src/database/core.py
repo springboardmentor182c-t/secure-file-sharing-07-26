@@ -1,4 +1,5 @@
 import os
+
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -18,6 +19,9 @@ if not DATABASE_URL:
         f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     )
 
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL not found. Check your .env file.")
+
 engine = create_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(
@@ -30,6 +34,9 @@ Base = declarative_base()
 
 
 def get_db():
+    """
+    Database session dependency.
+    """
     db = SessionLocal()
     try:
         yield db
