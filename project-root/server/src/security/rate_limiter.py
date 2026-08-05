@@ -43,6 +43,9 @@ DEFAULT_RATE_LIMITS = {
     "performance":       {"requests": 30, "window_seconds": 60},
     # Summary generation / regeneration endpoint
     "file_summary":      {"requests": 5,  "window_seconds": 60},
+    "assistant_chat":            {"requests": 20, "window_seconds": 60},
+    "assistant_test_connection": {"requests": 5,  "window_seconds": 60},
+    "assistant_admin_update":    {"requests": 30, "window_seconds": 60},
     "default":           {"requests": 60, "window_seconds": 60},
 }
 

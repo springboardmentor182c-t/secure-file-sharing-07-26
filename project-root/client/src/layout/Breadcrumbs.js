@@ -25,6 +25,8 @@ const ROUTE_LABELS = {
   analytics: "Analytics",
   admin: "Admin",
   settings: "Settings",
+  assistant: "AI Assistant",
+  configuration: "Configuration",
 };
 
 export default function Breadcrumbs({ items }) {

@@ -25,6 +25,8 @@ from src.users.controller import router as users_router
 from src.security.controller import router as security_router
 from src.file_summaries.controller import router as file_summaries_router
 
+from src.assistant.controller import router as assistant_router
+from src.assistant.admin_controller import router as assistant_admin_router
 
 def create_app() -> FastAPI:
     # Initialize DB tables
@@ -84,7 +86,9 @@ def create_app() -> FastAPI:
     app.include_router(settings_router,       prefix="/api/settings",       tags=["Settings"])
     app.include_router(todos_router,          prefix="/api/todos",          tags=["Todos"])
     app.include_router(security_router,       prefix="/api/security",       tags=["Security"])
-
+    app.include_router(assistant_router,      prefix="/api/assistant", tags=["AI Assistant"],)
+    app.include_router(assistant_admin_router, prefix="/api/assistant/admin",tags=["AI Assistant Admin"],)
+    
     # ── Health check ──────────────────────────────────────────────────────────
     @app.get("/health", tags=["System"])
     def health():
