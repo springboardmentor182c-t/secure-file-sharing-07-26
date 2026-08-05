@@ -11,6 +11,7 @@ const ROUTE_TITLES = {
   "/activity":        "Activity",
   "/notifications":   "Notifications",
   "/analytics":       "Analytics",
+  "/assistant":       "AI Assistant",
   "/admin":           "Admin",
   "/settings":        "Settings",
   "/login":           "Sign In",

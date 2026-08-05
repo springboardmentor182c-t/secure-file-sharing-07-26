@@ -25,6 +25,14 @@ from src.analytics.models.event_type import AnalyticsEventType  # noqa
 from src.analytics.models.event_status import AnalyticsEventStatus  # noqa
 from src.analytics.models.severity_map import AnalyticsSeverityMap  # noqa
 
+# Import AI Assistant models so tables are created
+from src.entities.assistant_config import AssistantConfig  # noqa
+from src.entities.assistant_function import AssistantFunction  # noqa
+from src.entities.assistant_prompt import AssistantPrompt  # noqa
+from src.entities.assistant_suggested_query import AssistantSuggestedQuery  # noqa
+from src.entities.chat_conversation import ChatConversation  # noqa
+from src.entities.chat_message import ChatMessage  # noqa
+
 # Import analytics seeds
 from src.analytics.seed import (
     seed_event_types,
@@ -32,6 +40,7 @@ from src.analytics.seed import (
     seed_analytics_config,
     seed_severity_map,
 )
+from src.assistant.seed import seed_all_assistant_data
 
 
 def init_db():
@@ -52,5 +61,9 @@ def init_db():
         seed_event_statuses(db)
         seed_analytics_config(db)
         seed_severity_map(db)
+
+        # AI Assistant module seeds
+        # Idempotent — only inserts missing rows
+        seed_all_assistant_data(db)
     finally:
         db.close()

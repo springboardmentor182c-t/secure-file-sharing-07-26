@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import UserDropdownMenu from "./UserDropdownMenu";
+import { Sparkles } from 'lucide-react';
 import "./Sidebar.css";
 
 import {
@@ -31,6 +32,7 @@ const NAV_ITEMS = [
   { to: "/activity",       label: "Activity",       icon: Activity },
   { to: "/notifications",  label: "Notifications",  icon: Bell, badge: true },
   { to: "/analytics",      label: "Analytics",      icon: BarChart3 },
+  { to: "/assistant",  label: "AI Assistant",  icon: Sparkles },
   { to: "/admin",          label: "Admin",          icon: Shield, adminOnly: true },
   { to: "/settings",       label: "Settings",       icon: Settings },
 ];
