@@ -4,6 +4,9 @@ from fastapi import (
     HTTPException,
     status
 )
+from src.auth.dependencies import get_current_user
+from src.auth.models import CurrentUserResponse
+
 
 from sqlalchemy.orm import Session
 
@@ -336,5 +339,27 @@ def reset_password(
 
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+@router.get(
+    "/me",
+    response_model=CurrentUserResponse
+)
+def current_user(
+    payload=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+
+    try:
+
+        return service.get_current_user_details(
+            db,
+            payload["sub"]
+        )
+
+    except ValueError as e:
+
+        raise HTTPException(
+            status_code=404,
             detail=str(e)
         )

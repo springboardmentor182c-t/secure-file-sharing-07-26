@@ -1,5 +1,11 @@
 from pydantic import BaseModel, EmailStr
 
+from pydantic import BaseModel
+
+class CurrentUserResponse(BaseModel):
+    username: str
+    role: str
+
 
 class SignupRequest(BaseModel):
     username: str

@@ -637,6 +637,33 @@ def forgot_password(
         user.email,
         token
     )
+    
+def get_current_user_details(
+    db: Session,
+    user_id: str
+):
+
+    user = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .first()
+    )
+
+    if user is None:
+        raise ValueError("User not found")
+
+    role = (
+        db.query(Role)
+        .filter(Role.id == user.role_id)
+        .first()
+    )
+
+    return {
+        "username": user.username,
+        "role": role.role_name if role else "user"
+    }
+
+    
 
 
 

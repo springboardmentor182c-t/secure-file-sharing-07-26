@@ -20,21 +20,11 @@ from src.api import api_router
 from src.sharing.controller import router as sharing_router
 from src.sharing import model  # noqa: F401
 
-<<<<<<< HEAD
-# Notifications
-=======
-# Feature-specific module imports for analytics
+# Analytics
 from src.analytics.controller import router as analytics_router
 from src.analytics import model as analytics_model  # noqa: F401
 
-# Retrieve the frontend URL from environment variables
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
-
-# Initialize FastAPI
-app = FastAPI(title="TrustShare API", version="1.0.0")
-
-# Configure CORS
->>>>>>> origin/main-group-C
+# Notifications
 from app.api.v1.notifications.routes import router as notification_router
 
 # Activity Monitor
@@ -46,6 +36,8 @@ from src.entities.issue import Issue  # noqa: F401
 from src.entities.file import File  # noqa: F401
 from src.entities.user import User  # noqa: F401
 from src.entities.system_health import SystemHealth  # noqa: F401
+
+load_dotenv()
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 FRONTEND_URL_ALT = os.getenv("FRONTEND_URL_ALT", "http://localhost:5173")
@@ -67,18 +59,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-<<<<<<< HEAD
-=======
-app.include_router(api_router)
-
-
-@app.get("/")
-def root():
-    return {
-        "message": "Secure File Sharing Platform API is running"
-    }
-
->>>>>>> origin/main-group-C
 
 @app.on_event("startup")
 def on_startup():
@@ -107,7 +87,7 @@ def on_startup():
         )
 
 
-# Register routers
+# Register Routers
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(api_router)
@@ -116,7 +96,6 @@ app.include_router(analytics_router)
 app.include_router(notification_router)
 
 
-# Root endpoint
 @app.get("/")
 def root():
     return {
