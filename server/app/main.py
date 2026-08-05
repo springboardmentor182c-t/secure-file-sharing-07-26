@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.dashboard.routes import router as dashboard_router
+from app.api.v1.analytics.routes import router as analytics_router
 from app.api.v1.dashboard.service import seed_dashboard_data
 from app.core.config import get_settings
 from app.database.session import SessionLocal, init_db
@@ -32,6 +33,7 @@ app.add_middleware(
 )
 
 app.include_router(dashboard_router, prefix=settings.api_v1_prefix)
+app.include_router(analytics_router, prefix=settings.api_v1_prefix)
 
 
 @app.get("/health")

@@ -22,6 +22,7 @@ from src.sharing import model  # noqa: F401
 
 # Feature-specific module imports for analytics
 from src.analytics.controller import router as analytics_router
+from src.upload.controller import router as upload_router
 from src.analytics import model as analytics_model  # noqa: F401
 
 # Retrieve the frontend URL from environment variables
@@ -56,6 +57,7 @@ app.add_middleware(
 app.include_router(api_router)
 
 
+
 @app.get("/")
 def root():
     return {
@@ -86,10 +88,9 @@ app.include_router(admin_router)
 
 app.include_router(api_router)
 app.include_router(sharing_router)
+app.include_router(upload_router)
 app.include_router(analytics_router)
 app.include_router(notification_router)
-
-
 # Health Check
 @app.get("/")
 def home():
