@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './layout/ProtectedRoute';
@@ -29,9 +29,19 @@ import Notifications from './pages/Notifications';
 import Admin from './pages/Admin';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
+import Assistant from './pages/Assistant';
 
 import { notificationsAPI } from './utils/api';
 import './assets/global.css';
+
+// Show floating ThemeToggle only on public/auth pages
+const PUBLIC_PATHS = ['/login', '/signup', '/verify-otp', '/forgot-password', '/reset-password', '/oauth-callback'];
+
+function ConditionalThemeToggle() {
+  const location = useLocation();
+  const isPublicPage = PUBLIC_PATHS.some((path) => location.pathname.startsWith(path));
+  return isPublicPage ? <ThemeToggle /> : null;
+}
 
 function AppShell() {
   const { user } = useAuth();
@@ -43,7 +53,6 @@ function AppShell() {
       return;
     }
 
-    // FIX ISS-L1: isMounted guard prevents setState after logout
     let isMounted = true;
 
     const load = () => {
@@ -78,8 +87,9 @@ function AppShell() {
         <Route path="/analytics"      element={<Analytics />} />
         <Route path="/notifications"  element={<Notifications />} />
         <Route path="/settings"       element={<Settings />} />
+        <Route path="/assistant"      element={<Assistant />} />
+        <Route path="/assistant/configuration" element={<Assistant />} />
 
-        {/* FIX ISS-L1: Admin route now enforces adminOnly at route level */}
         <Route
           path="/admin"
           element={
@@ -103,7 +113,7 @@ export default function App() {
           <Router>
             <ScrollToTop />
             <PageTitle />
-            <ThemeToggle />
+            <ConditionalThemeToggle />
             <Routes>
               {/* Public routes */}
               <Route path="/login"           element={<Login />} />

@@ -6,12 +6,19 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// FIX ISS-D9: only wipe auth-related keys, preserve theme/settings/etc.
 const AUTH_STORAGE_KEYS = ['access_token', 'refresh_token', 'user'];
+
+const ASSISTANT_SESSION_KEYS = [
+  'trustshare_bubble_conversation_id',
+  'trustshare_bubble_open',
+];
 
 const clearAuthStorage = () => {
   AUTH_STORAGE_KEYS.forEach((k) => {
     localStorage.removeItem(k);
+    sessionStorage.removeItem(k);
+  });
+  ASSISTANT_SESSION_KEYS.forEach((k) => {
     sessionStorage.removeItem(k);
   });
 };

@@ -9,6 +9,7 @@ import LoadingBar from "./LoadingBar";
 import KeyboardShortcuts from "./KeyboardShortcuts";
 import FaviconBadge from "./FaviconBadge";
 import NotificationSound from "./NotificationSound";
+import AssistantBubble from '../features/assistant/AssistantBubble';
 import "./Layout.css";
 
 export default function Layout({ children, unreadCount = 0 }) {
@@ -51,6 +52,7 @@ export default function Layout({ children, unreadCount = 0 }) {
       </div>
 
       <ScrollToTopButton />
+      <AssistantBubble /> 
     </div>
   );
 }
