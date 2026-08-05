@@ -36,9 +36,14 @@ import Dashboard from "./features/dashboard/Dashboard";
 import NotificationFeature from "./features/notifications/NotificationFeature";
 import Analytics from "./features/analytics/Analytics";
 
+
 // Route Guards
 import ProtectedRoute from "./features/authentication/components/ProtectedRoute";
 import AdminRoute from "./features/authentication/components/AdminRoute";
+
+import AdminDashboard from "./pages/AdminDashboard";
+import Profile from './features/profile/Profile';
+
 
 function App() {
   return (
@@ -244,6 +249,26 @@ function App() {
             </AdminRoute>
           }
         />
+
+
+        <Route
+         path="/profile"
+         element={
+           <PageContainer>
+            <Profile />
+           </PageContainer>
+          } 
+        />
+        
+        <Route
+  path="/admin"
+  element={
+    <PageContainer>
+      <Dashboard />
+    </PageContainer>
+  }
+/>
+
 
         {/* Invalid Route */}
         <Route
