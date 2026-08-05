@@ -7,22 +7,26 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from src.config import cors_origins
-from src.search.controller import router as search_router
+
+from src.activity.controller import router as activity_router
+from src.admin.controller import router as admin_router
+from src.analytics.controller import router as analytics_router
+from src.audit.controller import router as audit_router
 from src.auth.controller import router as auth_router
-from src.users.controller import router as users_router
+from src.dashboard.controller import router as dashboard_router
+from src.database.init_db import init_db
+from src.exceptions import AppException, app_exception_handler
 from src.files.controller import router as files_router
 from src.folders.controller import router as folders_router
-from src.shares.controller import router as shares_router
 from src.notifications.controller import router as notifications_router
-from src.audit.controller import router as audit_router
-from src.analytics.controller import router as analytics_router
-from src.dashboard.controller import router as dashboard_router
+from src.search.controller import router as search_router
+from src.settings.controller import router as settings_router
 from src.shared_with_me.controller import router as shared_with_me_router
-from src.admin.controller import router as admin_router
+from src.shares.controller import router as shares_router
 from src.todos.controller import router as todos_router
-from src.exceptions import AppException, app_exception_handler
-from src.database.init_db import init_db
+from src.users.controller import router as users_router
+from src.security.controller import router as security_router
+from src.file_summaries.controller import router as file_summaries_router
 
 
 def create_app() -> FastAPI:
@@ -36,7 +40,27 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
     )
-    origins = cors_origins()
+
+    # ── HTTPS Redirect Middleware (production only) ────────────────────────────
+    # PSD 4.ii: HTTPS/TLS Communication
+    # In production (ENVIRONMENT=production), all HTTP requests are
+    # automatically redirected to HTTPS.
+    # In development, HTTP is allowed (localhost does not need TLS).
+    _env = os.getenv("ENVIRONMENT", "development").lower().strip()
+    if _env in ("production", "prod"):
+        from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
+        app.add_middleware(HTTPSRedirectMiddleware)
+
+    configured_origins = os.getenv("BACKEND_CORS_ORIGINS", "")
+    origins = [origin.strip().rstrip("/") for origin in configured_origins.split(",") if origin.strip()]
+    if not origins:
+        origins = [
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:3001",
+        ]
+
     # ── CORS ──────────────────────────────────────────────────────────────────
     app.add_middleware(
         CORSMiddleware,
@@ -50,35 +74,37 @@ def create_app() -> FastAPI:
     app.add_exception_handler(AppException, app_exception_handler)
 
     # ── Routers ───────────────────────────────────────────────────────────────
-    app.include_router(auth_router,          prefix="/api/auth",          tags=["Auth"])
-    app.include_router(users_router,         prefix="/api/users",         tags=["Users"])
-    app.include_router(files_router,         prefix="/api/files",         tags=["Files"])
-    app.include_router(folders_router,       prefix="/api/folders",       tags=["Folders"])
-    app.include_router(shares_router,        prefix="/api/shares",        tags=["Sharing"])
-    app.include_router(notifications_router, prefix="/api/notifications", tags=["Notifications"])
-    app.include_router(audit_router,         prefix="/api/audit",         tags=["Audit"])
-    app.include_router(analytics_router,     prefix="/api/analytics",     tags=["Analytics"])
-    app.include_router(dashboard_router,     prefix="/api/dashboard",     tags=["Dashboard"])
+    app.include_router(auth_router,           prefix="/api/auth",           tags=["Auth"])
+    app.include_router(users_router,          prefix="/api/users",          tags=["Users"])
+    app.include_router(files_router,          prefix="/api/files",          tags=["Files"])
+    app.include_router(file_summaries_router, prefix="/api/files",          tags=["File summaries"])
+    app.include_router(folders_router,        prefix="/api/folders",        tags=["Folders"])
+    app.include_router(shares_router,         prefix="/api/shares",         tags=["Sharing"])
+    app.include_router(notifications_router,  prefix="/api/notifications",  tags=["Notifications"])
+    app.include_router(audit_router,          prefix="/api/audit",          tags=["Audit"])
+    app.include_router(analytics_router,      prefix="/api/analytics",      tags=["Analytics"])
+    app.include_router(dashboard_router,      prefix="/api/dashboard",      tags=["Dashboard"])
     app.include_router(shared_with_me_router, prefix="/api/shared-with-me", tags=["Shared with me"])
-    app.include_router(admin_router,         prefix="/api/admin",         tags=["Admin"])
-    app.include_router(todos_router,         prefix="/api/todos",         tags=["Todos"])
+    app.include_router(admin_router,          prefix="/api/admin",          tags=["Admin"])
+    app.include_router(activity_router,       prefix="/api/activity",       tags=["Activity"])
+    app.include_router(settings_router,       prefix="/api/settings",       tags=["Settings"])
+    app.include_router(todos_router,          prefix="/api/todos",          tags=["Todos"])
+    app.include_router(security_router,       prefix="/api/security",       tags=["Security"])
 
     # ── Health check ──────────────────────────────────────────────────────────
     @app.get("/health", tags=["System"])
     def health():
         return {"status": "ok", "service": "TrustShare API", "version": "2.0.0"}
-    
 
-    #---Search Bar--------
+    # ── Search Bar ────────────────────────────────────────────────────────────
     app.include_router(
-    search_router,
-    prefix="/api/search",
-    tags=["Search"],
-)
+        search_router,
+        prefix="/api/search",
+        tags=["Search"],
+    )
 
-    # In production the compiled React application is served by FastAPI so
-    # frontend and API share one origin. This route is registered last to keep
-    # every API and documentation route authoritative.
+    # The production image bundles the React build with the API. Keep this
+    # catch-all last so API and documentation routes continue to take priority.
     frontend_dir = Path(
         os.getenv(
             "FRONTEND_DIST_DIR",

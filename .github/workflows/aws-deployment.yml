@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - Group-D-feature/AWS-Deployment-Abhishek
+      - main-group-D
     paths:
       - ".github/workflows/aws-deployment*.yml"
       - "aws/**"

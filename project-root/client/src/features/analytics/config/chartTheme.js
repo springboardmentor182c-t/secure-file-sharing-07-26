@@ -1,9 +1,4 @@
 // client/src/features/analytics/config/chartTheme.js
-/**
- * Chart color palettes for light + dark mode.
- * These are RENDERING colors (Recharts SVG props) — NOT data.
- * Data-related colors (department segments) come from backend ui_config.
- */
 
 export const CHART_THEMES = {
   light: {

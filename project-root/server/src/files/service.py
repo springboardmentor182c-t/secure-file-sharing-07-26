@@ -5,7 +5,6 @@ import re
 import uuid
 import hashlib
 import mimetypes
-
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -14,15 +13,23 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, UploadFile, status
 
 from src.entities.file import File
-from src.entities.file_blob import FileBlob
 from src.entities.user import User
 from src.entities.audit_log import AuditLog
 from src.security.exceptions import KeyManagementError
 
 from src.security.validation.validators import validate_upload
-from src.security.key_manager import generate_key
+from src.security.key_manager import (
+    generate_key,
+    save_key,
+    load_key,
+    delete_key,
+)
 from src.security.encryption import encrypt_bytes, decrypt_bytes
-from src.security.master_key import load_master_key
+from src.security.secure_storage import (
+    save_encrypted_file,
+    load_encrypted_file,
+    delete_encrypted_file,
+)
 from src.security.hashing import calculate_sha256
 
 # ── Analytics event logger ────────────────────────────────────────────────
@@ -31,6 +38,10 @@ from src.analytics.constants import (
     AnalyticsEventType,
     AnalyticsEventStatus,
 )
+
+
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -150,10 +161,7 @@ def get_file(
     )
 
     if not file:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="File not found",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
 
     # Owner authorization
     if file.owner_id != owner_id:
@@ -185,14 +193,12 @@ def get_file(
         )
 
         db.commit()
-
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not authorized to access this file.",
         )
 
     return file
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 # UPLOAD
@@ -240,13 +246,15 @@ def upload_file(
     stored_name = f"{uuid.uuid4().hex}{Path(safe_filename).suffix.lower()}"
 
     # Encrypt file
-    wrapped_key = None
     if encrypted:
         aes_key = generate_key()
+        save_key(stored_name, aes_key)
         stored_bytes = encrypt_bytes(file_bytes, aes_key)
-        wrapped_key = encrypt_bytes(aes_key, load_master_key())
     else:
         stored_bytes = file_bytes
+
+    # Store encrypted file
+    save_encrypted_file(stored_name, stored_bytes)
 
     # SHA-256 integrity hash
     hash_sha256 = hashlib.sha256(file_bytes).hexdigest()
@@ -272,19 +280,11 @@ def upload_file(
 
     db.add(file)
     db.flush()  # Generate PK before audit log
-    db.add(
-        FileBlob(
-            file_id=file.id,
-            stored_name=stored_name,
-            encrypted_data=stored_bytes,
-            wrapped_key=wrapped_key,
-        )
-    )
 
     # Update user storage
     user = db.query(User).filter(User.id == owner_id).first()
     if user:
-        user.storage_used += file_size
+        user.storage_used = (user.storage_used or 0) + file_size
 
     # Audit log
     _audit(
@@ -337,9 +337,19 @@ def delete_file(
             detail="Not authorized",
         )
 
-    blob = db.query(FileBlob).filter(FileBlob.file_id == file.id).first()
-    if blob:
-        db.delete(blob)
+    # Delete encrypted file
+    try:
+        delete_encrypted_file(file.stored_name)
+    except Exception:
+        # best-effort
+        pass
+
+    # Delete AES key
+    if file.encrypted:
+        try:
+            delete_key(file.stored_name)
+        except Exception:
+            pass
 
     # Soft delete metadata
     file.is_deleted = True
@@ -396,9 +406,10 @@ def get_file_path(
     if not file:
         raise HTTPException(status_code=404, detail="File not found")
 
-    # Load the encrypted payload from PostgreSQL-backed storage.
-    blob = db.query(FileBlob).filter(FileBlob.file_id == file.id).first()
-    if not blob:
+    # Load stored (encrypted) file
+    try:
+        encrypted_bytes = load_encrypted_file(file.stored_name)
+    except Exception:
         _audit(
             db,
             owner_id,
@@ -428,14 +439,10 @@ def get_file_path(
             detail="Encrypted file not found.",
         )
 
-    encrypted_bytes = blob.encrypted_data
-
     # Decrypt only if encrypted
     if file.encrypted:
         try:
-            if not blob.wrapped_key:
-                raise KeyManagementError("Encryption key not found")
-            aes_key = decrypt_bytes(blob.wrapped_key, load_master_key())
+            aes_key = load_key(file.stored_name)
         except Exception:
             _audit(
                 db,
@@ -592,26 +599,21 @@ def rotate_file_key(
     """
     file = get_file(db, file_id, owner_id, ip_address=ip_address)
 
-    blob = db.query(FileBlob).filter(FileBlob.file_id == file.id).first()
-    if not blob or not blob.wrapped_key:
-        raise KeyManagementError("Encrypted file or key not found")
-
-    master_key = load_master_key()
-    encrypted_bytes = blob.encrypted_data
-    current_key = decrypt_bytes(blob.wrapped_key, master_key)
+    encrypted_bytes = load_encrypted_file(file.stored_name)
+    current_key = load_key(file.stored_name)
     decrypted_bytes = decrypt_bytes(encrypted_bytes, current_key)
 
     new_key = generate_key()
     new_encrypted_bytes = encrypt_bytes(decrypted_bytes, new_key)
 
-    blob.encrypted_data = new_encrypted_bytes
+    save_encrypted_file(file.stored_name, new_encrypted_bytes)
 
     # Atomic key replacement with rollback safety
     try:
-        blob.wrapped_key = encrypt_bytes(new_key, master_key)
+        save_key(file.stored_name, new_key)
     except Exception as e:
         try:
-            blob.encrypted_data = encrypted_bytes
+            save_encrypted_file(file.stored_name, encrypted_bytes)
         except Exception:
             _audit(
                 db,

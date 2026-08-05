@@ -22,6 +22,12 @@ def update_user(db: Session, user: User, data: UserUpdate) -> User:
         user.email = data.email
     if data.mfa_enabled is not None:
         user.mfa_enabled = data.mfa_enabled
+
+    if data.organization is not None:
+        user.organization = data.organization
+
+    if data.avatar_url is not None:
+        user.avatar_url = data.avatar_url
     db.commit()
     db.refresh(user)
     return user

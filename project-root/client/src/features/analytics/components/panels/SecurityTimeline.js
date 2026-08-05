@@ -1,19 +1,15 @@
 // client/src/features/analytics/components/panels/SecurityTimeline.js
-/**
- * Security Event Timeline — vertical timeline with severity dots + badges.
- * Severity labels + colors come from backend ui_config.severity.
- */
 
 import React from "react";
 import { motion } from "framer-motion";
 import Card, { CardHeader } from "../shared/Card";
-import Skeleton   from "../shared/Skeleton";
+import { TimelineSkeleton } from "../shared/Skeleton";
 import EmptyState from "../shared/EmptyState";
 
 export default function SecurityTimeline({
-  events   = [],
-  loading  = false,
-  config   = {},
+  events = [],
+  loading = false,
+  config = {},
   severity = {},
 }) {
   const title = config.title || "Security Event Timeline";
@@ -26,18 +22,7 @@ export default function SecurityTimeline({
       <CardHeader title={title} borderBottom />
 
       {loading ? (
-        <div className="an-timeline">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="an-timeline-skeleton">
-              <Skeleton className="an-skeleton--dot" />
-              <div className="an-timeline-skeleton-body">
-                <Skeleton style={{ width: "70%", height: 12 }} />
-                <Skeleton style={{ width: "90%", height: 10, marginTop: 6 }} />
-                <Skeleton style={{ width: "40%", height: 10, marginTop: 4 }} />
-              </div>
-            </div>
-          ))}
-        </div>
+        <TimelineSkeleton rows={5} />
       ) : !events.length ? (
         <div className="an-timeline-empty">
           <EmptyState message={empty} />
@@ -45,7 +30,7 @@ export default function SecurityTimeline({
       ) : (
         <div className="an-timeline">
           {events.map((ev, i) => {
-            const meta   = getSeverityMeta(ev.sev);
+            const meta = getSeverityMeta(ev.sev);
             const isLast = i === events.length - 1;
 
             return (
@@ -53,11 +38,11 @@ export default function SecurityTimeline({
                 key={ev.id}
                 className="an-timeline-item"
                 initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y:  0 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{
                   duration: 0.35,
-                  delay:    0.1 + i * 0.07,
-                  ease:     [0.32, 0.72, 0, 1],
+                  delay: 0.1 + i * 0.07,
+                  ease: [0.32, 0.72, 0, 1],
                 }}
               >
                 {/* Connector line */}

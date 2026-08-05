@@ -1,8 +1,4 @@
 // client/src/features/analytics/components/charts/ChartTooltip.js
-/**
- * Shared Recharts tooltip — theme-aware, matches Figma design.
- * Pass as: <Tooltip content={<ChartTooltip />} />
- */
 
 import React from "react";
 import { useTheme } from "../../../../context/ThemeContext";

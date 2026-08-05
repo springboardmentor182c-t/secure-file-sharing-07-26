@@ -72,9 +72,11 @@ function PanelHeader({ action, onAction, title }) {
   );
 }
 
-export default function DashboardOverview({ dashboardData, user }) {
+export default function DashboardOverview({ dashboardData = {}, user }) {
   const navigate = useNavigate();
-  const { analytics, files, notifications } = dashboardData;
+  const analytics = dashboardData?.analytics || {};
+  const files = dashboardData?.files || [];
+  const notifications = dashboardData?.notifications || [];
   const recentFiles = files.slice(0, 6);
   const recentNotifications = notifications.slice(0, 4);
   const uploadTrend = analytics.upload_trend || [];
@@ -196,7 +198,7 @@ export default function DashboardOverview({ dashboardData, user }) {
                 ['Upload file', Upload, '/files'],
                 ['Browse files', FolderOpen, '/files'],
                 ['Create share', Share2, '/sharing'],
-                ['Security', ShieldCheck, '/admin'],
+                ['Security', ShieldCheck, '/settings'],
               ].map(([label, Icon, route]) => (
                 <button
                   className="dashboard-action"
@@ -334,7 +336,7 @@ export default function DashboardOverview({ dashboardData, user }) {
                 Encrypted files
               </span>
               <strong className="is-positive">
-                {files.filter((file) => file.encrypted).length}
+                {analytics.encrypted_files}
               </strong>
             </div>
           </section>

@@ -1,106 +1,96 @@
-# TrustShare — Group D
+# Project Root
 
-TrustShare is Group D's secure file-sharing application. It uses a React frontend,
-a FastAPI backend, PostgreSQL metadata storage, and encrypted file storage.
+This repository contains the full-stack application:
+- client/ - React frontend
+- server/ - FastAPI backend
 
-## Local development
-
-### Without Docker
-
-Backend:
-
-```powershell
+The dashboard follows the shared application structure:
+- `client/src/pages/Dashboard.js` is the route-level page.
+- `client/src/features/dashboard/` contains dashboard components, hooks, and services.
+- `server/src/dashboard/` contains the dashboard controller, models, and database service.
+- The authenticated `GET /api/dashboard/` endpoint loads all dashboard data from the application database.
+# project root navigation 
+cd project-root
+# Start the server:
 cd server
-Copy-Item .env.example .env
-# Set FRONTEND_URL, BACKEND_URL, BACKEND_CORS_ORIGINS, and REACT_APP_API_URL in .env.
-python -m pip install -r requirements-dev.txt
 python -m src.main
-```
 
-Frontend (in another terminal):
-
-```powershell
+# Start the client:
 cd client
-Copy-Item .env.example .env
-# Set REACT_APP_API_URL in .env to the backend origin used on this machine.
-npm ci
 npm start
-```
 
-Open `http://localhost:3000`. The API and interactive documentation are at
-`http://localhost:8000` and `http://localhost:8000/docs`.
+## PostgreSQL development environment
 
-### With Docker Compose
-
-Run this from `server/`:
+TrustShare uses PostgreSQL for development, integration, and production. SQLAlchemy is the application data layer and connects to PostgreSQL through `psycopg2`.
 
 ```powershell
-# Copy .env.example to .env and set every required URL before the first run.
+cd project-root/server
+Copy-Item .env.example .env
 docker compose up --build
 ```
 
-The committed example files intentionally leave environment-specific URL values
-blank. Each developer supplies local values in ignored `.env` files. Docker
-Compose reads `server/.env` for both the backend runtime and the frontend build.
-This starts React, FastAPI, PostgreSQL, and persistent local volumes.
+The Compose stack starts PostgreSQL 16, waits for its health check, and then starts FastAPI. Override `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` outside source control when shared credentials are required. SQLite remains available only to isolated unit tests.
 
-## Production architecture
+## AI-powered file summaries
 
-The production Docker image builds React and serves the compiled application from
-FastAPI. The API base URL is supplied explicitly through `REACT_APP_API_URL` at
-build time, even when the frontend and API share one HTTPS origin. PostgreSQL
-stores application metadata, while the configured persistent storage protects
-encrypted file payloads. Per-file AES keys are wrapped by a separate production
-master key.
+Authorised users can generate summaries from **My Files** and **Shared With Me** without sending plaintext to the browser. Supported formats are `.txt`, `.md`, `.pdf`, `.docx`, `.pptx`, `.csv`, and `.xlsx`. Image-only PDFs return an explicit OCR-not-enabled message.
 
-## Deploy to AWS
+```mermaid
+flowchart LR
+  React[React summary panel] --> API[FastAPI summary endpoint]
+  API --> Permission[Owner or file-permission check]
+  Permission --> Storage[Encrypted file retrieval]
+  Storage --> Memory[In-memory decryption and extraction]
+  Memory --> Chunks[Bounded overlapping chunks]
+  Chunks --> Provider[Ollama / optional Hugging Face / fallback]
+  Provider --> Database[SQLAlchemy summary record in PostgreSQL]
+  Database --> React
+```
 
-The AWS deployment uses API Gateway HTTPS, ECS Fargate, a private RDS PostgreSQL
-database, encrypted EFS, ECR, Secrets Manager, and GitHub Actions OIDC. It does
-not require long-lived AWS access keys in GitHub.
+### Privacy and security
 
-See [`../aws/README.md`](../aws/README.md) for the architecture, cost boundary,
-first-time CloudFormation setup, deployment workflow, and verification steps.
+- Every endpoint requires JWT authentication and backend file authorisation.
+- Encrypted files are decrypted only in backend memory; extracted text is neither persisted nor logged.
+- External document processing is blocked unless `ALLOW_EXTERNAL_AI=true` and Hugging Face is explicitly selected.
+- Document text is treated as untrusted prompt content. Summary prompts prohibit following document instructions or revealing configuration.
+- Requests are rate-limited, file size and type are validated, and unchanged summaries are reused by checksum and options.
+- Successful and failed jobs create safe activity records; completed jobs reuse the notification table.
 
-## Production environment variables
+### Local Ollama setup
 
-Frontend build configuration:
+1. Install Ollama and run `ollama pull qwen2.5:1.5b`.
+2. Copy `server/.env.example` to `server/.env`.
+3. Keep `AI_SUMMARY_PROVIDER=ollama` and start Ollama on `http://localhost:11434`.
+4. Start FastAPI and React normally. If Ollama is offline and `ENABLE_SUMMARY_FALLBACK=true`, TrustShare clearly labels the deterministic extractive fallback.
 
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `REACT_APP_API_URL` | Yes | Public API base URL embedded into the React build; the AWS workflow reads it from the CloudFormation `ApplicationUrl` output |
+Optional Hugging Face inference requires `AI_SUMMARY_PROVIDER=huggingface`, `ALLOW_EXTERNAL_AI=true`, `HF_API_TOKEN`, and `HF_SUMMARY_MODEL`. Never place the token in the client environment.
 
-Backend runtime configuration:
+### Summary API
 
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `DATABASE_URL` | Yes | PostgreSQL connection URL; assembled securely in the AWS task |
-| `SECRET_KEY` | Yes | JWT signing key; generated by AWS Secrets Manager |
-| `MASTER_KEY` | Yes | Wraps per-file AES keys; generated by AWS Secrets Manager |
-| `ENVIRONMENT` | Yes | Must be `production` in production |
-| `DATA_DIR` | No | Filesystem root; `/data` on the encrypted AWS EFS mount |
-| `FRONTEND_URL` | Yes | Public HTTPS application URL |
-| `BACKEND_URL` | Yes | Public HTTPS API URL |
-| `BACKEND_CORS_ORIGINS` | Yes | Comma-separated allowed frontend origins |
-| `SMTP_*` | No | Email delivery credentials |
-| `GOOGLE_*` | No | Google OAuth credentials and callback URL |
-| `MICROSOFT_*` | No | Microsoft OAuth credentials and callback URL |
+```http
+POST /api/files/{file_id}/summaries
+GET /api/files/{file_id}/summaries
+GET /api/files/{file_id}/summaries/latest
+GET /api/files/{file_id}/summaries/{summary_id}
+POST /api/files/{file_id}/summaries/{summary_id}/regenerate
+DELETE /api/files/{file_id}/summaries/{summary_id}
+```
 
-Never commit `.env`, database files, uploaded files, or encryption keys.
+New jobs return `202`; identical completed results return `200` with `cached: true`. The frontend polls persisted `pending`/`processing` records until `completed` or `failed`.
 
-`FRONTEND_URL`, `BACKEND_URL`, and `BACKEND_CORS_ORIGINS` are always loaded from
-the environment. Local development gets them from the copied `.env` file, while
-the AWS task receives them dynamically from the CloudFormation-generated API
-Gateway URL.
+### Database and tests
 
-## Deployment smoke test
+This repository does not use Alembic. Models are registered with the existing `Base.metadata.create_all()` initialization. Use a fresh database when schema definitions change until versioned migrations are introduced.
 
-After deployment, verify:
+```powershell
+cd server
+python -m pip install -r requirements-dev.txt
+pytest -q
 
-1. `/health` returns `status: ok`.
-2. Signup, login, token refresh, and logout work.
-3. Dashboard, Shared With Me, Analytics, Activity, and Notifications load.
-4. A file can be uploaded, downloaded, shared, and opened by the recipient.
-5. The uploaded file still works after a service restart.
-6. Directly refreshing `/dashboard` or another React route does not return 404.
-7. OAuth and password-reset links use the public HTTPS URL when configured.
+cd ../client
+npm ci
+npm test -- --watchAll=false
+npm run build
+```
+
+Known limitations: background work uses FastAPI `BackgroundTasks`, so running jobs are not retried after a process restart; local rate limiting is process-local; extractive fallback cannot reliably translate content; OCR is not implemented.
