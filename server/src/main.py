@@ -37,6 +37,7 @@ from src.todos import models as file_models  # noqa: F401
 from src.analytics.controller import router as analytics_router
 from src.analytics import model as analytics_model  # noqa: F401
 
+from src.users.controller import router as user_router
 
 # =====================================================
 # ROUTERS
@@ -56,6 +57,9 @@ from src.sharing.controller import router as sharing_router
 from app.api.v1.notifications.routes import (
     router as notification_router,
 )
+
+# Load environment variables
+load_dotenv()
 
 
 # =====================================================
@@ -98,6 +102,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def root():
+    return {
+        "message": "Secure File Sharing Platform API is running"
+    }
 
 # =====================================================
 # STARTUP
@@ -179,13 +188,5 @@ app.include_router(
     notification_router
 )
 
-
-# =====================================================
-# ROOT ENDPOINT
-# =====================================================
-
-@app.get("/")
-def home():
-    return {
-        "message": "Secure File Sharing Backend Running"
-    }
+# Users
+app.include_router(user_router)

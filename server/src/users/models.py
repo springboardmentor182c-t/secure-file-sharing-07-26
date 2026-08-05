@@ -1,24 +1,52 @@
-from sqlalchemy import Column, String, Boolean, DateTime
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import func
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+from uuid import UUID
+from datetime import datetime
 
-from src.database.core import Base
+# ==========================================
+# RESPONSE MODELS (What Frontend Receives)
+# ==========================================
+class UserProfileResponse(BaseModel):
+    id: UUID
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: EmailStr
+    phone_number: Optional[str] = None
+    role: Optional[str] = None           # READ-ONLY from UI
+    department: Optional[str] = None     # READ-ONLY from UI
+    location: Optional[str] = None
+    status: Optional[str] = None
+    join_date: Optional[datetime] = None
 
+    class Config:
+        from_attributes = True
 
-class User(Base):
-    __tablename__ = "users"
+class UserSettingsResponse(BaseModel):
+    timezone: Optional[str] = "UTC+00:00"
+    language: Optional[str] = "en-US"
+    show_file_previews: bool = False
+    email_notifications: bool = True
+    in_app_notifications: bool = True
 
-    id = Column(
-        UUID(as_uuid=True),
-        primary_key=True
-    )
+# ==========================================
+# REQUEST MODELS (What Frontend Can Update)
+# ==========================================
+class UpdatePersonalInfoRequest(BaseModel):
+    # Notice: 'role' and 'department' are intentionally missing for security
+    full_name: str
+    phone_number: Optional[str] = None
+    location: Optional[str] = None
 
-    username = Column(
-        String(50),
-        nullable=False
-    )
+class UpdatePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+    confirm_password: str
 
-    email = Column(
-        String(255),
-        nullable=False
-    )
+class UpdatePreferencesRequest(BaseModel):
+    # UI/General Settings
+    timezone: Optional[str] = None
+    language: Optional[str] = None
+    show_file_previews: bool = False
+    # Notification Settings
+    email_notifications: bool = True
+    in_app_notifications: bool = True
