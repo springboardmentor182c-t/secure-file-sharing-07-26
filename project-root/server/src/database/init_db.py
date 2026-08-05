@@ -1,3 +1,5 @@
+from sqlalchemy import inspect, text
+
 from src.database.core import Base, engine, SessionLocal
 from src.security.seed.seed_config import seed_configs
 from src.security.models.allowed_file_type import AllowedFileType
@@ -38,6 +40,7 @@ def init_db():
     """Create all tables and seed default configuration."""
 
     Base.metadata.create_all(bind=engine)
+    _upgrade_existing_postgresql_schema()
 
     db = SessionLocal()
 
@@ -54,3 +57,25 @@ def init_db():
         seed_severity_map(db)
     finally:
         db.close()
+
+
+def _upgrade_existing_postgresql_schema() -> None:
+    """Apply additive upgrades that ``create_all`` cannot make to an old RDS schema."""
+
+    if engine.dialect.name != "postgresql":
+        return
+
+    user_columns = {
+        column["name"]
+        for column in inspect(engine).get_columns("users")
+    }
+    upgrades = {
+        "organization": "ALTER TABLE users ADD COLUMN organization VARCHAR",
+        "avatar_url": "ALTER TABLE users ADD COLUMN avatar_url VARCHAR",
+        "is_active": "ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE",
+    }
+
+    with engine.begin() as connection:
+        for column, statement in upgrades.items():
+            if column not in user_columns:
+                connection.execute(text(statement))
