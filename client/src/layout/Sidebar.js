@@ -11,8 +11,6 @@ export default function Sidebar({ users, stats }) {
     { name: "Shared Files", path: "/shared-files", icon: Link2 },
     { name: "Recent", path: "/recent", icon: Clock },
 
-    { name: "AI Summary", path: "/ai-summary", icon: Sparkles },
-
     { name: "Trash", path: "/trash", icon: Trash2 },
   ];
 
