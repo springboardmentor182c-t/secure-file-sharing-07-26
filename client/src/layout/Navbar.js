@@ -18,7 +18,7 @@ const Navbar = () => {
 
             try {
 
-                const token = localStorage.getItem("token");
+                const token = localStorage.getItem("access_token");
 
                 const response = await axios.get(
                     `${process.env.REACT_APP_API_URL}/auth/me`,
@@ -34,7 +34,7 @@ const Navbar = () => {
             }
             catch (error) {
 
-                console.log(error);
+                console.error("Failed to fetch user:", error);
 
             }
 
@@ -75,18 +75,18 @@ const Navbar = () => {
 
                         {user.username
                             ? user.username.substring(0, 2).toUpperCase()
-                            : "SM"}
+                            : ""}
 
                     </div>
 
                     <div className="profile-info">
 
                         <h4>
-                            {user.username || "Sarah Mitchell"}
+                            {user.username}
                         </h4>
 
                         <p>
-                            {user.role || "Administrator"}
+                            {user.role}
                         </p>
 
                     </div>
