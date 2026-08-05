@@ -50,20 +50,6 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           role-session-name: TrustShareGitHubDeployment
 
-      - name: Configure hosted AI summaries
-        shell: bash
-        run: |
-          HF_SECRET_ARN="$(aws secretsmanager describe-secret \
-            --secret-id "trustshare-group-d-aws/huggingface-token" \
-            --query ARN --output text)"
-
-          aws cloudformation deploy \
-            --stack-name "$AWS_STACK_NAME" \
-            --template-file aws/infrastructure.yml \
-            --parameter-overrides "HuggingFaceTokenSecretArn=$HF_SECRET_ARN" \
-            --capabilities CAPABILITY_NAMED_IAM \
-            --no-fail-on-empty-changeset
-
       - name: Read stack outputs
         id: stack
         shell: bash
