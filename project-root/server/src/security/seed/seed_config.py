@@ -53,4 +53,4 @@ def seed_configs(db: Session):
             seeded += 1
 
     db.commit()
-    print(f"  ✓ Security configs: {seeded} seeded, {len(DEFAULT_CONFIGS)} total defined")
+    print(f"  [OK] Security configs: {seeded} seeded, {len(DEFAULT_CONFIGS)} total defined")

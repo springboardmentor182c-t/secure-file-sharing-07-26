@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './layout/ProtectedRoute';
 import Layout from './layout/Layout';
 import ScrollToTop from './layout/ScrollToTop';
@@ -19,6 +20,7 @@ import OAuthCallback from './pages/OAuthCallback';
 // Protected pages
 import Dashboard from './pages/Dashboard';
 import Files from './pages/Files';
+import MyFiles from './pages/MyFiles';
 import Sharing from './pages/Sharing';
 import SharedWithMe from './pages/SharedWithMe';
 import Activity from './features/activity/ActivityPage';
@@ -32,6 +34,7 @@ import Assistant from './pages/Assistant';
 import { notificationsAPI } from './utils/api';
 import './assets/global.css';
 
+// Show floating ThemeToggle only on public/auth pages
 const PUBLIC_PATHS = ['/login', '/signup', '/verify-otp', '/forgot-password', '/reset-password', '/oauth-callback'];
 
 function ConditionalThemeToggle() {
@@ -77,6 +80,7 @@ function AppShell() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard"      element={<Dashboard />} />
         <Route path="/files"          element={<Files />} />
+        <Route path="/my-files"       element={<MyFiles />} />
         <Route path="/sharing"        element={<Sharing />} />
         <Route path="/shared-with-me" element={<SharedWithMe />} />
         <Route path="/activity"       element={<Activity />} />
@@ -84,7 +88,7 @@ function AppShell() {
         <Route path="/notifications"  element={<Notifications />} />
         <Route path="/settings"       element={<Settings />} />
         <Route path="/assistant"      element={<Assistant />} />
-        <Route path="/assistant/configuration"  element={<Assistant />} />
+        <Route path="/assistant/configuration" element={<Assistant />} />
 
         <Route
           path="/admin"
@@ -103,33 +107,35 @@ function AppShell() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <Router>
-          <ScrollToTop />
-          <PageTitle />
-          <ConditionalThemeToggle />  {/* Only shows on public pages */}
-          <Routes>
-            {/* Public routes */}
-            <Route path="/login"           element={<Login />} />
-            <Route path="/signup"          element={<Signup />} />
-            <Route path="/verify-otp"      element={<VerifyOtp />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password"  element={<ResetPassword />} />
-            <Route path="/oauth-callback"  element={<OAuthCallback />} />
+    <ThemeProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <Router>
+            <ScrollToTop />
+            <PageTitle />
+            <ConditionalThemeToggle />
+            <Routes>
+              {/* Public routes */}
+              <Route path="/login"           element={<Login />} />
+              <Route path="/signup"          element={<Signup />} />
+              <Route path="/verify-otp"      element={<VerifyOtp />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password"  element={<ResetPassword />} />
+              <Route path="/oauth-callback"  element={<OAuthCallback />} />
 
-            {/* Protected app shell */}
-            <Route
-              path="/*"
-              element={
-                <ProtectedRoute>
-                  <AppShell />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </Router>
-      </ToastProvider>
-    </AuthProvider>
+              {/* Protected app shell */}
+              <Route
+                path="/*"
+                element={
+                  <ProtectedRoute>
+                    <AppShell />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </Router>
+        </ToastProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

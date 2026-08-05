@@ -10,6 +10,7 @@ import "./ThemeToggle.css";
 const HIDDEN_ROUTES = [
   "/dashboard",
   "/files",
+  "/my-files",
   "/sharing",
   "/shared-with-me",
   "/activity",
