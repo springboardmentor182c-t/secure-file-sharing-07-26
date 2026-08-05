@@ -7,6 +7,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 
 from src.activity.controller import router as activity_router
 from src.admin.controller import router as admin_router
@@ -29,6 +30,16 @@ from src.security.controller import router as security_router
 from src.file_summaries.controller import router as file_summaries_router
 
 
+class HealthCheckAwareHTTPSRedirectMiddleware(HTTPSRedirectMiddleware):
+    """Keep the internal load-balancer health probe on HTTP in production."""
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and scope["path"] == "/health":
+            await self.app(scope, receive, send)
+            return
+        await super().__call__(scope, receive, send)
+
+
 def create_app() -> FastAPI:
     # Initialize DB tables
     init_db()
@@ -48,8 +59,7 @@ def create_app() -> FastAPI:
     # In development, HTTP is allowed (localhost does not need TLS).
     _env = os.getenv("ENVIRONMENT", "development").lower().strip()
     if _env in ("production", "prod"):
-        from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
-        app.add_middleware(HTTPSRedirectMiddleware)
+        app.add_middleware(HealthCheckAwareHTTPSRedirectMiddleware)
 
     configured_origins = os.getenv("BACKEND_CORS_ORIGINS", "")
     origins = [origin.strip().rstrip("/") for origin in configured_origins.split(",") if origin.strip()]
