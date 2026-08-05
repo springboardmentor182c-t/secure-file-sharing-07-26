@@ -50,9 +50,14 @@ Parameters:
     Default: "true"
     AllowedValues: ["true", "false"]
     Description: Set false if this account already has GitHub's OIDC provider.
+  HuggingFaceTokenSecretArn:
+    Type: String
+    Default: ""
+    Description: Optional Secrets Manager ARN containing the Hugging Face token under the token JSON key.
 
 Conditions:
   ShouldCreateGitHubOidcProvider: !Equals [!Ref CreateGitHubOidcProvider, "true"]
+  UseHuggingFaceSummaries: !Not [!Equals [!Ref HuggingFaceTokenSecretArn, ""]]
 
 Resources:
   Vpc:
@@ -316,7 +321,11 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: [secretsmanager:GetSecretValue]
-                Resource: [!Ref DatabaseCredentials, !Ref JwtSecret, !Ref MasterKeySecret]
+                Resource:
+                  - !Ref DatabaseCredentials
+                  - !Ref JwtSecret
+                  - !Ref MasterKeySecret
+                  - !If [UseHuggingFaceSummaries, !Ref HuggingFaceTokenSecretArn, !Ref "AWS::NoValue"]
   TaskRole:
     Type: AWS::IAM::Role
     Properties:
@@ -456,6 +465,12 @@ Resources:
               Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"
             - Name: BACKEND_CORS_ORIGINS
               Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"
+            - Name: AI_SUMMARY_PROVIDER
+              Value: !If [UseHuggingFaceSummaries, huggingface, ollama]
+            - Name: ALLOW_EXTERNAL_AI
+              Value: !If [UseHuggingFaceSummaries, "true", "false"]
+            - Name: HF_SUMMARY_MODEL
+              Value: Qwen/Qwen2.5-7B-Instruct
           Essential: true
           HealthCheck:
             Command:
@@ -487,6 +502,11 @@ Resources:
               ValueFrom: !Ref JwtSecret
             - Name: MASTER_KEY
               ValueFrom: !Ref MasterKeySecret
+            - !If
+              - UseHuggingFaceSummaries
+              - Name: HF_API_TOKEN
+                ValueFrom: !Sub "${HuggingFaceTokenSecretArn}:token::"
+              - !Ref "AWS::NoValue"
       Volumes:
         - Name: trustshare-data
           EFSVolumeConfiguration:
