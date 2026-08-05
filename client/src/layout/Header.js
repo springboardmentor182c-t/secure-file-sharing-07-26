@@ -1,6 +1,6 @@
-import { Menu, Search, Bell, ChevronDown } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { Menu, Search, ChevronDown } from "lucide-react";
 
+import { useLocation } from "react-router-dom";
 import pageTitles from "../data/pageTitles";
 import NotificationBell from "../components/NotificationBell";
 
@@ -99,6 +99,7 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
       <div className="flex items-center gap-3 lg:gap-5">
 
         {/* Notification */}
+
         <NotificationBell />
 
          <button
@@ -132,7 +133,7 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
               font-semibold
             "
           >
-            X
+            V
           </div>
 
       
@@ -150,7 +151,7 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
                 text-white
               "
             >
-              XYZ
+              Vamshi
             </p>
 
             <p
@@ -159,7 +160,7 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
                 text-gray-400
               "
             >
-              Engineering Lead
+              Student
             </p>
           </div>
 

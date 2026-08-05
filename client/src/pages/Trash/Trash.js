@@ -3,7 +3,6 @@ import { toast } from "react-hot-toast";
 
 import TrashToolbar from "./TrashToolbar";
 import TrashTable from "./TrashTable";
-
 import ConfirmModal from "../../components/trash/ConfirmModal";
 
 import {
@@ -17,8 +16,6 @@ function Trash() {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Modal State
-
   const [modal, setModal] = useState({
     open: false,
     type: null,
@@ -28,13 +25,10 @@ function Trash() {
   const fetchTrash = async () => {
     try {
       setLoading(true);
-
       const data = await getTrashFiles();
-
       setFiles(data);
     } catch (error) {
       console.error(error);
-
       toast.error("Failed to load trash files");
     } finally {
       setLoading(false);
@@ -45,54 +39,35 @@ function Trash() {
     fetchTrash();
   }, []);
 
-  // Open Modal
-
   const openModal = (type, fileId = null) => {
-    setModal({
-      open: true,
-      type,
-      fileId,
-    });
+    setModal({ open: true, type, fileId });
   };
-
-  // Close Modal
 
   const closeModal = () => {
-    setModal({
-      open: false,
-      type: null,
-      fileId: null,
-    });
+    setModal({ open: false, type: null, fileId: null });
   };
-
-  // Confirm Actions
 
   const handleConfirm = async () => {
     try {
       if (modal.type === "restore") {
         await restoreTrashFile(modal.fileId);
-
         toast.success("File restored successfully");
       }
 
       if (modal.type === "delete") {
         await deleteTrashFile(modal.fileId);
-
         toast.success("File permanently deleted");
       }
 
       if (modal.type === "empty") {
         await emptyTrash();
-
         toast.success("Trash emptied successfully");
       }
 
       closeModal();
-
       fetchTrash();
     } catch (error) {
       console.error(error);
-
       toast.error("Action failed");
     }
   };

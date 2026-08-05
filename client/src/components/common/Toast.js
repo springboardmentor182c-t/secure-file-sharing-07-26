@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckIcon, XIcon } from "../../../layout/icons";
+import { CheckIcon, XIcon } from "../../layout/icons";
 
 export default function ToastContainer({ toasts, onDismiss }) {
   if (!toasts.length) return null;

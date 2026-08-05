@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import ModalShell from "./ModalShell";
+import ModalShell from "../../../components/common/ModalShell";
 
 const PASSWORD_PLACEHOLDER = "••••••••";
 

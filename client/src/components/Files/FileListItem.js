@@ -25,7 +25,7 @@ function formatDate(dateString) {
 }
 
 function getIconColor(fileName) {
-  const ext = fileName.split(".").pop().toLowerCase();
+  const ext = (fileName || "").split(".").pop().toLowerCase();
   const colors = {
     pdf: "#f87171",
     zip: "#fbbf24",

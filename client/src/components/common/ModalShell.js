@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { XIcon } from "../../../layout/icons";
+import { XIcon } from "../../layout/icons";
 
 export default function ModalShell({ title, onClose, children, footer, labelledBy }) {
   const dialogRef = useRef(null);

@@ -42,10 +42,11 @@ export default function ActivityChart({ data }) {
           const groupX = PADDING_L + i * groupWidth + groupWidth / 2;
           const createdH = (d.created / maxVal) * chartH;
           const accessH = (d.access / maxVal) * chartH;
+          const barGap = 5;
           return (
             <g key={d.label + i}>
               <rect
-                x={groupX - barWidth - 2}
+                x={groupX - barWidth - barGap / 2}
                 y={PADDING_T + chartH - createdH}
                 width={barWidth}
                 height={createdH}
@@ -55,7 +56,7 @@ export default function ActivityChart({ data }) {
                 <title>{`${d.label}: ${d.created} links created`}</title>
               </rect>
               <rect
-                x={groupX + 2}
+                x={groupX + barGap / 2}
                 y={PADDING_T + chartH - accessH}
                 width={barWidth}
                 height={accessH}

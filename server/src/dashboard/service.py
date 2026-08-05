@@ -18,14 +18,14 @@ def get_dashboard_stats(db: Session) -> models.DashboardStats:
     active_users = db.query(User).filter(User.account_status == "ACTIVE").count()
 
     total_storage_bytes = db.query(
-        func.coalesce(func.sum(File.file_size), 0)
+        func.coalesce(func.sum(File.size), 0)
     ).scalar()
     total_storage_gb = float(total_storage_bytes) / 1e9
 
     now = datetime.now(timezone.utc)
     files_this_month = db.query(File).filter(
-        extract("month", File.uploaded_at) == now.month,
-        extract("year", File.uploaded_at) == now.year,
+        extract("month", File.created_at) == now.month,
+        extract("year", File.created_at) == now.year,
     ).count()
 
     active_share_links = db.query(SharedLink).filter(
@@ -46,7 +46,7 @@ def get_storage_by_user(db: Session) -> list[models.StorageByUser]:
     rows = (
         db.query(
             User,
-            func.coalesce(func.sum(File.file_size), 0).label("total_bytes"),
+            func.coalesce(func.sum(File.size), 0).label("total_bytes"),
         )
         .outerjoin(File, File.owner_id == User.id)
         .group_by(User.id)
@@ -66,7 +66,7 @@ def get_users_with_file_counts(db: Session) -> list[models.UserOut]:
         db.query(
             User,
             func.count(File.id).label("files_count"),
-            func.coalesce(func.sum(File.file_size), 0).label("total_bytes"),
+            func.coalesce(func.sum(File.size), 0).label("total_bytes"),
         )
         .outerjoin(File, File.owner_id == User.id)
         .group_by(User.id)

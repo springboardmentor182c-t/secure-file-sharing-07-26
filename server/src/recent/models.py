@@ -1,7 +1,8 @@
-from pydantic import BaseModel
 from datetime import datetime
-from uuid import UUID
 from typing import Optional
+from uuid import UUID
+
+from pydantic import BaseModel
 
 
 class RecentFileResponse(BaseModel):
@@ -13,7 +14,7 @@ class RecentFileResponse(BaseModel):
     access_type: Optional[str] = None
     accessed_at: datetime
     user_id: UUID
-    username: Optional[str] = None   # NEW
+    username: Optional[str] = None
 
     class Config:
         from_attributes = True

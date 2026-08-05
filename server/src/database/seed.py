@@ -35,7 +35,8 @@ def seed(email: str, full_name: str) -> None:
             print(f"  Send requests with header:  X-User-Id: {existing.id}")
             return
 
-        user = User(email=email, full_name=full_name)
+        username = email.split("@")[0]
+        user = User(username=username, email=email, full_name=full_name, account_status="ACTIVE")
         db.add(user)
         db.commit()
         db.refresh(user)

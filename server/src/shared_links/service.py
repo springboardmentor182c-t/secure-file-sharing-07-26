@@ -101,7 +101,7 @@ def search_links(
     if search:
         like = f"%{search.strip()}%"
         query = query.join(File, SharedLink.file_id == File.id).filter(
-            or_(File.file_name.ilike(like), SharedLink.recipient_email.ilike(like))
+            or_(File.original_filename.ilike(like), SharedLink.recipient_email.ilike(like))
         )
     if status is not None:
         query = query.filter(SharedLink.status == status)
@@ -121,7 +121,7 @@ def search_links(
         SortField.EXPIRATION: SharedLink.expires_at.asc().nullslast(),
     }
     if sort_by == SortField.ALPHABETICAL:
-        query = query.join(File, SharedLink.file_id == File.id).order_by(File.file_name.asc())
+        query = query.join(File, SharedLink.file_id == File.id).order_by(File.original_filename.asc())
     else:
         query = query.order_by(sort_map.get(sort_by, SharedLink.created_at.desc()))
 
@@ -318,10 +318,10 @@ def get_monthly_activity(db: Session, owner_id: uuid.UUID, months: int = 5) -> l
 def get_top_files(db: Session, owner_id: uuid.UUID, *, by: str, limit: int = 5) -> list[TopFileEntry]:
     metric_col = SharedLink.views if by == "views" else SharedLink.downloads
     rows = (
-        db.query(File.id, File.file_name, func.sum(metric_col).label("total"))
+        db.query(File.id, File.original_filename, func.sum(metric_col).label("total"))
         .join(SharedLink, SharedLink.file_id == File.id)
         .filter(SharedLink.owner_id == owner_id)
-        .group_by(File.id, File.file_name)
+        .group_by(File.id, File.original_filename)
         .order_by(func.sum(metric_col).desc())
         .limit(limit)
         .all()
@@ -331,7 +331,7 @@ def get_top_files(db: Session, owner_id: uuid.UUID, *, by: str, limit: int = 5) 
 
 def get_recent_activity(db: Session, owner_id: uuid.UUID, limit: int = 10) -> list[RecentActivityEntry]:
     rows = (
-        db.query(AccessLog, File.file_name)
+        db.query(AccessLog, File.original_filename)
         .join(SharedLink, AccessLog.shared_link_id == SharedLink.id)
         .join(File, SharedLink.file_id == File.id)
         .filter(SharedLink.owner_id == owner_id)
