@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 from sqlalchemy import text
 
 from src.entities.audit_log import AuditLog
@@ -20,36 +21,46 @@ from src.sharing.controller import router as sharing_router
 from src.sharing import model  # noqa: F401
 
 
-# Retrieve the frontend URL from environment variables
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+from src.users.controller import router as user_router
+
 
 # Initialize FastAPI
 app = FastAPI(title="TrustShare API", version="1.0.0")
+
+# Load environment variables
+load_dotenv()
+
 
 # Configure CORS
 from app.api.v1.notifications.routes import router as notification_router
 
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+FRONTEND_URL_ALT = os.getenv("FRONTEND_URL_ALT", "http://localhost:5173")
 
 app = FastAPI(
     title="TrustShare API",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
         FRONTEND_URL,
+        FRONTEND_URL_ALT,
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Startup event
+
+@app.get("/")
+def root():
+    return {
+        "message": "Secure File Sharing Platform API is running"
+    }
+
 
 @app.on_event("startup")
 def on_startup():
@@ -71,10 +82,11 @@ def on_startup():
 
 # Register Routers
 app.include_router(admin_router)
-
+app.include_router(api_router)
 app.include_router(api_router)
 app.include_router(sharing_router)
 app.include_router(notification_router)
+app.include_router(user_router)
 
 
 # Health Check
