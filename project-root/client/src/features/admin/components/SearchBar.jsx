@@ -33,7 +33,7 @@ export default function SearchBar({
       >
         <option value="all">All Roles</option>
         <option value="admin">Admin</option>
-        <option value="user">User</option>
+        <option value="member">Member</option>
       </select>
     </div>
   );

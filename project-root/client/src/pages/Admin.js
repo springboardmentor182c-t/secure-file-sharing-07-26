@@ -3,12 +3,13 @@ import { adminAPI, auditAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import AdminHeader from "../features/admin/components/AdminHeader";
-import UserList from "../features/admin/components/UserList";
+import UserTable from "../features/admin/components/UserTable";
 import AuditLog from "../features/admin/components/AuditLog";
 import StatCards from "../features/admin/components/StatCards";
 import SystemStatus from "../features/admin/components/SystemStatus";
 import SearchBar from "../features/admin/components/SearchBar";
 import useAdminData from "../features/admin/hooks/useAdminData";
+import "../features/admin/admin.css";
 
 const timeAgo = (d) => {
   if (!d) return '—';
@@ -27,8 +28,13 @@ export default function Admin() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
 
-  const { users, setUsers, logs, loading } = useAdminData(user, navigate);
-
+  const {
+  stats,
+  users,
+  setUsers,
+  logs,
+  loading,
+} = useAdminData(user, navigate);
   const toggleActive = async (u) => {
     await adminAPI.updateUser(u.id, { role: u.role, is_active: !u.is_active });
     setUsers(prev => prev.map(x => x.id === u.id ? { ...x, is_active: !u.is_active } : x));
@@ -36,18 +42,13 @@ export default function Admin() {
 
   const LEVEL_BADGE = { info: 'badge-blue', warn: 'badge-amber', error: 'badge-rose', success: 'badge-emerald' };
 
-  const stats = [
-    { icon: '👥', label: 'Total Users', value: users.length, color: 'var(--blue-400)' },
-    { icon: '✅', label: 'Active', value: users.filter(u => u.is_active).length, color: 'var(--emerald-400)' },
-    { icon: '🔐', label: 'Admins', value: users.filter(u => u.role === 'admin').length, color: 'var(--purple-400)' },
-    { icon: '📋', label: 'Audit Logs', value: logs.length, color: 'var(--amber-400)' },
-  ];
-
+ console.log(users);
   return (
-    <div className="fade-in">
+  <div className="admin-dashboard fade-in">
     <AdminHeader />
-      {/* Stats */}
-      <StatCards stats={stats} />
+        
+      <StatCards stats={stats}/>
+       
 
       {/* Tabs */}
       <div className="flex gap-2 mb-4">
@@ -72,13 +73,12 @@ export default function Admin() {
      {loading ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}><div className="spinner" /></div>
      ) : tab === 'users' ? (
-  <UserList
-    users={users}
-    search={search}
-    roleFilter={roleFilter}
-    user={user}
-    toggleActive={toggleActive}
-  />
+ <UserTable
+  users={users}
+  search={search}
+  roleFilter={roleFilter}
+  toggleActive={toggleActive}
+/>
 ) : tab === 'audit' ? (
   <AuditLog
     logs={logs}

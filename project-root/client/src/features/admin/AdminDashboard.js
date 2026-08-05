@@ -1,8 +1,20 @@
 import React from "react";
+import useAdminData from "./hooks/useAdminData";
+import { useNavigate } from "react-router-dom";
 import "./admin.css";
 import StatCards from "./components/StatCards";
 import UserTable from "./components/UserTable";
-const AdminDashboard = () => {
+const AdminDashboard = ({ user }) => {
+  const navigate = useNavigate();
+
+  const {
+    stats,
+    users,
+    setUsers,
+    logs,
+    loading,
+  } = useAdminData(user, navigate);
+  console.log("Stats in AdminDashboard:", stats);
   return (
     <div className="admin-dashboard">
 
@@ -19,8 +31,11 @@ const AdminDashboard = () => {
       </div>
 
       {/* Statistics Cards */}
-      <StatCards />
-      <UserTable />
+      <StatCards stats={stats} />
+      <UserTable
+  users={users}
+  setUsers={setUsers}
+/>
 
     </div>
   );

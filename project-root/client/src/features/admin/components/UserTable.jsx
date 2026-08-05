@@ -1,30 +1,25 @@
 import React from "react";
 
-const users = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    role: "User",
-    status: "Active",
-  },
-  {
-    id: 2,
-    name: "Alice Smith",
-    email: "alice@example.com",
-    role: "Admin",
-    status: "Active",
-  },
-  {
-    id: 3,
-    name: "Robert Brown",
-    email: "robert@example.com",
-    role: "User",
-    status: "Inactive",
-  },
-];
+const UserTable = ({
+  users,
+  search = "",
+  roleFilter = "all",
+  toggleActive,
+}) => {
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.name.toLowerCase().includes(search.toLowerCase()) ||
+      user.email.toLowerCase().includes(search.toLowerCase());
 
-const UserTable = () => {
+    const matchesRole =
+      roleFilter === "all" || user.role === roleFilter;
+
+    return matchesSearch && matchesRole;
+  });
+  console.log("roleFilter =", roleFilter);
+console.log("users =", users);
+console.log("filteredUsers =", filteredUsers);
+
   return (
     <div className="user-table-container">
       <h2>Users</h2>
@@ -36,16 +31,25 @@ const UserTable = () => {
             <th>Email</th>
             <th>Role</th>
             <th>Status</th>
+            <th>Action</th>
           </tr>
         </thead>
 
         <tbody>
-          {users.map((user) => (
+          {filteredUsers.map((user) => (
             <tr key={user.id}>
               <td>{user.name}</td>
               <td>{user.email}</td>
               <td>{user.role}</td>
-              <td>{user.status}</td>
+              <td>{user.is_active ? "Active" : "Inactive"}</td>
+              <td>
+  <button
+    onClick={() => toggleActive(user)}
+    className="btn btn-sm"
+  >
+    {user.is_active ? "Deactivate" : "Activate"}
+  </button>
+</td>
             </tr>
           ))}
         </tbody>
