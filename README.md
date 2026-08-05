@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # TrustShare - Secure File-Sharing System
 
 This repository currently contains the Dashboard module for TrustShare.
@@ -126,3 +127,5 @@ import Dashboard from './features/dashboard/Dashboard';
 ```
 
 The Dashboard component does not include global sidebar, header, routing, authentication, or unrelated modules.
+=======
+>>>>>>> b9ef5279aa1a5b45ad52c0779faf72bb7f99af5f

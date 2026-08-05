@@ -1,0 +1,9 @@
+@import '../assets/global.css';
+@import './fonts.css';
+@import './common.css';
+@import './tailwind.css';
+
+body {
+  background-color: #0f0f14;
+  color: #ffffff;
+}
