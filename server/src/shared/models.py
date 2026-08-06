@@ -1,58 +1,35 @@
+from datetime import datetime
+from typing import Any, List, Optional, Union
+from uuid import UUID
 from pydantic import BaseModel
-from typing import List
 
-class UserMiniSchema(BaseModel):
-    id: int
-    name: str
-    email: str
-    role: str
-    
-    class Config:
-        from_attributes = True
 
-class SharedFileSchema(BaseModel):
-    id: int
-    name: str
-    size: str
-    created_at: str
-    checksum: str
-    security_status: str
-    file_type: str
-    owner: UserMiniSchema
+class SharedLinkResponse(BaseModel):
+    id: Union[UUID, int, str]
+    file_name: str
+    file_size: Union[int, str]
+    mime_type: Optional[str] = None
+    created_at: Union[datetime, str]
+    expires_at: Optional[Union[datetime, str]] = None
+    is_active: bool = True
+    download_count: int = 0
+    user_id: Optional[Union[UUID, int, str]] = None
+    username: Optional[str] = None
 
     class Config:
         from_attributes = True
 
-class FileShareResponseSchema(BaseModel):
-    id: int
-    permission: str
-    shared_at: str
-    file: SharedFileSchema
-    shared_with: UserMiniSchema
-
-    class Config:
-        from_attributes = True
-
-class StatCardSchema(BaseModel):
-    label: str
-    value: str
-    sub: str
-    color: str
-
-class ShareActivitySchema(BaseModel):
-    day: str
-    downloads: int
-    shares: int
-
-class SharedFilesDashboardDataSchema(BaseModel):
-    shares: List[FileShareResponseSchema]
-    stats: List[StatCardSchema]
-    activity: List[ShareActivitySchema]
 
 class FileShareCreateSchema(BaseModel):
     file_name: str
-    size: str
-    file_type: str
+    size: Optional[str] = "4.2 MB"
+    file_type: Optional[str] = "pdf"
     recipient_email: str
-    permission: str
-    owner_name: str
+    permission: Optional[str] = "viewer"
+    owner_name: Optional[str] = "Admin User"
+
+
+class SharedFilesDashboardDataSchema(BaseModel):
+    shares: List[Any]
+    stats: List[Any]
+    activity: List[Any]

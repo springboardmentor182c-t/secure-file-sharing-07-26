@@ -1,71 +1,95 @@
 import React, { useState, useEffect } from "react";
-import { Bell, ShieldCheck, Share2, Info, CheckCheck, Trash2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Bell, ShieldCheck, Share2, Info, CheckCheck, Trash2 } from "lucide-react";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export default function Notifications() {
   const [filter, setFilter] = useState("all");
-  const [notifications, setNotifications] = useState([
-    {
-      id: "1",
-      type: "sharing",
-      title: "File Shared Successfully",
-      message: "Encrypted file access for 'kibi.jpg' was granted to nk91042020@gmail.com",
-      time: "10 minutes ago",
-      read: false,
-      icon: Share2,
-      color: "text-purple-400 bg-purple-500/10 border-purple-500/20"
-    },
-    {
-      id: "2",
-      type: "security",
-      title: "Security Encryption Active",
-      message: "AES-256 bit zero-knowledge encryption verified across all 2 active shared links.",
-      time: "1 hour ago",
-      read: false,
-      icon: ShieldCheck,
-      color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
-    },
-    {
-      id: "3",
-      type: "system",
-      title: "System Audit Log Verified",
-      message: "Real-time audit log agent completed routine checksum verification with zero integrity errors.",
-      time: "3 hours ago",
-      read: true,
-      icon: Info,
-      color: "text-blue-400 bg-blue-500/10 border-blue-500/20"
-    },
-    {
-      id: "4",
-      type: "sharing",
-      title: "Shared Link Access Event",
-      message: "Download access was verified for recipient nk91042020@gmail.com.",
-      time: "5 hours ago",
-      read: true,
-      icon: CheckCircle2,
-      color: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20"
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadNotifications = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE_URL}/notifications`);
+      if (res.ok) {
+        const json = await res.json();
+        const liveData = json.data || [];
+        const readState = JSON.parse(localStorage.getItem("trustshare_read_notifications") || "{}");
+        const deletedState = JSON.parse(localStorage.getItem("trustshare_deleted_notifications") || "[]");
+
+        const merged = liveData
+          .filter((item) => !deletedState.includes(String(item.id)))
+          .map((item) => ({
+            ...item,
+            read: readState[item.id] !== undefined ? readState[item.id] : (item.read || item.is_read || false)
+          }));
+
+        setNotifications(merged);
+      }
+    } catch (err) {
+      console.error("Failed to load live notifications", err);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
+
+  useEffect(() => {
+    loadNotifications();
+
+    const handleSync = () => loadNotifications();
+    window.addEventListener("trustshare_notifications_updated", handleSync);
+    window.addEventListener("storage", handleSync);
+
+    return () => {
+      window.removeEventListener("trustshare_notifications_updated", handleSync);
+      window.removeEventListener("storage", handleSync);
+    };
+  }, []);
 
   const markAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications((prev) => {
+      const updated = prev.map((n) => ({ ...n, read: true }));
+      const readState = JSON.parse(localStorage.getItem("trustshare_read_notifications") || "{}");
+      updated.forEach((n) => { readState[n.id] = true; });
+      localStorage.setItem("trustshare_read_notifications", JSON.stringify(readState));
+      return updated;
+    });
+    window.dispatchEvent(new Event("trustshare_notifications_updated"));
   };
 
   const markAsRead = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setNotifications((prev) => {
+      const updated = prev.map((n) => (String(n.id) === String(id) ? { ...n, read: true } : n));
+      const readState = JSON.parse(localStorage.getItem("trustshare_read_notifications") || "{}");
+      readState[id] = true;
+      localStorage.setItem("trustshare_read_notifications", JSON.stringify(readState));
+      return updated;
+    });
+    window.dispatchEvent(new Event("trustshare_notifications_updated"));
   };
 
   const deleteNotification = (id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications((prev) => {
+      const updated = prev.filter((n) => String(n.id) !== String(id));
+      const deletedState = JSON.parse(localStorage.getItem("trustshare_deleted_notifications") || "[]");
+      if (!deletedState.includes(String(id))) {
+        deletedState.push(String(id));
+      }
+      localStorage.setItem("trustshare_deleted_notifications", JSON.stringify(deletedState));
+      return updated;
+    });
+    window.dispatchEvent(new Event("trustshare_notifications_updated"));
   };
 
-  const filtered = notifications.filter(n => {
+  const filtered = notifications.filter((n) => {
     if (filter === "unread") return !n.read;
     if (filter === "security") return n.type === "security";
     if (filter === "sharing") return n.type === "sharing";
     return true;
   });
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <div className="p-6 lg:p-8 space-y-6 max-w-6xl mx-auto text-left">
@@ -84,12 +108,14 @@ export default function Notifications() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={markAllRead}
-            className="px-3.5 py-2 rounded-xl bg-[#272938] hover:bg-[#34364A] text-gray-300 text-xs font-semibold border border-[#34364A] transition flex items-center gap-1.5 cursor-pointer"
-          >
-            <CheckCheck className="w-4 h-4 text-purple-400" /> Mark All as Read
-          </button>
+          {unreadCount > 0 && (
+            <button
+              onClick={markAllRead}
+              className="px-3.5 py-2 rounded-xl bg-[#272938] hover:bg-[#34364A] text-gray-300 text-xs font-semibold border border-[#34364A] transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <CheckCheck className="w-4 h-4 text-purple-400" /> Mark All as Read
+            </button>
+          )}
         </div>
       </div>
 
@@ -117,7 +143,11 @@ export default function Notifications() {
 
       {/* Notifications Feed */}
       <div className="space-y-3">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="bg-[#1E1F2B] border border-[#2D2F3F] rounded-2xl p-12 text-center text-gray-400 text-xs">
+            Loading live notifications...
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="bg-[#1E1F2B] border border-[#2D2F3F] rounded-2xl p-12 text-center text-gray-400 space-y-3">
             <Bell className="w-10 h-10 mx-auto text-gray-600" />
             <p className="text-sm font-semibold text-white">No notifications found</p>
@@ -125,7 +155,7 @@ export default function Notifications() {
           </div>
         ) : (
           filtered.map(item => {
-            const Icon = item.icon;
+            const Icon = item.icon || (item.iconName === "ShieldCheck" ? ShieldCheck : item.iconName === "Info" ? Info : Share2);
             return (
               <div
                 key={item.id}
@@ -136,7 +166,7 @@ export default function Notifications() {
                 }`}
               >
                 <div className="flex items-start gap-3.5">
-                  <div className={`p-2.5 rounded-xl border ${item.color} shrink-0 mt-0.5`}>
+                  <div className={`p-2.5 rounded-xl border ${item.color || "text-purple-400 bg-purple-500/10 border-purple-500/20"} shrink-0 mt-0.5`}>
                     <Icon className="w-4 h-4" />
                   </div>
                   <div>

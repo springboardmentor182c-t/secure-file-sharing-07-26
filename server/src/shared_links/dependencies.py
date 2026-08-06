@@ -1,20 +1,10 @@
-
-import uuid
-
+"""
+Re-exports the shared auth dependency from `src.dependencies` so existing imports keep working.
+"""
 from fastapi import Header
 from typing_extensions import Annotated
-
+from src.dependencies import get_current_user_id  # noqa: F401
 from src.exceptions import PermissionDeniedError, UnauthorizedError
-
-
-def get_current_user_id(x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None) -> uuid.UUID:
-    if not x_user_id:
-        return uuid.UUID("11111111-1111-1111-1111-111111111111")
-
-    try:
-        return uuid.UUID(x_user_id)
-    except Exception:
-        return uuid.UUID("11111111-1111-1111-1111-111111111111")
 
 
 def require_role(allowed_roles: list[str]):

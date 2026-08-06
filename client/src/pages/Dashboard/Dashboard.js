@@ -88,7 +88,7 @@ export default function Dashboard() {
         <h2 className="text-white font-semibold mb-4">
           User management {searchTerm && <span className="text-gray-500 text-sm font-normal">— filtered by "{searchTerm}"</span>}
         </h2>
-        {users ? <UserManagementTable users={filteredUsers} /> : <p className="text-gray-500 text-sm">{usersLoading ? "Loading registered users..." : "No users found."}</p>}
+        {users ? <UserManagementTable users={filteredUsers} onUserUpdated={() => { refetchUsers(); refetchStats(); refetchStorage(); }} /> : <p className="text-gray-500 text-sm">{usersLoading ? "Loading registered users..." : "No users found."}</p>}
       </div>
 
       <InviteUserModal

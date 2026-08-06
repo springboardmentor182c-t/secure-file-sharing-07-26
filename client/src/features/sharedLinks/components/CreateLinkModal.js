@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import ModalShell from "./ModalShell";
+import ModalShell from "../../../components/common/ModalShell";
 
 const initialForm = {
   file: null,
@@ -7,10 +7,9 @@ const initialForm = {
   access: "view",
   expiresAt: "",
   password: "",
-  allowDownload: false,
 };
 
-export default function CreateLinkModal({ onClose, onCreate, isSaving }) {
+export default function CreateLinkModal({ onClose, onCreate, isSaving, preselectedFile = null }) {
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState({});
 
@@ -18,7 +17,7 @@ export default function CreateLinkModal({ onClose, onCreate, isSaving }) {
 
   function validate() {
     const errs = {};
-    if (!form.file) errs.file = "Choose a file to share.";
+    if (!preselectedFile && !form.file) errs.file = "Choose a file to share.";
     if (!form.recipientEmail.trim()) {
       errs.recipientEmail = "Recipient email is required.";
     } else if (!/^\S+@\S+\.\S+$/.test(form.recipientEmail)) {
@@ -37,7 +36,15 @@ export default function CreateLinkModal({ onClose, onCreate, isSaving }) {
   function handleSubmit(e) {
     e.preventDefault();
     if (!validate()) return;
-    onCreate(form);
+
+    const allowDownload = form.access !== "view";
+
+    if (preselectedFile) {
+      const { file, ...rest } = form;
+      onCreate({ ...rest, allowDownload, fileId: preselectedFile.id, fileName: preselectedFile.name });
+    } else {
+      onCreate({ ...form, allowDownload });
+    }
   }
 
   return (
@@ -52,17 +59,24 @@ export default function CreateLinkModal({ onClose, onCreate, isSaving }) {
       )}
     >
       <form id="create-link-form" onSubmit={handleSubmit} noValidate>
-        <div className="form-field">
-          <label htmlFor="file">File</label>
-          <input
-            id="file"
-            type="file"
-            onChange={(e) => setField("file", e.target.files?.[0] || null)}
-            aria-invalid={!!errors.file}
-          />
-          {form.file && <span className="form-field__hint">{form.file.name}</span>}
-          {errors.file && <span className="form-field__error">{errors.file}</span>}
-        </div>
+        {preselectedFile ? (
+          <div className="form-field">
+            <label>File</label>
+            <div className="form-static">{preselectedFile.name}</div>
+          </div>
+        ) : (
+          <div className="form-field">
+            <label htmlFor="file">File</label>
+            <input
+              id="file"
+              type="file"
+              onChange={(e) => setField("file", e.target.files?.[0] || null)}
+              aria-invalid={!!errors.file}
+            />
+            {form.file && <span className="form-field__hint">{form.file.name}</span>}
+            {errors.file && <span className="form-field__error">{errors.file}</span>}
+          </div>
+        )}
 
         <div className="form-field">
           <label htmlFor="recipientEmail">Recipient email</label>
@@ -111,15 +125,6 @@ export default function CreateLinkModal({ onClose, onCreate, isSaving }) {
           />
           {errors.password && <span className="form-field__error">{errors.password}</span>}
         </div>
-
-        <label className="checkbox-field">
-          <input
-            type="checkbox"
-            checked={form.allowDownload}
-            onChange={(e) => setField("allowDownload", e.target.checked)}
-          />
-          Allow download
-        </label>
       </form>
     </ModalShell>
   );

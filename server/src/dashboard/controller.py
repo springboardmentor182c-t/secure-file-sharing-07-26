@@ -34,6 +34,16 @@ def invite_user(payload: models.InviteUserRequest, db: Session = Depends(get_db)
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.patch("/users/{user_id}")
+def update_user(user_id: int, payload: dict, db: Session = Depends(get_db)):
+    return service.update_user_management(db, user_id, payload)
+
+
+@router.delete("/users/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    return service.delete_user_management(db, user_id)
+
+
 users_router = APIRouter(prefix="/users", tags=["Users"])
 
 @users_router.get("/me")

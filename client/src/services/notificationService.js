@@ -1,37 +1,42 @@
-import axios from "axios";
+import { getOrCreateCurrentUserId } from "./currentUser";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
+async function authHeaders() {
+  const userId = await getOrCreateCurrentUserId(API);
+  return {
+    "X-User-Id": userId,
+    "Content-Type": "application/json",
+  };
+}
 
-const authHeader = () => ({
-  headers: {
-    "X-User-Id": localStorage.getItem("userId") || "00000000-0000-0000-0000-000000000000",
-  },
-});
+async function handleResponse(response) {
+  const data = await response.json().catch(() => null);
 
+  if (!response.ok) {
+    const message = data?.message || data?.detail || "Request failed";
+    throw new Error(message);
+  }
 
-// Get notifications
+  return data;
+}
+
 export const getNotifications = async () => {
+  const headers = await authHeaders();
+  const response = await fetch(`${API}/notifications`, {
+    headers,
+  });
 
-  const response = await axios.get(
-    `${API}/notifications`,
-    authHeader()
-  );
-
-  return response.data;
-
+  return handleResponse(response);
 };
 
-
-// Mark notification as read
 export const markNotificationRead = async (id) => {
+  const headers = await authHeaders();
+  const response = await fetch(`${API}/notifications/${id}/read`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({}),
+  });
 
-  const response = await axios.post(
-    `${API}/notifications/${id}/read`,
-    {},
-    authHeader()
-  );
-
-  return response.data;
-
+  return handleResponse(response);
 };

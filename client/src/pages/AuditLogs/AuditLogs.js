@@ -50,7 +50,11 @@ export function AuditLogsView() {
       log.id.toLowerCase().includes(search.toLowerCase());
 
     const matchesCategory = categoryFilter === "all" || log.category.toLowerCase() === categoryFilter.toLowerCase();
-    const matchesSeverity = severityFilter === "all" || log.severity.toLowerCase() === severityFilter.toLowerCase();
+    const matchesSeverity =
+      severityFilter === "all" ||
+      log.severity.toLowerCase() === severityFilter.toLowerCase() ||
+      (severityFilter.toLowerCase() === "info" && (log.severity.toLowerCase() === "low" || log.severity.toLowerCase() === "info")) ||
+      (severityFilter.toLowerCase() === "low" && (log.severity.toLowerCase() === "low" || log.severity.toLowerCase() === "info"));
 
     return matchesSearch && matchesCategory && matchesSeverity;
   });
@@ -63,6 +67,8 @@ export function AuditLogsView() {
         return <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-orange-500/20 text-orange-400 border border-orange-500/30">High</span>;
       case "medium":
         return <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30">Medium</span>;
+      case "low":
+      case "info":
       default:
         return <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30">Info</span>;
     }

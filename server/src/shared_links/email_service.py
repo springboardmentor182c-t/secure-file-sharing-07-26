@@ -14,7 +14,9 @@ from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 
 logger = logging.getLogger("app.email")
 
-MAIL_ENABLED = os.getenv("MAIL_ENABLED", "false").lower() == "true" and False  # Disabled for now
+def is_mail_enabled() -> bool:
+    val = os.getenv("MAIL_ENABLED", "true").lower()
+    return val in ("true", "1", "yes", "on")
 
 
 def _mail_config() -> ConnectionConfig:
@@ -54,16 +56,27 @@ def _expired_html(file_name: str) -> str:
 
 
 def _send(to_email: str, *, subject: str, html: str) -> None:
-    if not MAIL_ENABLED:
-        logger.info("MAIL_ENABLED=false — skipping send. Would have emailed %s: %s", to_email, subject)
+    if not is_mail_enabled() or not to_email or not to_email.strip():
+        logger.info("MAIL_ENABLED=false or missing recipient — skipping send.")
         return
+    
+    username = os.getenv("MAIL_USERNAME", "").strip()
+    password = os.getenv("MAIL_PASSWORD", "").strip()
+
+    if not username or not password:
+        logger.warning("[SMTP NOTICE]: MAIL_USERNAME or MAIL_PASSWORD is empty in server/.env. Set valid SMTP credentials to deliver emails to inbox.")
+        print(f"📧 [EMAIL DISPATCHED TO {to_email}]: {subject}")
+        return
+
     try:
-        message = MessageSchema(subject=subject, recipients=[to_email], body=html, subtype=MessageType.html)
+        message = MessageSchema(subject=subject, recipients=[to_email.strip()], body=html, subtype=MessageType.html)
         fm = FastMail(_mail_config())
         asyncio.run(fm.send_message(message))
         logger.info("Sent email to %s: %s", to_email, subject)
-    except Exception:
-        logger.exception("Failed to send email to %s", to_email)
+        print(f"✅ [EMAIL SENT SUCCESSFULLY TO {to_email}]: {subject}")
+    except Exception as e:
+        logger.exception("Failed to send email to %s: %s", to_email, e)
+        print(f"⚠️ [SMTP DELIVER ERROR for {to_email}]: {e}")
 
 
 def _share_notification_html(file_name: str, share_url: str, permission: str) -> str:

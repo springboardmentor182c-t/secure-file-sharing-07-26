@@ -64,16 +64,7 @@ def get_storage_by_user(db: Session) -> list[models.StorageByUser]:
         for row in rows:
             name = row[0] or "Unknown"
             storage_str = row[1] or "0 GB"
-            try:
-                parts = storage_str.split()
-                val = float(parts[0])
-                unit = parts[1].upper() if len(parts) > 1 else "GB"
-                if unit == "MB":
-                    val /= 1024
-                elif unit == "TB":
-                    val *= 1024
-            except Exception:
-                val = 0.0
+            val = _parse_storage_gb(storage_str)
             result.append(models.StorageByUser(name=name, storage_used_gb=val))
         return result
     except Exception:
@@ -261,3 +252,29 @@ def invite_user(db: Session, payload: models.InviteUserRequest) -> models.UserOu
             storage_used_gb=0,
             files_count=0,
         )
+
+
+def update_user_management(db: Session, user_id: int, payload: dict):
+    try:
+        if "role" in payload:
+            db.execute(text("UPDATE users SET role = :role WHERE id = :id"), {"role": str(payload["role"]), "id": user_id})
+        if "status" in payload:
+            db.execute(text("UPDATE users SET status = :status WHERE id = :id"), {"status": str(payload["status"]), "id": user_id})
+        if "mfa_enabled" in payload:
+            mfa_val = True if payload["mfa_enabled"] in (True, "true", "True", 1) else False
+            db.execute(text("UPDATE users SET mfa = :mfa WHERE id = :id"), {"mfa": mfa_val, "id": user_id})
+        db.commit()
+        return {"message": "User updated successfully", "status": "success"}
+    except Exception as e:
+        db.rollback()
+        return {"message": str(e), "status": "error"}
+
+
+def delete_user_management(db: Session, user_id: int):
+    try:
+        db.execute(text("DELETE FROM users WHERE id = :id"), {"id": user_id})
+        db.commit()
+        return {"message": "User removed successfully", "status": "success"}
+    except Exception as e:
+        db.rollback()
+        return {"message": str(e), "status": "error"}

@@ -1,13 +1,53 @@
-import { LayoutDashboard, Folder, Link2, Trash2, ShieldAlert, Settings, User, HardDrive, LogOut, Clock, BarChart3, Share2, Bell } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  LayoutDashboard,
+  Folder,
+  Link2,
+  Trash2,
+  ShieldAlert,
+  Settings,
+  User,
+  HardDrive,
+  LogOut,
+  Clock,
+  BarChart3,
+  Share2,
+  Bell
+} from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 export default function Sidebar({ users, stats, currentUser }) {
   const location = useLocation();
-  const userRole = (currentUser?.role || "").toLowerCase();
-  const isAdmin = userRole.includes("admin");
+  const [storageData, setStorageData] = useState({ used_bytes: 0, total_bytes: 10 * 1024 * 1024 * 1024, used_percent: 0 });
+
+  const fetchStorageStats = () => {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+    fetch(`${API_BASE_URL}/files/storage-stats`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.data) {
+          setStorageData(data.data);
+        }
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchStorageStats();
+
+    // Listen for custom storage-updated events triggered by file upload/delete/restore
+    window.addEventListener("storage-updated", fetchStorageStats);
+
+    // Periodic 5-second polling interval for real-time live storage status updates
+    const interval = setInterval(fetchStorageStats, 5000);
+
+    return () => {
+      window.removeEventListener("storage-updated", fetchStorageStats);
+      clearInterval(interval);
+    };
+  }, [location.pathname]);
 
   const mainLinks = [
-    { name: "Dashboard", path: "/", icon: LayoutDashboard },
     { name: "My Files", path: "/files", icon: Folder },
     { name: "Shared Files", path: "/shared-files", icon: Link2 },
     { name: "Shared Links", path: "/shared-links", icon: Share2 },
@@ -17,6 +57,7 @@ export default function Sidebar({ users, stats, currentUser }) {
   ];
 
   const securityLinks = [
+    { name: "Admin Dashboard", path: "/", icon: LayoutDashboard },
     { name: "Audit Logs", path: "/audit", icon: ShieldAlert },
     { name: "Security", path: "/security", icon: ShieldAlert },
   ];
@@ -34,7 +75,7 @@ export default function Sidebar({ users, stats, currentUser }) {
         to={path}
         className={`flex items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer transition-colors ${
           isActive
-            ? "bg-purple-600/20 text-white border-l-2 border-purple-500"
+            ? "bg-purple-600/20 text-white border-l-2 border-purple-500 font-semibold"
             : "text-gray-400 hover:text-white hover:bg-white/5"
         }`}
       >
@@ -44,9 +85,18 @@ export default function Sidebar({ users, stats, currentUser }) {
     );
   };
 
-  const storagePercent = stats
-    ? Math.min((stats.total_storage_gb / stats.total_storage_limit_gb) * 100, 100)
-    : 0;
+  const usedBytes = storageData?.used_bytes || 0;
+  const percent = storageData?.used_percent ?? storageData?.used_percentage ?? 0;
+
+  const formatSize = (bytes) => {
+    if (!bytes || bytes === 0) return "0 MB";
+    const gb = bytes / (1024 * 1024 * 1024);
+    if (gb >= 1) return `${gb.toFixed(1)} GB`;
+    const mb = bytes / (1024 * 1024);
+    if (mb >= 1) return `${mb.toFixed(1)} MB`;
+    const kb = bytes / 1024;
+    return `${kb.toFixed(1)} KB`;
+  };
 
   return (
     <div className="w-64 bg-[#13131a] h-screen sticky top-0 flex flex-col justify-between border-r border-gray-800">
@@ -61,25 +111,21 @@ export default function Sidebar({ users, stats, currentUser }) {
           </div>
         </div>
 
-        <p className="text-gray-500 text-xs px-4 mb-2 mt-4">MAIN</p>
+        <p className="text-gray-500 text-xs px-4 mb-2 mt-4 font-semibold uppercase tracking-wider">MAIN</p>
         <div className="space-y-1">
           {mainLinks.map((link) => (
             <NavItem key={link.name} {...link} />
           ))}
         </div>
 
-        {securityLinks.length > 0 && (
-          <>
-            <p className="text-gray-500 text-xs px-4 mb-2 mt-6">SECURITY</p>
-            <div className="space-y-1">
-              {securityLinks.map((link) => (
-                <NavItem key={link.name} {...link} />
-              ))}
-            </div>
-          </>
-        )}
+        <p className="text-gray-500 text-xs px-4 mb-2 mt-6 font-semibold uppercase tracking-wider">SECURITY</p>
+        <div className="space-y-1">
+          {securityLinks.map((link) => (
+            <NavItem key={link.name} {...link} />
+          ))}
+        </div>
 
-        <p className="text-gray-500 text-xs px-4 mb-2 mt-6">ACCOUNT</p>
+        <p className="text-gray-500 text-xs px-4 mb-2 mt-6 font-semibold uppercase tracking-wider">ACCOUNT</p>
         <div className="space-y-1">
           {accountLinks.map((link) => (
             <NavItem key={link.name} {...link} />
@@ -94,88 +140,33 @@ export default function Sidebar({ users, stats, currentUser }) {
               <HardDrive size={16} className="text-purple-400" />
               Storage
             </div>
-            <span className="text-gray-400 text-xs">
-              {stats ? `${Math.round(storagePercent)}%` : "..."}
-            </span>
+            <span className="text-xs text-gray-400">{percent}%</span>
           </div>
           <div className="w-full bg-gray-800 rounded-full h-2 mb-2">
-            <div
-              className="bg-purple-500 h-2 rounded-full"
-              style={{ width: `${storagePercent}%` }}
-            />
+            <div className="h-full rounded-full bg-[#7C5CFC] transition-all duration-500" style={{ width: `${Math.max(percent, usedBytes > 0 ? 3 : 0)}%` }} />
           </div>
-          <p className="text-gray-500 text-xs">
-            {stats
-              ? `${stats.total_storage_gb.toFixed(0)} GB / ${stats.total_storage_limit_gb} GB Used`
-              : "Loading..."}
-          </p>
+          <p className="mt-3 text-xs text-gray-400">{formatSize(usedBytes)} / 10 GB Used</p>
         </div>
 
-      {/* User Section */}
-
-      <div
-        className="
-          mt-6
-          border-t
-          border-[#34364A]
-          p-5
-        "
-      >
-        <div
-          className="
-            flex
-            items-center
-            justify-between
-          "
-        >
-          <div
-            className="
-              flex
-              items-center
-              gap-3
-            "
-          >
-            <div
-              className="
-                h-11
-                w-11
-                rounded-full
-                bg-[#7C5CFC]
-                flex
-                items-center
-                justify-center
-                text-white
-                font-bold
-              "
-            >
-              {currentUser?.initials || currentUser?.name?.charAt(0) || "U"}
+        <div className="border-t border-[#34364A] pt-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-[#7C5CFC] flex items-center justify-center text-white font-bold">
+                {currentUser?.initials || currentUser?.name?.charAt(0) || "U"}
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-white">
+                  {currentUser?.name || "User"}
+                </h3>
+                <p className="text-xs text-gray-400">
+                  {currentUser?.role || currentUser?.email || "Editor"}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3
-                className="
-                  text-sm
-                  font-semibold
-                  text-white
-                "
-              >
-                {currentUser?.name || "User"}
-              </h3>
-
-              <p
-                className="
-                  text-xs
-                  text-gray-400
-                "
-              >
-                {currentUser?.role || currentUser?.email || "Team Member"}
-              </p>
-            </div>
+            <LogOut size={16} className="text-gray-500 cursor-pointer hover:text-white" />
           </div>
-          <LogOut size={16} className="text-gray-500 cursor-pointer hover:text-white" />
         </div>
       </div>
     </div>
-    </div>
   );
 }
-
