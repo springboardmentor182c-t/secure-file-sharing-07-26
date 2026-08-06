@@ -3,9 +3,12 @@ import SearchIcon from "@mui/icons-material/Search";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
-const Navbar = () => {
+const Navbar = ({title}) => {
   return (
     <div className="navbar">
+      <h2 className="navbar-title">{title}</h2>
+
+
       <div className="navbar-right">
         <div className="search-box">
           <SearchIcon />
@@ -33,6 +36,7 @@ const Navbar = () => {
           <KeyboardArrowDownIcon />
         </div>
       </div>
+
     </div>
   );
 };

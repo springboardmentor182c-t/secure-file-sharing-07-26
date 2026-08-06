@@ -196,6 +196,7 @@ const handleDrop = async (e) => {
 
   return (
     <div className="upload-page">
+      
 
   {/* Upload Area */}
   <div className="upload-container"

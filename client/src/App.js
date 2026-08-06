@@ -1,25 +1,22 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PageContainer from "./layout/PageContainer";
-// Pages & Features
 
 import Home from "./pages/Home";
 import Settings from "./pages/Settings";
 import Securesharing from "./pages/Securesharing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import Upload from "./pages/Upload";
+import Upload from "./pages/Upload.jsx";
 import Files from "./pages/Files";
 import Users from "./pages/Users";
 import Activity from "./pages/Activity";
 import Storage from "./pages/Storage";
 
-import Dashboard from "./features/dashboard/Dashboard";
 import NotificationFeature from "./features/notifications/NotificationFeature";
-import ActivityMonitorPage from "./pages/ActivityMonitorPage";
 import Analytics from "./features/analytics/Analytics";
 import AdminDashboard from "./pages/AdminDashboard";
-import Profile from './features/profile/Profile';
+import Profile from "./features/profile/Profile";
 
 function App() {
   return (
@@ -29,34 +26,25 @@ function App() {
         <Route
           path="/"
           element={
-            <PageContainer>
+            <PageContainer title="Home">
               <Home />
             </PageContainer>
           }
         />
 
         <Route
-          path="/sharing"
+          path="/admin"
           element={
-            <PageContainer>
-              <Securesharing />
+            <PageContainer title="Dashboard">
+              <AdminDashboard />
             </PageContainer>
           }
         />
 
-         <Route
-          path="/settings"
-          element={
-            <PageContainer>
-              <Settings />
-            </PageContainer>
-          }
-        /> 
-
         <Route
           path="/upload"
           element={
-            <PageContainer>
+            <PageContainer title="Upload Files">
               <Upload />
             </PageContainer>
           }
@@ -65,7 +53,7 @@ function App() {
         <Route
           path="/files"
           element={
-            <PageContainer>
+            <PageContainer title="Files">
               <Files />
             </PageContainer>
           }
@@ -74,7 +62,7 @@ function App() {
         <Route
           path="/users"
           element={
-            <PageContainer>
+            <PageContainer title="Users">
               <Users />
             </PageContainer>
           }
@@ -83,26 +71,8 @@ function App() {
         <Route
           path="/activity"
           element={
-            <PageContainer>
+            <PageContainer title="Activity">
               <Activity />
-            </PageContainer>
-          }
-        />
-
-        <Route
-          path="/dashboard"
-          element={
-            <PageContainer>
-              <Dashboard />
-            </PageContainer>
-          }
-        />
-
-        <Route
-          path="/notifications"
-          element={
-            <PageContainer>
-              <NotificationFeature />
             </PageContainer>
           }
         />
@@ -110,20 +80,26 @@ function App() {
         <Route
           path="/storage"
           element={
-            <PageContainer>
+            <PageContainer title="Storage">
               <Storage />
             </PageContainer>
           }
         />
 
-        <Route path="/login" element={<Login />} />
-         <Route path="/login" element={<Login />} /> 
+        <Route
+          path="/sharing"
+          element={
+            <PageContainer title="Secure Sharing">
+              <Securesharing />
+            </PageContainer>
+          }
+        />
 
         <Route
-          path="/dashboard"
+          path="/settings"
           element={
-            <PageContainer>
-              <Dashboard />
+            <PageContainer title="Settings">
+              <Settings />
             </PageContainer>
           }
         />
@@ -131,50 +107,31 @@ function App() {
         <Route
           path="/notifications"
           element={
-            <PageContainer>
+            <PageContainer title="Notifications">
               <NotificationFeature />
             </PageContainer>
           }
         />
 
         <Route
-          path="/activity"
+          path="/analytics"
           element={
-            <PageContainer>
-              <ActivityMonitorPage />
-            </PageContainer>
-          }
-        />
-
-        <Route 
-          path="/analytics" 
-          element={
-            <PageContainer>
+            <PageContainer title="Analytics">
               <Analytics />
             </PageContainer>
           }
         />
 
         <Route
-         path="/profile"
-         element={
-           <PageContainer>
-            <Profile />
-           </PageContainer>
-          } 
+          path="/profile"
+          element={
+            <PageContainer title="Profile">
+              <Profile />
+            </PageContainer>
+          }
         />
-        
-        <Route
-  path="/admin"
-  element={
-    <PageContainer>
-      <Dashboard />
-    </PageContainer>
-  }
-/>
 
-        {/* Auth Routes (Without Sidebar/Navbar) */}
-        <Route path="/login" element={<Login />} /> 
+        <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
       </Routes>

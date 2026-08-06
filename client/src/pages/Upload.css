@@ -3,9 +3,9 @@
 ========================== */
 
 .upload-page{
-    padding:30px;
+    padding:0;
     background:#f8f9fb;
-    min-height:100vh;
+    min-height:100%;
     font-family:Inter,sans-serif;
 }
 
