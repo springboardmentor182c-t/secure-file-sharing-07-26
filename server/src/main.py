@@ -142,6 +142,25 @@ def on_startup():
             )
         )
 
+    # Create default roles if they don't exist
+    from src.entities.role import Role
+    from sqlalchemy.orm import Session
+    
+    with Session(engine) as db:
+        # Check if default roles exist
+        admin_role = db.query(Role).filter(Role.role_name == "admin").first()
+        user_role = db.query(Role).filter(Role.role_name == "user").first()
+        
+        if not admin_role:
+            admin_role = Role(role_name="admin", description="Administrator with full access")
+            db.add(admin_role)
+        
+        if not user_role:
+            user_role = Role(role_name="user", description="Standard user with limited access")
+            db.add(user_role)
+        
+        db.commit()
+
 
 # Register Routers
 app.include_router(auth_router)
