@@ -44,6 +44,18 @@ import AdminRoute from "./features/authentication/components/AdminRoute";
 import AdminDashboard from "./pages/AdminDashboard";
 import Profile from './features/profile/Profile';
 
+// File Management
+import FileManagementPage from "./filemanagement/FileManagementPage";
+import FileDetailsPage from "./filemanagement/FileDetailsPage";
+
+// File Management CSS
+import "./assets/css/layout.css";
+import "./assets/css/sidebar.css";
+import "./assets/css/header.css";
+import "./assets/css/folders.css";
+import "./assets/css/table.css";
+import "./assets/css/fileDetails.css";
+import "./assets/css/responsive.css";
 
 function App() {
   return (
@@ -195,16 +207,10 @@ function App() {
         {/* Files */}
         <Route
           path="/files"
-          element={
-            <ProtectedRoute>
-              <PageContainer>
-                <Files />
-              </PageContainer>
-            </ProtectedRoute>
-          }
+          element={<FileManagementPage />}
         />
 
-        {/* Users */}
+        {/* File Details */}
         <Route
           path="/file-details"
           element={<FileDetailsPage />}

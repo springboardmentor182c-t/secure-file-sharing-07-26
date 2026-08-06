@@ -29,6 +29,9 @@ from app.api.v1.notifications.routes import router as notification_router
 
 from src.users.controller import router as user_router
 
+# File Management
+from src.todos.controller import router as todos_router
+
 # =====================================================
 # ROUTERS
 # =====================================================
@@ -148,6 +151,9 @@ app.include_router(analytics_router)
 app.include_router(
     notification_router
 )
+
+# File Management
+app.include_router(todos_router)
 
 @app.get("/")
 def root():
