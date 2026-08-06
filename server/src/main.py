@@ -161,6 +161,12 @@ def on_startup():
         
         db.commit()
 
+    # Add missing columns to users table
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(100)"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS storage_used VARCHAR(20) DEFAULT '0 GB'"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'Active'"))
+
 
 # Register Routers
 app.include_router(auth_router)
