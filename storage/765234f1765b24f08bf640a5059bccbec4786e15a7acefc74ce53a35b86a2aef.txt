@@ -1,0 +1,1 @@
+Infosys Virtual Internship report for AI Duplicate File Detection. The main objective of this task is to implement automated duplicate matching and similarity checks for the Secure File Sharing platform. We utilize SHA-256 hash digests for exact match verification, and TF-IDF with Cosine Similarity for text-based similarity alerts.
