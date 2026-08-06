@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body,
+#root {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -10,13 +20,13 @@
 }
 
 body {
-    margin: 0;
     overflow: hidden;
 }
 
 /* =========================
    MAIN LAYOUT
 ========================= */
+
 .layout {
     display: flex;
     height: 100vh;
@@ -26,6 +36,7 @@ body {
 /* =========================
    FIXED SIDEBAR
 ========================= */
+
 .sidebar {
     position: fixed;
     top: 0;
@@ -38,11 +49,12 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    overflow: hidden;   /* IMPORTANT - no sidebar scroll */
+    overflow: hidden;
     z-index: 1000;
 }
 
 /* Logo */
+
 .logo-section {
     display: flex;
     align-items: center;
@@ -62,14 +74,14 @@ body {
     font-weight: bold;
 }
 
-/* Menu container */
+/* Sidebar Menu */
+
 .sidebar-menu {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-/* Menu items */
 .menu {
     height: 40px;
     display: flex;
@@ -95,7 +107,6 @@ body {
     color: white;
 }
 
-/* Bottom buttons */
 .bottom-menu {
     padding-top: 10px;
     border-top: 1px solid #444;
@@ -107,6 +118,7 @@ body {
 /* =========================
    MAIN SECTION
 ========================= */
+
 .mainSection {
     margin-left: 240px;
     width: calc(100% - 240px);
@@ -117,8 +129,9 @@ body {
 }
 
 /* =========================
-   FIXED NAVBAR
+   NAVBAR
 ========================= */
+
 .navbar {
     position: fixed;
     top: 0;
@@ -134,7 +147,7 @@ body {
     padding: 0 30px;
 
     border-bottom: 1px solid #eee;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     z-index: 999;
 }
 .navbar-title {
@@ -169,7 +182,6 @@ body {
     width: 100%;
 }
 
-/* Navbar right */
 .nav-icon {
     cursor: pointer;
 }
@@ -195,6 +207,7 @@ body {
 }
 
 /* Profile */
+
 .profile {
     display: flex;
     align-items: center;
@@ -223,8 +236,9 @@ body {
 }
 
 /* =========================
-   PAGE CONTENT SCROLL ONLY
+   PAGE CONTENT
 ========================= */
+
 .pageContainer {
     margin-top: 80px;
     height: calc(100vh - 70px);
@@ -235,7 +249,8 @@ body {
     min-height: 0;
 }
 
-/* Scrollbar styling */
+/* Scrollbars */
+
 .sidebar::-webkit-scrollbar,
 .pageContainer::-webkit-scrollbar {
     width: 6px;

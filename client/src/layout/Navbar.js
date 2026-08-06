@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+
 import SearchIcon from "@mui/icons-material/Search";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -18,10 +20,7 @@ const Navbar = ({title}) => {
           />
         </div>
 
-        <div className="notification">
-          <NotificationsNoneIcon />
-          <span>3</span>
-        </div>
+    );
 
         <div className="profile">
           <div className="avatar">
