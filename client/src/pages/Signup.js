@@ -1,12 +1,34 @@
 import React from "react";
+import SignupForm from "../features/authentication/components/SignupForm";
+
 
 const Signup = () => {
-  return (
-    <div className="signup-page">
-      <h2>Sign Up</h2>
-      <p>Signup page - placeholder component</p>
-    </div>
-  );
+
+return(
+
+<div style={styles.container}>
+
+<SignupForm/>
+
+</div>
+
+);
+
 };
+
+
+const styles={
+
+container:{
+ minHeight:"100vh",
+ background:"#F5EBDD",
+ display:"flex",
+ justifyContent:"center",
+ alignItems:"center",
+ padding:"20px"
+}
+
+};
+
 
 export default Signup;

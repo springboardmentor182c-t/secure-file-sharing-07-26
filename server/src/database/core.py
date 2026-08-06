@@ -54,19 +54,10 @@ if not DATABASE_URL:
         f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     )
 
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL not found. Check your .env file.")
 
-# =====================================================
-# DATABASE ENGINE
-# =====================================================
-
-engine = create_engine(
-    DATABASE_URL
-)
-
-
-# =====================================================
-# SESSION FACTORY
-# =====================================================
+engine = create_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(
     autocommit=False,
@@ -88,10 +79,8 @@ Base = declarative_base()
 
 def get_db():
     """
-    Create a database session for a request
-    and safely close it afterwards.
+    Database session dependency.
     """
-
     db = SessionLocal()
 
     try:
