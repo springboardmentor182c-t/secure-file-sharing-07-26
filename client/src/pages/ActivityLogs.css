@@ -1,0 +1,223 @@
+/* ============================================================
+   Access Monitoring / Activity Logs
+   Uses the tokens from assets/global.css so it works in both themes.
+   ============================================================ */
+
+.al-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.al-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.al-header h1 { font-size: 1.75rem; font-weight: 800; }
+.al-header p { color: var(--text-muted); margin-top: 4px; font-size: .9375rem; }
+.al-header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.al-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  border-radius: var(--radius-md);
+  background: rgba(244, 63, 94, .12);
+  border: 1px solid rgba(244, 63, 94, .3);
+  color: var(--rose-400);
+  font-size: .875rem;
+}
+
+/* ── Stat cards ──────────────────────────────────────────── */
+.stat-icon.tone-blue    { background: rgba(59,130,246,.14); color: var(--blue-400); }
+.stat-icon.tone-amber   { background: rgba(245,158,11,.14); color: var(--amber-400); }
+.stat-icon.tone-purple  { background: rgba(139,92,246,.14); color: var(--purple-400); }
+.stat-icon.tone-emerald { background: rgba(16,185,129,.14); color: var(--emerald-400); }
+
+.al-stat-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.al-stat-top .stat-trend { margin-top: 0; }
+
+/* ── Blocked addresses ───────────────────────────────────── */
+.al-blocked-card { padding: 16px 20px; margin-bottom: 20px; }
+.al-blocked-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .875rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+.al-blocked-list { display: flex; flex-wrap: wrap; gap: 10px; }
+.al-blocked-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 12px;
+  border-radius: 999px;
+  background: rgba(244, 63, 94, .1);
+  border: 1px solid rgba(244, 63, 94, .25);
+  font-size: .8125rem;
+}
+.al-blocked-chip code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--rose-400);
+}
+.al-blocked-chip button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  transition: all var(--transition);
+}
+.al-blocked-chip button:hover { background: var(--bg-hover); color: var(--text-primary); }
+.al-blocked-chip button:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── Suspicious activity banner ──────────────────────────── */
+.al-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 20px;
+  margin-bottom: 22px;
+  border-radius: var(--radius-lg);
+  background: rgba(244, 63, 94, .09);
+  border: 1px solid rgba(244, 63, 94, .28);
+}
+.al-alert-icon {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(244, 63, 94, .16);
+  color: var(--rose-400);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.al-alert-body { flex: 1; min-width: 0; }
+.al-alert-body h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--rose-400);
+  margin-bottom: 4px;
+}
+.al-alert-body p { font-size: .875rem; color: var(--text-secondary); line-height: 1.5; }
+.al-alert-note {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: .8125rem;
+}
+.al-block-btn { flex-shrink: 0; align-self: center; }
+
+/* ── Risk filter pills ───────────────────────────────────── */
+.al-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.al-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  transition: all var(--transition);
+}
+.al-pill:hover { border-color: var(--border-medium); color: var(--text-primary); }
+.al-pill.active {
+  background: var(--grad-primary);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: var(--shadow-blue);
+}
+.al-pill-count {
+  font-size: .72rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--bg-input);
+  color: var(--text-muted);
+}
+.al-pill.active .al-pill-count { background: rgba(255,255,255,.22); color: #fff; }
+
+/* ── Events table ────────────────────────────────────────── */
+.al-table-card { padding: 8px 4px; }
+.al-table-wrap { overflow-x: auto; }
+.al-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+.al-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: .6875rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+.al-table td {
+  padding: 14px 16px;
+  font-size: .875rem;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+.al-table tbody tr:last-child td { border-bottom: none; }
+.al-table tbody tr:hover { background: var(--bg-card); }
+
+.al-table .badge { text-transform: capitalize; }
+
+.al-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .8125rem;
+}
+.al-muted { color: var(--text-muted); }
+.al-nowrap { white-space: nowrap; }
+.al-truncate {
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.al-row-blocked { opacity: .55; }
+.al-row-blocked td:first-child { border-left: 3px solid var(--rose-500); }
+
+.al-empty {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--text-muted);
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .al-header { flex-direction: column; align-items: stretch; }
+  .al-alert { flex-wrap: wrap; }
+  .al-block-btn { width: 100%; justify-content: center; }
+}
