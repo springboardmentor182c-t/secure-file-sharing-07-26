@@ -41,7 +41,6 @@ import Analytics from "./features/analytics/Analytics";
 import ProtectedRoute from "./features/authentication/components/ProtectedRoute";
 import AdminRoute from "./features/authentication/components/AdminRoute";
 
-import AdminDashboard from "./pages/AdminDashboard";
 import Profile from './features/profile/Profile';
 
 // File Management
