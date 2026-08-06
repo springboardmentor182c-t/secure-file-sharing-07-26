@@ -47,6 +47,12 @@ from src.entities.issue import Issue  # noqa: F401
 from src.entities.file import File  # noqa: F401
 from src.entities.user import User  # noqa: F401
 from src.entities.system_health import SystemHealth  # noqa: F401
+from src.entities.role import Role  # noqa: F401
+from src.entities.user_profile import UserProfile  # noqa: F401
+from src.entities.email_verification import EmailVerificationToken  # noqa: F401
+from src.entities.mfa import MFACode  # noqa: F401
+from src.entities.session import UserSession  # noqa: F401
+from src.entities.password_reset import PasswordResetToken  # noqa: F401
 
 # Load environment variables
 load_dotenv()
