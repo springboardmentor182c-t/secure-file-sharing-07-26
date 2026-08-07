@@ -315,6 +315,13 @@ def upload_file(
     db.commit()
     db.refresh(file)
 
+    # Automatically index document content for AI search
+    try:
+        from src.search.service import get_or_index_file_content
+        get_or_index_file_content(db, file)
+    except Exception:
+        pass
+
     return file
 
 
