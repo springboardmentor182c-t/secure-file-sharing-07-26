@@ -213,6 +213,10 @@ export const searchAPI = {
     api.get("/api/search/", {
       params: { q: query },
     }),
+  searchContent: (query, limit = 20) =>
+    api.get("/api/search/content", {
+      params: { q: query, limit },
+    }),
 };
 
 // ── Settings (API Placeholders) ──────────────────────────────────────────

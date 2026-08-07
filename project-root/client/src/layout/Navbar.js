@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, Moon, Sun, CheckCheck } from "lucide-react";
+import { Bell, Moon, Sun, CheckCheck, Sparkles } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import {
   RiSearch2Line,
@@ -16,6 +16,7 @@ import {
   RiShieldCheckLine,
 } from "react-icons/ri";
 import { searchAPI, notificationsAPI } from "../utils/api";
+import ContentSearchModal from "../features/search/ContentSearchModal";
 import "./Navbar.css";
 
 // File type icon resolver
@@ -59,6 +60,7 @@ export default function Navbar({
   setSidebarOpen,
   connectionStatus,
 }) {
+  const [showContentModal, setShowContentModal] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -171,6 +173,9 @@ export default function Navbar({
     results.notifications?.forEach((n) =>
       list.push({ type: "notification", data: n, id: `notif-${n.id}` })
     );
+    results.content_matches?.forEach((c) =>
+      list.push({ type: "content", data: c, id: `content-${c.id}` })
+    );
     return list;
   }, [results]);
 
@@ -208,6 +213,7 @@ export default function Navbar({
       folder: "/my-files",
       share: "/sharing",
       notification: "/notifications",
+      content: "/my-files",
     };
     navigate(routes[type] || "/dashboard");
   };
@@ -231,7 +237,8 @@ export default function Navbar({
     !results.files?.length &&
     !results.folders?.length &&
     !results.shares?.length &&
-    !results.notifications?.length;
+    !results.notifications?.length &&
+    !results.content_matches?.length;
 
   // Render helpers
   const renderSearchItem = (item, globalIndex) => {
@@ -241,18 +248,20 @@ export default function Navbar({
       folder: () => <RiFolderOpenLine className="search-icon" />,
       share: () => <RiShareForwardLine className="search-icon" />,
       notification: () => <RiNotification3Line className="search-icon" />,
+      content: () => <Sparkles className="search-icon" style={{ color: "#6366f1", width: 16, height: 16 }} />,
     };
     const labelMap = {
       file: item.data.original_name,
       folder: item.data.name,
       share: `Share #${item.data.id}`,
       notification: item.data.title,
+      content: item.data.original_name,
     };
     return (
       <motion.div
         key={item.id}
         data-result-index={globalIndex}
-        className={`search-item ${isActive ? "search-item--active" : ""}`}
+        className={`search-item ${isActive ? "search-item--active" : ""} ${item.type === "content" ? "search-item--content" : ""}`}
         onClick={() => handleResultClick(item.type)}
         onMouseEnter={() => setActiveIndex(globalIndex)}
         initial={{ opacity: 0, x: -6 }}
@@ -260,7 +269,15 @@ export default function Navbar({
         transition={{ delay: globalIndex * 0.02, duration: 0.2 }}
       >
         {iconMap[item.type]()}
-        <span>{labelMap[item.type]}</span>
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+          <span style={{ fontWeight: item.type === "content" ? 600 : 400 }}>{labelMap[item.type]}</span>
+          {item.type === "content" && item.data.snippet && (
+            <span
+              style={{ fontSize: "0.75rem", opacity: 0.8, marginTop: 2 }}
+              dangerouslySetInnerHTML={{ __html: item.data.snippet }}
+            />
+          )}
+        </div>
       </motion.div>
     );
   };
@@ -298,6 +315,14 @@ export default function Navbar({
           onKeyDown={handleSearchKeyDown}
           aria-label="Search"
         />
+        <button
+          type="button"
+          className="ai-search-trigger-btn"
+          onClick={() => setShowContentModal(true)}
+          title="Open AI Content Search"
+        >
+          <Sparkles size={13} /> AI Search
+        </button>
 
         <AnimatePresence>
           {loading && (
@@ -327,6 +352,7 @@ export default function Navbar({
                 currentIndex = 0;
                 return (
                   <>
+                    {renderSection("Inside Document Content (AI)", results.content_matches, "content")}
                     {renderSection("Files", results.files, "file")}
                     {renderSection("Folders", results.folders, "folder")}
                     {renderSection("Shares", results.shares, "share")}
@@ -501,6 +527,11 @@ export default function Navbar({
           )}
         </AnimatePresence>
       </div>
+
+      <ContentSearchModal
+        isOpen={showContentModal}
+        onClose={() => setShowContentModal(false)}
+      />
     </header>
   );
 }
