@@ -29,7 +29,6 @@ import Users from "./pages/Users";
 import Activity from "./pages/Activity";
 import Storage from "./pages/Storage";
 import ActivityMonitorPage from "./pages/ActivityMonitorPage";
-import AdminDashboard from "./pages/AdminDashboard";
 
 // Features
 import Dashboard from "./features/dashboard/Dashboard";
@@ -197,7 +196,6 @@ function App() {
           element={
             <ProtectedRoute>
               <PageContainer>
-                <Files />
                 <Upload />
               </PageContainer>
             </ProtectedRoute>
@@ -284,15 +282,6 @@ function App() {
            </PageContainer>
           } 
         />
-
-<Route
-  path="/admin"
-  element={
-    <PageContainer>
-      <Dashboard />
-    </PageContainer>
-  }
-/>
 
         {/* Invalid Route */}
         <Route
