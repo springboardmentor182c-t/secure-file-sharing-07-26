@@ -254,9 +254,9 @@ function App() {
         <Route
           path="/admin"
           element={
-            <AdminRoute>
-              <AdminHome />
-            </AdminRoute>
+            <PageContainer>
+              <Dashboard />
+            </PageContainer>
           }
         />
 
