@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @import "tailwindcss";
 
 :root {
@@ -99,3 +100,9 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+=======
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+>>>>>>> 8590378 (Add user authentication module and database schema)
