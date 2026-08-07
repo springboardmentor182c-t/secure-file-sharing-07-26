@@ -5,7 +5,6 @@ These define request/response shapes for the controller endpoints.
 
 from datetime import datetime
 from typing import Optional
-import uuid
 
 from pydantic import BaseModel
 
@@ -27,20 +26,6 @@ class SummaryResponse(BaseModel):
     summary: Optional[str] = None
     model_used: Optional[str] = None
     generated_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
-
-
-class FileListItem(BaseModel):
-    """
-    Used by GET /api/ai-summary/files to list files available for summarization.
-    """
-    id: uuid.UUID
-    file_name: str
-    file_extension: Optional[str] = None
-    file_size: int
-    uploaded_at: datetime
 
     class Config:
         from_attributes = True

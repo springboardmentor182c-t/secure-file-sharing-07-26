@@ -1,50 +1,38 @@
 """
 API routes for the AI File Summary feature.
 
-GET  /api/ai-summary/files                     -> list all files (for the AI Summary page)
-POST /api/ai-summary/files/{file_id}/summary    -> trigger generation
-GET  /api/ai-summary/files/{file_id}/summary    -> fetch current status/result
-"""
+POST /ai-summary/files/{file_id}/summary    -> trigger generation
+GET  /ai-summary/files/{file_id}/summary    -> fetch current status/result
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+No separate file-listing endpoint here on purpose: the summary button
+lives inside the My Files table (src/files), which already lists files.
+This module only ever needs a file_id that's already on screen.
+"""
+import uuid
+from typing import Annotated
+
+from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.orm import Session
 
 from src.database.core import get_db
-from src.entities.file import File
-from src.ai_summary.models import GenerateSummaryResponse, SummaryResponse, FileListItem
+from src.dependencies import get_current_user_id
+from src.files import service as files_service
+from src.ai_summary.models import GenerateSummaryResponse, SummaryResponse
 from src.ai_summary.service import FileSummaryService
 
-router = APIRouter(prefix="/api/ai-summary", tags=["AI Summary"])
-
-
-@router.get("/files", response_model=list[FileListItem])
-def list_files(db: Session = Depends(get_db)):
-    """
-    Lists all non-deleted files, so the AI Summary page can show
-    a real, dynamic list of files to summarize.
-    """
-    files = (
-        db.query(File)
-        .filter(File.is_deleted == False)  # noqa: E712
-        .order_by(File.uploaded_at.desc())
-        .all()
-    )
-    return files
+router = APIRouter(prefix="/ai-summary", tags=["AI Summary"])
 
 
 @router.post("/files/{file_id}/summary", response_model=GenerateSummaryResponse)
 async def generate_summary(
-    file_id: str,
+    file_id: uuid.UUID,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
+    owner_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
+    db: Annotated[Session, Depends(get_db)],
 ):
-    file = (
-        db.query(File)
-        .filter(File.id == file_id, File.is_deleted == False)  # noqa: E712
-        .first()
-    )
-    if not file:
-        raise HTTPException(status_code=404, detail="File not found")
+    # Reuses the same ownership check as every other /files route, so a
+    # user can't trigger (or read) a summary for a file they don't own.
+    files_service.get_owned_file(db, file_id=file_id, owner_id=owner_id)
 
     service = FileSummaryService(db)
     existing = service.get_summary(file_id)
@@ -56,18 +44,19 @@ async def generate_summary(
         return GenerateSummaryResponse(status="pending", message="Summary generation already in progress")
 
     service.start_generation(file_id)
-    background_tasks.add_task(
-        service.process_summary,
-        file_id,
-        file.storage_path,
-        file.encrypted_path,
-    )
+    background_tasks.add_task(service.process_summary, file_id)
 
     return GenerateSummaryResponse(status="pending", message="Summary generation started")
 
 
 @router.get("/files/{file_id}/summary", response_model=SummaryResponse)
-def get_summary(file_id: str, db: Session = Depends(get_db)):
+def get_summary(
+    file_id: uuid.UUID,
+    owner_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    files_service.get_owned_file(db, file_id=file_id, owner_id=owner_id)
+
     service = FileSummaryService(db)
     row = service.get_summary(file_id)
 

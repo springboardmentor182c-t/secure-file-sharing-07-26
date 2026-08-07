@@ -1,21 +1,27 @@
 """
 Business logic for AI file summary generation:
 - checks/creates FileSummary rows
-- extracts text from the file
+- pulls the real file's encrypted bytes off the storage backend and decrypts them
+- extracts text
 - calls the AI model (Gemini)
 - saves the result back to the DB
 """
 
 import os
+import uuid
 
 import httpx
 from sqlalchemy.orm import Session
 
+from src.entities.file import File
 from src.entities.file_summary import FileSummary
-from src.ai_summary.text_extractor import extract_text
+from src.ai_summary.text_extractor import extract_text, is_supported
+from src.files.constants import EncryptionStatus
+from src.files.encryption import decrypt_bytes
+from src.files.storage import get_storage_backend
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-AI_MODEL = "gemini-2.0-flash"
+AI_MODEL = "gemini-flash-latest"
 MAX_CHARS = 15000  # keep requests small/cheap; adjust as needed
 
 
@@ -25,7 +31,7 @@ class FileSummaryService:
 
     # ---------- reads ----------
 
-    def get_summary(self, file_id) -> FileSummary | None:
+    def get_summary(self, file_id: uuid.UUID) -> FileSummary | None:
         return (
             self.db.query(FileSummary)
             .filter(FileSummary.file_id == file_id)
@@ -34,7 +40,7 @@ class FileSummaryService:
 
     # ---------- writes ----------
 
-    def start_generation(self, file_id) -> FileSummary:
+    def start_generation(self, file_id: uuid.UUID) -> FileSummary:
         """
         Creates a new pending FileSummary row, or resets an existing
         failed/completed one back to pending for regeneration.
@@ -53,47 +59,61 @@ class FileSummaryService:
         self.db.refresh(summary_row)
         return summary_row
 
-    async def process_summary(self, file_id, storage_path: str, encrypted_path: str | None):
+    async def process_summary(self, file_id: uuid.UUID):
         """
-        Runs in the background (via FastAPI BackgroundTasks):
-        extract text -> call AI -> save result.
-        Takes plain values (not the SQLAlchemy File object) because the
-        original DB session is closed by the time this background task runs.
-        """
-        row = self.get_summary(file_id)
-        if row is None:
-            return
+        Runs in the background (via FastAPI BackgroundTasks): fetch the
+        file row fresh (the request's DB session is closed by the time
+        this runs), read + decrypt its bytes, extract text, call the AI,
+        save the result.
 
+        Takes only `file_id` (not the File object or its paths) because
+        this needs its own DB session anyway to persist the result, and
+        re-reading the file row here avoids passing around a detached
+        SQLAlchemy instance across the background-task boundary.
+        """
+        from src.database.core import SessionLocal
+
+        db = SessionLocal()
         try:
-            text = self._read_file_text(storage_path, encrypted_path)
+            file_obj = db.get(File, file_id)
+            row = (
+                db.query(FileSummary)
+                .filter(FileSummary.file_id == file_id)
+                .first()
+            )
+            if row is None or file_obj is None:
+                return
 
-            if not text.strip():
-                raise ValueError("No extractable text found in file")
+            try:
+                if not is_supported(file_obj.extension):
+                    raise ValueError(f"'.{file_obj.extension}' files can't be summarized yet")
 
-            summary_text = await self._call_ai(text)
+                raw = get_storage_backend().read(file_obj.file_path)
+                plaintext_bytes = (
+                    decrypt_bytes(raw)
+                    if file_obj.encryption_status == EncryptionStatus.ENCRYPTED.value
+                    else raw
+                )
 
-            row.summary = summary_text
-            row.status = "completed"
-            row.model_used = AI_MODEL
-            self.db.commit()
+                text = extract_text(plaintext_bytes, file_obj.extension)
+                if not text.strip():
+                    raise ValueError("No extractable text found in file")
 
-        except Exception as e:
-            print("❌ AI SUMMARY ERROR:", repr(e))  # TEMPORARY DEBUG LINE
-            row.status = "failed"
-            self.db.commit()
+                summary_text = await self._call_ai(text)
+
+                row.summary = summary_text
+                row.status = "completed"
+                row.model_used = AI_MODEL
+                db.commit()
+
+            except Exception as e:
+                
+                row.status = "failed"
+                db.commit()
+        finally:
+            db.close()
 
     # ---------- internals ----------
-
-    def _read_file_text(self, storage_path: str, encrypted_path: str | None) -> str:
-        """
-        Resolves the correct path (encrypted vs plain) and returns extracted text.
-        """
-        if encrypted_path:
-            raise NotImplementedError(
-                "Encrypted file summarization isn't wired up yet — "
-                "needs the project's decryption service."
-            )
-        return extract_text(storage_path)
 
     async def _call_ai(self, text: str) -> str:
         truncated_text = text[:MAX_CHARS]

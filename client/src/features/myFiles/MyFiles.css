@@ -233,3 +233,97 @@
   .my-files-layout { grid-template-columns: 1fr; }
   .my-files-layout__side { position: static; }
 }
+
+
+
+.summary-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+ 
+.summary-modal__generate-btn {
+  align-self: flex-start;
+}
+ 
+.summary-panel {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+}
+.summary-panel h4 {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #9CA3AF;
+}
+.summary-panel p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #E5E7EB;
+}
+ 
+.summary-loading-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.skeleton-line {
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--bg-input) 25%, var(--bg-card-hover) 50%, var(--bg-input) 75%);
+  background-size: 200% 100%;
+  animation: summary-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+.skeleton-line.short { width: 60%; }
+ 
+@keyframes summary-skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+ 
+.summary-error {
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.summary-error p {
+  margin: 0;
+  font-size: 13px;
+  color: #FCA5A5;
+}
+.summary-error .retry-button {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  color: #FCA5A5;
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.summary-error .retry-button:hover {
+  background: rgba(248, 113, 113, 0.12);
+}
+ 
+.summary-button {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.summary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

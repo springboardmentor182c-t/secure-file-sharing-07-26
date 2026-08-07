@@ -343,7 +343,7 @@ Depends on the CSS variables defined in assets/global.css.
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
-  overflow: hidden;
+  overflow: visible;
 }
 .links-panel__toolbar {
   display: flex;
@@ -359,7 +359,7 @@ Depends on the CSS variables defined in assets/global.css.
 
 /* ---------- Table shell ---------- */
 .links-table__scroll { overflow-x: auto; }
-.links-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px; }
+.links-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .links-table thead th {
   text-align: left;
   font-size: 11px;
@@ -379,4 +379,5 @@ Depends on the CSS variables defined in assets/global.css.
 }
 .links-table__row:last-child td { border-bottom: none; }
 .links-table__row:hover { background: var(--bg-card-hover); }
+
 
