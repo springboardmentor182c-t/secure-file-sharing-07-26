@@ -206,13 +206,25 @@ function App() {
         {/* Files */}
         <Route
           path="/files"
-          element={<FileManagementPage />}
+          element={
+            <ProtectedRoute>
+              <PageContainer>
+                <FileManagementPage />
+              </PageContainer>
+            </ProtectedRoute>
+          }
         />
 
         {/* File Details */}
         <Route
           path="/file-details"
-          element={<FileDetailsPage />}
+          element={
+            <ProtectedRoute>
+              <PageContainer>
+                <FileDetailsPage />
+              </PageContainer>
+            </ProtectedRoute>
+          }
         />
 
         {/* USERS */}
