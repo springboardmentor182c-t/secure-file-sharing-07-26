@@ -1,0 +1,241 @@
+/* AI Smart Folder Recommendation card - shown inside the Upload modal,
+   before the user confirms the destination folder. Uses the same design
+   tokens as the rest of the app (see client/src/assets/global.css). */
+
+.ai-rec-card {
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-top: 4px;
+}
+
+.ai-rec-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ai-rec-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+}
+
+.ai-rec-card__badge svg {
+  flex-shrink: 0;
+}
+
+.ai-rec-card__source {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.ai-rec-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-rec-card__folder-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-rec-card__folder-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ai-rec-card__new-tag {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--info);
+  background: var(--info-soft);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+}
+
+.ai-rec-card__confidence-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-rec-card__confidence-track {
+  flex: 1;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--bg-input);
+  overflow: hidden;
+}
+
+.ai-rec-card__confidence-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+.ai-rec-card__confidence-fill--low { background: var(--warning); }
+.ai-rec-card__confidence-fill--high { background: var(--success); }
+
+.ai-rec-card__confidence-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 34px;
+  text-align: right;
+}
+
+.ai-rec-card__reason {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.ai-rec-card__similarity {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.ai-rec-card__similarity strong {
+  color: var(--text-secondary);
+}
+
+.ai-rec-card__alternatives {
+  margin-top: 6px;
+}
+
+.ai-rec-card__alternatives-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ai-rec-card__alternatives-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.ai-rec-card__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.ai-rec-card__chip:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.ai-rec-card__chip--active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.ai-rec-card__chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-rec-card__chip-score {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.ai-rec-card__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ai-rec-card__btn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ai-rec-card__btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.ai-rec-card__btn--accept {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.ai-rec-card__btn--accept:hover {
+  background: var(--accent-hover);
+}
+
+.ai-rec-card__btn--accepted {
+  background: var(--success-soft);
+  border-color: var(--success);
+  color: var(--success);
+  cursor: default;
+}
+
+.ai-rec-card__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ai-rec-card__loading,
+.ai-rec-card__error {
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-rec-card__error {
+  color: var(--warning);
+}
+
+.ai-rec-card__spinner {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid var(--border-subtle);
+  border-top-color: var(--accent);
+  animation: ai-rec-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes ai-rec-spin {
+  to { transform: rotate(360deg); }
+}
