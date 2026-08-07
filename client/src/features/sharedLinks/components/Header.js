@@ -3,8 +3,7 @@ import { SearchIcon, PlusIcon } from "../../../layout/icons";
 
 export default function Header({ searchQuery, onSearchChange, onCreateClick }) {
   return (
-    <header className="page-header">
-      <h1 className="page-header__title">Shared Links</h1>
+    <header className="page-header flex justify-end">
       <div className="page-header__actions">
         <div className="search-bar">
           <SearchIcon className="search-bar__icon" width={16} height={16} />

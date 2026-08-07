@@ -19,7 +19,12 @@ import { createSharedLink } from "../sharedLinks/services/sharedLinksApi";
 import useMyFiles from "./hooks/useMyFiles";
 import useToast from "../../hooks/useToast";
 
+import { useOutletContext } from "react-router-dom";
+
 export default function MyFilesPage({ initialView = "files" }) {
+  const outletContext = useOutletContext() || {};
+  const headerSearch = outletContext.searchTerm || "";
+
   const {
     view, changeView,
     isLoading, error, files, totalCount, page, totalPages, setPage,
@@ -32,6 +37,12 @@ export default function MyFilesPage({ initialView = "files" }) {
     upload, rename, move, changeFileCategory, toggleStar, trash, restore, permanentlyDelete, download,
     createFolder, renameFolder, deleteFolder, refreshAll,
   } = useMyFiles(initialView);
+
+  useEffect(() => {
+    if (headerSearch !== undefined && headerSearch !== searchQuery) {
+      updateSearch(headerSearch);
+    }
+  }, [headerSearch, updateSearch, searchQuery]);
 
   const { toasts, showToast, dismiss } = useToast();
   const fileInputRef = useRef(null);

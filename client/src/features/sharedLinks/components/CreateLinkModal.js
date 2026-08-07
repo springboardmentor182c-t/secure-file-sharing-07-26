@@ -7,19 +7,8 @@ const initialForm = {
   access: "view",
   expiresAt: "",
   password: "",
-  allowDownload: false,
 };
 
-/**
- * Two modes:
- *  - Opened from the Shared Links screen with no `preselectedFile`: shows a
- *    real file picker, uploads it, then creates the link (unchanged
- *    behavior).
- *  - Opened from the My Files screen with `preselectedFile={id, name}`:
- *    skips the upload step entirely and creates a link straight against
- *    that existing file id - this is the integration point between the two
- *    modules (same POST /shared-links call either way, no duplicate API).
- */
 export default function CreateLinkModal({ onClose, onCreate, isSaving, preselectedFile = null }) {
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState({});
@@ -48,11 +37,13 @@ export default function CreateLinkModal({ onClose, onCreate, isSaving, preselect
     e.preventDefault();
     if (!validate()) return;
 
+    const allowDownload = form.access !== "view";
+
     if (preselectedFile) {
       const { file, ...rest } = form;
-      onCreate({ ...rest, fileId: preselectedFile.id, fileName: preselectedFile.name });
+      onCreate({ ...rest, allowDownload, fileId: preselectedFile.id, fileName: preselectedFile.name });
     } else {
-      onCreate(form);
+      onCreate({ ...form, allowDownload });
     }
   }
 
@@ -134,15 +125,6 @@ export default function CreateLinkModal({ onClose, onCreate, isSaving, preselect
           />
           {errors.password && <span className="form-field__error">{errors.password}</span>}
         </div>
-
-        <label className="checkbox-field">
-          <input
-            type="checkbox"
-            checked={form.allowDownload}
-            onChange={(e) => setField("allowDownload", e.target.checked)}
-          />
-          Allow download
-        </label>
       </form>
     </ModalShell>
   );
