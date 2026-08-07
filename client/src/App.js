@@ -42,7 +42,7 @@ import ProtectedRoute from "./features/authentication/components/ProtectedRoute"
 import AdminRoute from "./features/authentication/components/AdminRoute";
 
 import Profile from './features/profile/Profile';
-
+import AdminDashboard from "./pages/AdminDashboard";
 // File Management
 import FileManagementPage from "./filemanagement/FileManagementPage";
 import FileDetailsPage from "./filemanagement/FileDetailsPage";
@@ -197,6 +197,7 @@ function App() {
           element={
             <ProtectedRoute>
               <PageContainer>
+                <Files />
                 <Upload />
               </PageContainer>
             </ProtectedRoute>
@@ -284,6 +285,14 @@ function App() {
           } 
         />
 
+<Route
+  path="/admin"
+  element={
+    <PageContainer>
+      <Dashboard />
+    </PageContainer>
+  }
+/>
 
         {/* Invalid Route */}
         <Route
