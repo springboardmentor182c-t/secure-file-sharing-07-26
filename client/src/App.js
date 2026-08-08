@@ -6,6 +6,13 @@ import PageContainer from "./layout/PageContainer";
 // Pages
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import OTPVerification from "./pages/OTPVerification";
+import EmailVerification from "./pages/EmailVerification";
+import TwoFactorAuth from "./pages/TwoFactorAuth";
+import SessionExpired from "./pages/SessionExpired";
+
 import Home from "./pages/Home";
 import Settings from "./pages/Settings";
 import Securesharing from "./pages/Securesharing";
@@ -20,16 +27,25 @@ import AdminDashboard from "./pages/AdminDashboard";
 import NotificationFeature from "./features/notifications/NotificationFeature";
 import Analytics from "./features/analytics/Analytics";
 import Profile from "./features/profile/Profile";
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
 
+        {/* Authentication Routes */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/otp-verification" element={<OTPVerification />} />
+        <Route path="/email-verification" element={<EmailVerification />} />
+        <Route path="/two-factor-auth" element={<TwoFactorAuth />} />
+        <Route path="/session-expired" element={<SessionExpired />} />
 
+        {/* Home */}
         <Route
           path="/home"
           element={
@@ -39,6 +55,7 @@ function App() {
           }
         />
 
+        {/* Admin Dashboard */}
         <Route
           path="/admin"
           element={
@@ -48,6 +65,7 @@ function App() {
           }
         />
 
+        {/* Upload */}
         <Route
           path="/upload"
           element={
@@ -57,6 +75,7 @@ function App() {
           }
         />
 
+        {/* Files */}
         <Route
           path="/files"
           element={
@@ -66,6 +85,7 @@ function App() {
           }
         />
 
+        {/* Users */}
         <Route
           path="/users"
           element={
@@ -75,6 +95,7 @@ function App() {
           }
         />
 
+        {/* Activity */}
         <Route
           path="/activity"
           element={
@@ -84,6 +105,7 @@ function App() {
           }
         />
 
+        {/* Storage */}
         <Route
           path="/storage"
           element={
@@ -93,6 +115,7 @@ function App() {
           }
         />
 
+        {/* Secure Sharing */}
         <Route
           path="/sharing"
           element={
@@ -102,6 +125,7 @@ function App() {
           }
         />
 
+        {/* Settings */}
         <Route
           path="/settings"
           element={
@@ -111,6 +135,7 @@ function App() {
           }
         />
 
+        {/* Notifications */}
         <Route
           path="/notifications"
           element={
@@ -120,6 +145,7 @@ function App() {
           }
         />
 
+        {/* Analytics */}
         <Route
           path="/analytics"
           element={
@@ -129,6 +155,7 @@ function App() {
           }
         />
 
+        {/* Profile */}
         <Route
           path="/profile"
           element={
@@ -138,11 +165,11 @@ function App() {
           }
         />
 
+        {/* Invalid route */}
         <Route path="*" element={<Navigate to="/login" replace />} />
 
       </Routes>
     </BrowserRouter>
   );
 }
-
 export default App;
