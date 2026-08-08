@@ -1,17 +1,18 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-
+import React from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
-const Navbar = ({title}) => {
+const Navbar = ({ title = "Dashboard" }) => {
   return (
     <div className="navbar">
-      <h2 className="navbar-title">{title}</h2>
 
+      <div className="navbar-title">
+        <h2>{title}</h2>
+      </div>
 
       <div className="navbar-right">
+
         <div className="search-box">
           <SearchIcon />
           <input
@@ -20,7 +21,10 @@ const Navbar = ({title}) => {
           />
         </div>
 
-    );
+        <div className="notification">
+          <NotificationsNoneIcon />
+          <span>3</span>
+        </div>
 
         <div className="profile">
           <div className="avatar">
@@ -34,6 +38,7 @@ const Navbar = ({title}) => {
 
           <KeyboardArrowDownIcon />
         </div>
+
       </div>
 
     </div>
