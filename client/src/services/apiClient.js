@@ -42,12 +42,13 @@ export function createApiRequest(apiBaseUrl) {
       init.body = formData; // browser sets multipart Content-Type + boundary
     }
 
+    const url = `${apiBaseUrl}${path}`.replace("localhost", "127.0.0.1");
     let res;
     try {
-      res = await fetch(`${apiBaseUrl}${path}`, init);
+      res = await fetch(url, init);
     } catch (err) {
-      console.error(`Network error: ${method} ${apiBaseUrl}${path}`, err);
-      throw new ApiError(`Couldn't reach the backend. Is it running on ${apiBaseUrl}? Error: ${err.message}`, 0);
+      console.error(`Network error: ${method} ${url}`, err);
+      throw new ApiError(`Couldn't reach the backend. Is it running on ${url}? Error: ${err.message}`, 0);
     }
 
     if (!res.ok) {

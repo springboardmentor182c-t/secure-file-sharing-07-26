@@ -147,9 +147,10 @@
 .category-tabs__tab--active { background: var(--accent); color: #fff !important; }
 
 /* ---------- File table cells ---------- */
-.files-table__checkbox-cell { width: 36px; }
+.files-table td, .files-table th { vertical-align: middle; }
+.files-table__checkbox-cell { width: 40px; text-align: center; vertical-align: middle; }
 .files-table__checkbox-cell input,
-.files-table__row input[type="checkbox"] { cursor: pointer; accent-color: var(--accent); }
+.files-table__row input[type="checkbox"] { cursor: pointer; accent-color: var(--accent); width: 16px; height: 16px; margin: 0 auto; display: block; vertical-align: middle; }
 .files-table__name-cell { display: flex; align-items: center; gap: 10px; min-width: 220px; }
 .files-table__icon {
   width: 30px;

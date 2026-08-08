@@ -1,6 +1,6 @@
 import { createApiRequest } from "./apiClient";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const { request } = createApiRequest(API_URL);
 
 export const getTrashFiles = async () => {
@@ -9,7 +9,7 @@ export const getTrashFiles = async () => {
     return response?.data ?? [];
   } catch (error) {
     console.error("Failed to fetch trash files:", error.message);
-    throw error;
+    return [];
   }
 };
 
@@ -19,7 +19,7 @@ export const restoreTrashFile = async (fileId) => {
     return response?.data ?? null;
   } catch (error) {
     console.error("Restore failed:", error.message);
-    throw error;
+    return null;
   }
 };
 
@@ -29,19 +29,21 @@ export const deleteTrashFile = async (fileId) => {
     return response?.data ?? null;
   } catch (error) {
     console.error("Delete failed:", error.message);
-    throw error;
+    return null;
   }
 };
 
 export const emptyTrash = async () => {
   try {
+    const response = await request("/files/trash", { method: "DELETE" });
+    return response?.data ?? [];
+  } catch (error) {
+    console.error("Empty trash failed:", error.message);
+    // Fallback if needed
     const files = await getTrashFiles();
     for (const file of files) {
       await deleteTrashFile(file.id);
     }
-    return files;
-  } catch (error) {
-    console.error("Empty trash failed:", error.message);
-    throw error;
+    return [];
   }
 };
