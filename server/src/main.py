@@ -20,17 +20,18 @@ from src.api import api_router
 from src.sharing.controller import router as sharing_router
 from src.sharing import model  # noqa: F401
 
+# Analytics
+from src.analytics.controller import router as analytics_router
+from src.analytics import model as analytics_model  # noqa: F401
 
-
+# Notifications
 from app.api.v1.notifications.routes import router as notification_router
 
+# Users
 from src.users.controller import router as user_router
-
-
 
 # Activity Monitor
 from src.activity_monitor import models  # noqa: F401
-
 
 # Entity imports (register tables)
 from src.entities.audit_log import AuditLog  # noqa: F401
@@ -39,25 +40,30 @@ from src.entities.file import File  # noqa: F401
 from src.entities.user import User  # noqa: F401
 from src.entities.system_health import SystemHealth  # noqa: F401
 
+
 # Load environment variables
 load_dotenv()
 
 
-# Configure CORS
-from app.api.v1.notifications.routes import router as notification_router
+FRONTEND_URL = os.getenv(
+    "FRONTEND_URL",
+    "http://localhost:3000"
+)
+
+FRONTEND_URL_ALT = os.getenv(
+    "FRONTEND_URL_ALT",
+    "http://localhost:5173"
+)
 
 
-load_dotenv()
-
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
-FRONTEND_URL_ALT = os.getenv("FRONTEND_URL_ALT", "http://localhost:5173")
-
+# Create FastAPI application
 app = FastAPI(
     title="TrustShare API",
     version="1.0.0",
 )
 
-# CORS
+
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -70,15 +76,15 @@ app.add_middleware(
 )
 
 
-
+# Root endpoint
 @app.get("/")
 def root():
     return {
-        "message": "Secure File Sharing Platform API is running"
+        "message": "TrustShare Backend Running Successfully"
     }
 
 
-
+# Startup
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
@@ -86,40 +92,53 @@ def on_startup():
     with engine.begin() as conn:
         conn.execute(
             text(
-                "ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS resource VARCHAR(255)"
+                "ALTER TABLE activity_logs "
+                "ADD COLUMN IF NOT EXISTS resource VARCHAR(255)"
             )
         )
+
         conn.execute(
             text(
-                "ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45)"
+                "ALTER TABLE activity_logs "
+                "ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45)"
             )
         )
+
         conn.execute(
             text(
-                "ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS status VARCHAR(30) NOT NULL DEFAULT 'success'"
+                "ALTER TABLE activity_logs "
+                "ADD COLUMN IF NOT EXISTS status "
+                "VARCHAR(30) NOT NULL DEFAULT 'success'"
             )
         )
+
         conn.execute(
             text(
-                "ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS details TEXT"
+                "ALTER TABLE activity_logs "
+                "ADD COLUMN IF NOT EXISTS details TEXT"
             )
         )
 
 
 # Register Routers
+
+# Authentication
 app.include_router(auth_router)
+
+# Admin
 app.include_router(admin_router)
 
+# Main API
 app.include_router(api_router)
 
-app.include_router(api_router)
+# Secure Sharing
 app.include_router(sharing_router)
+
+# Analytics
+app.include_router(analytics_router)
+
+# Notifications
 app.include_router(notification_router)
+
+# Users
 app.include_router(user_router)
-
-
-@app.get("/")
-def root():
-    return {
-        "message": "TrustShare Backend Running Successfully"
-    }
