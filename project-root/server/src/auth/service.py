@@ -27,6 +27,32 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 # In-memory store for OTPs: {user_id: {"otp": str, "expires_at": datetime}}
 otp_store = {}
 
+DEFAULT_DEV_DUMMY_EMAIL_DOMAINS = "example.com,test.com,invalid,localhost"
+
+
+def _environment() -> str:
+    return os.getenv("ENVIRONMENT", "development").strip().lower()
+
+
+def _development_dummy_email_domains() -> set[str]:
+    configured = os.getenv(
+        "DEV_DUMMY_EMAIL_DOMAINS",
+        DEFAULT_DEV_DUMMY_EMAIL_DOMAINS,
+    )
+    return {
+        domain.strip().lower().lstrip("@")
+        for domain in configured.split(",")
+        if domain.strip()
+    }
+
+
+def _is_development_dummy_email(email: str) -> bool:
+    if _environment() not in {"development", "dev"}:
+        return False
+
+    _, separator, domain = email.strip().lower().rpartition("@")
+    return bool(separator and domain in _development_dummy_email_domains())
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 # AUTHENTICATION
@@ -209,14 +235,28 @@ def generate_otp(user_id: int, to_email: str = "", user_name: str = "") -> str:
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
     otp_store[user_id] = {"otp": code, "expires_at": expires_at}
 
-    # Always log to console for dev debugging (safe — only visible on server)
-    print(
-        f"[OTP DEV] User {user_id} → {code} (expires {expires_at.strftime('%H:%M:%S')} UTC)",
-        flush=True,
-    )
+    if _environment() in {"development", "dev"}:
+        print(
+            f"[OTP DEV] User {user_id} -> {code} "
+            f"(expires {expires_at.strftime('%H:%M:%S')} UTC)",
+            flush=True,
+        )
 
     if to_email:
-        email_service.send_otp_email(to_email, code, user_name)
+        if _is_development_dummy_email(to_email):
+            domain = to_email.strip().lower().rpartition("@")[2]
+            print(
+                f"[EMAIL DEV] Skipping SMTP for configured dummy/test domain: {domain}",
+                flush=True,
+            )
+        else:
+            try:
+                email_service.send_otp_email(to_email, code, user_name)
+            except Exception as exc:
+                print(
+                    f"[EMAIL ERROR] Failed to send MFA email: {type(exc).__name__}",
+                    flush=True,
+                )
    
     return code
 
