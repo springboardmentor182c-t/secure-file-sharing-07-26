@@ -122,11 +122,16 @@ export const foldersAPI = {
 
 // ── Shares ────────────────────────────────────────────────────────────────
 export const sharesAPI = {
-  list: () => api.get('/api/shares/'),
-  create: (data) => api.post('/api/shares/', data),
-  revoke: (id) => api.delete(`/api/shares/${id}`),
-  access: (token, password) => api.get(`/api/shares/access/${token}`, { params: { password } }),
-};
+    list: () => api.get('/api/shares/'),
+    create: (data) => api.post('/api/shares/', data),
+    revoke: (id) => api.delete(`/api/shares/${id}`),
+    access: (token, password) => api.get(`/api/shares/access/${token}`, { params: { password } }),
+    publicDetails: (token, password) => axios.get(`${API_BASE_URL}/api/shares/public/${token}`, { params: { password } }),
+    publicContent: (token, password) => axios.get(`${API_BASE_URL}/api/shares/public/${token}/content`, {
+      params: { password },
+      responseType: 'blob',
+    }),
+  };
 
 // ── Notifications ─────────────────────────────────────────────────────────
 export const notificationsAPI = {

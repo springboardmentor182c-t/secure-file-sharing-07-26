@@ -453,19 +453,6 @@ body.dark .page-wrapper{
   color:var(--text-muted);
 }
 
-.my-files-page .my-files-search-clear {
-  color:var(--text-muted);
-}
-
-.my-files-page .my-files-search-clear:hover {
-  background:var(--bg-hover);
-  color:var(--text-primary);
-}
-
-.my-files-page .my-files-search-bar > span:not(.sr-only) {
-  display:none;
-}
-
 /* Match the quieter dashboard cards in dark mode. */
 body.dark .my-files-page .my-files-surface {
   border-color:#26354a!important;
@@ -479,7 +466,7 @@ body.dark .my-files-page .my-files-surface:hover {
 .my-files-card {
   background:var(--bg-card);
   border:1px solid var(--border-subtle);
-  border-radius:16px;
+  border-radius:8px;
   box-shadow:none;
 }
 

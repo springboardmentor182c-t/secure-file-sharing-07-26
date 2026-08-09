@@ -117,7 +117,7 @@ export default function MyFiles() {
       />
 
       {/* Page Header */}
-      <header className="my-files-surface mb-8 rounded-3xl border border-[#E2E8F0] bg-white p-6 shadow-sm shadow-slate-100">
+      <header className="my-files-surface mb-8 rounded-lg border border-[#E2E8F0] bg-white p-6 shadow-sm shadow-slate-100">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#4F46E5]">My Files</p>
@@ -130,7 +130,7 @@ export default function MyFiles() {
             <button
               type="button"
               onClick={() => setShowNewFolderModal(true)}
-              className="my-files-secondary-button rounded-2xl border border-[#E2E8F0] bg-white px-4 py-2.5 text-sm font-semibold text-[#475569] transition hover:bg-slate-50 hover:text-[#0F172A]"
+              className="my-files-secondary-button rounded-lg border border-[#E2E8F0] bg-white px-4 py-2.5 text-sm font-semibold text-[#475569] transition hover:bg-slate-50 hover:text-[#0F172A]"
             >
               📁 New Folder
             </button>
@@ -138,7 +138,7 @@ export default function MyFiles() {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="rounded-2xl bg-[#4338CA] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#3730A3] disabled:opacity-50"
+              className="rounded-lg bg-[#4338CA] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#3730A3] disabled:opacity-50"
             >
               {uploading ? `Uploading (${uploadProgress}%)` : '⬆️ Upload File'}
             </button>
@@ -160,28 +160,26 @@ export default function MyFiles() {
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
-            onClear={() => setSearchQuery('')}
-            onUpload={() => fileInputRef.current?.click()}
           />
         </div>
       </header>
 
       {/* New Folder Modal */}
       {showNewFolderModal && (
-        <div className="my-files-surface mb-8 rounded-3xl border border-[#EEF2FF] bg-[#F8FAFC] p-6 shadow-sm">
+        <div className="my-files-surface mb-8 rounded-lg border border-[#EEF2FF] bg-[#F8FAFC] p-6 shadow-sm">
           <form onSubmit={handleCreateFolder} className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <input
               type="text"
               placeholder="Enter folder name..."
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
-              className="my-files-input flex-1 rounded-2xl border border-[#E2E8F0] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#4F46E5]"
+              className="my-files-input flex-1 rounded-lg border border-[#E2E8F0] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#4F46E5]"
               autoFocus
             />
             <div className="flex items-center gap-2">
               <button
                 type="submit"
-                className="rounded-2xl bg-[#4F46E5] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#3730A3]"
+                className="rounded-lg bg-[#4F46E5] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#3730A3]"
               >
                 Create Folder
               </button>
@@ -191,7 +189,7 @@ export default function MyFiles() {
                   setShowNewFolderModal(false);
                   setNewFolderName('');
                 }}
-                className="my-files-secondary-button rounded-2xl border border-[#E2E8F0] bg-white px-4 py-2.5 text-sm font-semibold text-[#64748B] transition hover:bg-slate-50"
+                className="my-files-secondary-button rounded-lg border border-[#E2E8F0] bg-white px-4 py-2.5 text-sm font-semibold text-[#64748B] transition hover:bg-slate-50"
               >
                 Cancel
               </button>
@@ -213,7 +211,7 @@ export default function MyFiles() {
       )}
 
       {/* Filter Chips Bar */}
-      <section className="my-files-surface mb-6 rounded-3xl border border-[#E2E8F0] bg-white p-6 shadow-sm shadow-slate-100">
+      <section className="my-files-surface mb-6 rounded-lg border border-[#E2E8F0] bg-white p-6 shadow-sm shadow-slate-100">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="my-files-title text-lg font-semibold text-[#0F172A]">All files</h2>
@@ -227,7 +225,7 @@ export default function MyFiles() {
 
       {/* Files Grid or Empty State */}
       {isLoading ? (
-        <div className="my-files-surface my-files-muted flex h-48 items-center justify-center rounded-3xl border border-[#E2E8F0] bg-white p-12 text-center text-slate-500">
+        <div className="my-files-surface my-files-muted flex h-48 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white p-12 text-center text-slate-500">
           <div className="space-y-3">
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-[#4F46E5] border-t-transparent"></div>
             <p className="text-sm font-medium">Loading files...</p>
@@ -245,7 +243,7 @@ export default function MyFiles() {
           ))}
         </section>
       ) : (
-        <div className="my-files-surface rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center">
+        <div className="my-files-surface rounded-lg border border-dashed border-slate-300 bg-white p-12 text-center">
           <div className="mx-auto mb-4 text-4xl">📂</div>
           <h3 className="my-files-title text-lg font-semibold text-[#0F172A]">
             {searchQuery ? `No files matching "${searchQuery}"` : 'No files uploaded yet'}

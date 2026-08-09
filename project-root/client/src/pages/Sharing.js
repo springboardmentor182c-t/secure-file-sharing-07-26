@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { sharesAPI, filesAPI, sharedWithMeAPI } from '../utils/api';
 
+export const getShareStatus = (share, now = new Date()) => {
+  if (!share.is_active) return 'revoked';
+  if (share.expires_at && new Date(share.expires_at) <= now) return 'expired';
+  if (share.max_views != null && share.access_count >= share.max_views) return 'limit-reached';
+  return 'active';
+};
+
 export default function Sharing() {
   const [shares, setShares] = useState([]);
   const [files, setFiles] = useState([]);
@@ -101,7 +108,7 @@ export default function Sharing() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 style={{ fontSize: '1.375rem', fontWeight: 800 }}>Sharing Center</h1>
-          <p className="text-muted text-sm mt-1">{shares.filter(s => s.is_active).length} active links · {shares.length} total</p>
+          <p className="text-muted text-sm mt-1">{shares.filter(s => getShareStatus(s) === 'active').length} active links · {shares.length} total</p>
         </div>
         <div className="flex gap-2">
           <button className="btn btn-secondary" onClick={() => setShowDirectShare(v => !v)}>
@@ -221,8 +228,10 @@ export default function Sharing() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {shares.map(s => (
-            <div key={s.id} className="card" style={{ padding: '18px 20px', opacity: s.is_active ? 1 : .5, borderColor: s.is_active ? 'var(--border-subtle)' : 'var(--border-subtle)' }}>
+          {shares.map(s => {
+            const shareStatus = getShareStatus(s);
+            return (
+            <div key={s.id} className="card" style={{ padding: '18px 20px', opacity: shareStatus === 'active' ? 1 : .6, borderColor: 'var(--border-subtle)' }}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(59,130,246,.1)', color: 'var(--blue-400)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>
@@ -234,7 +243,9 @@ export default function Sharing() {
                     </div>
                     <div className="flex gap-2 items-center">
                       <span className={`badge ${permBadge[s.permission]}`}>{s.permission}</span>
-                      {!s.is_active && <span className="badge badge-rose">Revoked</span>}
+                      {shareStatus === 'revoked' && <span className="badge badge-rose">Revoked</span>}
+                      {shareStatus === 'expired' && <span className="badge badge-amber">Expired</span>}
+                      {shareStatus === 'limit-reached' && <span className="badge badge-amber">View limit reached</span>}
                       <span className="text-xs text-muted">
                         👁 {s.access_count}{s.max_views ? `/${s.max_views}` : ''} views
                       </span>
@@ -254,13 +265,14 @@ export default function Sharing() {
                   >
                     {copied === s.id ? '✅ Copied!' : '📋 Copy Link'}
                   </button>
-                  {s.is_active && (
+                  {shareStatus === 'active' && (
                     <button className="btn btn-danger btn-sm" onClick={() => handleRevoke(s.id)}>🚫 Revoke</button>
                   )}
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

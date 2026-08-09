@@ -1,5 +1,6 @@
 # server/src/shares/service.py
 
+import os
 import secrets
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
@@ -47,8 +48,87 @@ class ShareOut(BaseModel):
         from_attributes = True
 
 
+class PublicShareOut(BaseModel):
+    token: str
+    file_name: str
+    mimetype: str
+    size: int
+    permission: str
+    expires_at: Optional[datetime]
+    access_count: int
+    max_views: Optional[int]
+    password_required: bool
+
+
 def _build_link(token: str) -> str:
-    return f"https://trust.sh/s/{token}"
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
+    return f"{frontend_url}/s/{token}"
+
+
+def _is_expired(expires_at: datetime | None) -> bool:
+    if not expires_at:
+        return False
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    return expires_at < datetime.now(timezone.utc)
+
+
+def inspect_public_share(db: Session, token: str, password: str | None = None) -> PublicShareOut:
+    share = (
+        db.query(ShareLink)
+        .filter(ShareLink.token == token, ShareLink.is_active == True)
+        .first()
+    )
+    if not share:
+        raise HTTPException(status_code=404, detail="Share link not found or revoked")
+    if _is_expired(share.expires_at):
+        raise HTTPException(status_code=410, detail="Share link has expired")
+    if share.max_views is not None and share.access_count >= share.max_views:
+        raise HTTPException(status_code=410, detail="Share link view limit reached")
+    if share.password_hash and (not password or not verify_password(password, share.password_hash)):
+        raise HTTPException(status_code=401, detail="A valid share password is required")
+
+    file = (
+        db.query(File)
+        .filter(File.id == share.file_id, File.is_deleted == False)
+        .first()
+    )
+    if not file:
+        raise HTTPException(status_code=404, detail="The shared file is no longer available")
+
+    return PublicShareOut(
+        token=share.token,
+        file_name=file.original_name,
+        mimetype=file.mimetype,
+        size=file.size,
+        permission=share.permission,
+        expires_at=share.expires_at,
+        access_count=share.access_count,
+        max_views=share.max_views,
+        password_required=bool(share.password_hash),
+    )
+
+
+def get_public_file_path(
+    db: Session,
+    token: str,
+    password: str | None = None,
+    ip_address: str | None = None,
+):
+    share_out = access_share(db, token, password=password, ip_address=ip_address)
+    file = db.query(File).filter(File.id == share_out.file_id, File.is_deleted == False).first()
+    if not file:
+        raise HTTPException(status_code=404, detail="The shared file is no longer available")
+
+    from src.files.service import get_file_path
+
+    path, original_name = get_file_path(
+        db,
+        file.id,
+        file.owner_id,
+        ip_address=ip_address,
+    )
+    return path, original_name, file.mimetype, share_out.permission
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -225,7 +305,7 @@ def access_share(
         )
 
     # ── Expired ─────────────────────────────────────────────────────────────
-    if share.expires_at and share.expires_at < datetime.now(timezone.utc):
+    if _is_expired(share.expires_at):
         log_event(
             db,
             event_type=AnalyticsEventType.SECURITY,

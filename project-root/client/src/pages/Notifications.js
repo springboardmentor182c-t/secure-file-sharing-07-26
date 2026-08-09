@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Activity, Bell, CheckCheck, Download, Eye, Share2, ShieldCheck, Upload, X } from 'lucide-react';
+import { Activity, Bell, CheckCheck, ChevronRight, Download, Eye, Share2, ShieldCheck, Upload, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { notificationsAPI } from '../utils/api';
+import { events, EVENTS } from '../utils/events';
 import './Notifications.css';
 
 const TYPE_STYLE = {
@@ -20,7 +22,24 @@ const timeAgo = (dateStr) => {
   return `${Math.floor(secs / 86400)}d ago`;
 };
 
+export const getNotificationAction = (notification) => {
+  if (notification.type === 'share' || notification.category === 'shares') {
+    return { label: 'Open shared files', destination: '/shared-with-me' };
+  }
+  if (notification.type === 'security' || notification.category === 'security') {
+    return { label: 'Review security', destination: '/settings?tab=security' };
+  }
+  if (notification.type === 'expiration') {
+    return { label: 'Manage share links', destination: '/sharing' };
+  }
+  if (notification.type === 'upload' || notification.type === 'summary' || notification.category === 'uploads') {
+    return { label: 'Open My Files', destination: '/my-files' };
+  }
+  return { label: 'View activity', destination: '/activity' };
+};
+
 export default function Notifications() {
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -60,9 +79,17 @@ export default function Notifications() {
       setItems((previous) => previous.map((notification) => (
         notification.id === id ? { ...notification, is_read: true } : notification
       )));
+      events.emit(EVENTS.NOTIFICATIONS_CHANGED);
+      return true;
     } catch (requestError) {
       setError(requestError.response?.data?.detail || 'The notification could not be updated.');
+      return false;
     }
+  };
+
+  const openNotification = async (notification) => {
+    if (!notification.is_read && !(await markRead(notification.id))) return;
+    navigate(getNotificationAction(notification).destination);
   };
 
   const markAll = async () => {
@@ -71,6 +98,7 @@ export default function Notifications() {
     try {
       await notificationsAPI.markAllRead();
       setItems((previous) => previous.map((notification) => ({ ...notification, is_read: true })));
+      events.emit(EVENTS.NOTIFICATIONS_CHANGED);
     } catch (requestError) {
       setError(requestError.response?.data?.detail || 'Notifications could not be marked as read.');
     } finally {
@@ -82,6 +110,7 @@ export default function Notifications() {
     try {
       await notificationsAPI.delete(id);
       setItems((previous) => previous.filter((notification) => notification.id !== id));
+      events.emit(EVENTS.NOTIFICATIONS_CHANGED);
     } catch (requestError) {
       setError(requestError.response?.data?.detail || 'The notification could not be deleted.');
     }
@@ -149,11 +178,11 @@ export default function Notifications() {
           {filtered.map((notification) => {
             const style = TYPE_STYLE[notification.type] || TYPE_STYLE.access;
             const NotificationIcon = style.Icon;
+            const action = getNotificationAction(notification);
             return (
               <div
                 key={notification.id}
                 className={`notif-item notification-row--${notification.type} ${!notification.is_read ? 'unread' : ''}`}
-                onClick={() => !notification.is_read && markRead(notification.id)}
               >
                 <div className="notif-icon" style={{ background: style.bg, color: style.color }}>
                   <NotificationIcon size={20} aria-hidden="true" />
@@ -167,6 +196,13 @@ export default function Notifications() {
                       {notification.category}
                     </span>
                   </div>
+                  <button
+                    className="btn btn-ghost btn-sm notification-cta"
+                    type="button"
+                    onClick={() => openNotification(notification)}
+                  >
+                    {action.label} <ChevronRight size={14} aria-hidden="true" />
+                  </button>
                 </div>
                 {!notification.is_read && <div className="unread-dot" aria-label="Unread" />}
                 <button
