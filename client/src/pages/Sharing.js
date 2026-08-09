@@ -2,9 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Shield, Link2, Mail, Clock, Copy, Check, Eye, Download,
   Edit3, Lock, Calendar, AlertCircle, ChevronDown, X, Send,
-  FileText, RefreshCw,
+  FileText, RefreshCw, ExternalLink, Search,
 } from 'lucide-react';
 import { filesAPI, sharesAPI } from '../utils/api';
+import { useRealtime } from '../context/RealtimeContext';
 import './Sharing.css';
 
 /* ─── helpers ─── */
@@ -144,6 +145,16 @@ function GeneratedLinkPanel({ link, permission, expiresAt, passwordEnabled, down
             <button type="button" className="ss-copy-btn" onClick={handleCopy} title="Copy link">
               {copied ? <Check size={15} color="#10b981" /> : <Copy size={15} />}
             </button>
+            <a
+              href={link}
+              target="_blank"
+              rel="noreferrer"
+              className="ss-copy-btn"
+              title="Open / Test link in viewer"
+              style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <ExternalLink size={15} color="#38bdf8" />
+            </a>
           </div>
 
           <div className="ss-link-meta">
@@ -595,6 +606,12 @@ function SharingHistoryTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
   const [revoking, setRevoking] = useState(null);
+  const [filterStatus, setFilterStatus] = useState('all'); // 'all' | 'active' | 'expired' | 'revoked'
+  const [searchQuery, setSearchQuery]   = useState('');
+  const [highlightedId, setHighlightedId] = useState(null);
+  const [copiedId, setCopiedId] = useState(null);
+
+  const realtime = useRealtime();
 
   const loadShares = useCallback(async () => {
     setLoading(true);
@@ -612,11 +629,52 @@ function SharingHistoryTab() {
 
   useEffect(() => { loadShares(); }, [loadShares]);
 
+  // Real-time synchronization
+  useEffect(() => {
+    if (!realtime?.subscribe) return;
+
+    const unsubAccess = realtime.subscribe('share_accessed', (data) => {
+      setShares(prev => prev.map(s => {
+        if (s.id === data.share_id || s.token === data.token) {
+          return { ...s, access_count: data.access_count };
+        }
+        return s;
+      }));
+      setHighlightedId(data.share_id);
+      setTimeout(() => setHighlightedId(null), 3000);
+    });
+
+    const unsubCreate = realtime.subscribe('share_created', (data) => {
+      setShares(prev => [{
+        id: data.share_id,
+        file_id: data.file_id,
+        token: data.token,
+        permission: data.permission,
+        recipient_email: data.recipient_email,
+        expires_at: data.expires_at,
+        access_count: 0,
+        is_active: true,
+        created_at: data.created_at || new Date().toISOString(),
+        file_name: data.file_name,
+      }, ...prev]);
+    });
+
+    const unsubRevoke = realtime.subscribe('share_revoked', (data) => {
+      setShares(prev => prev.map(s => s.id === data.share_id ? { ...s, is_active: false, revoked: true } : s));
+    });
+
+    return () => {
+      unsubAccess();
+      unsubCreate();
+      unsubRevoke();
+    };
+  }, [realtime]);
+
   const handleRevoke = async (id) => {
     setRevoking(id);
     try {
       await sharesAPI.revoke(id);
-      setShares(prev => prev.filter(s => s.id !== id));
+      setShares(prev => prev.map(s => s.id === id ? { ...s, is_active: false, revoked: true } : s));
     } catch (err) {
       console.error(err);
     } finally {
@@ -624,35 +682,107 @@ function SharingHistoryTab() {
     }
   };
 
+  const handleCopyLink = (token, id) => {
+    const url = `${window.location.origin}/share/${token}`;
+    navigator.clipboard.writeText(url).catch(() => {});
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
   const getStatus = (share) => {
-    if (share.revoked) return 'revoked';
+    if (share.revoked || share.is_active === false) return 'revoked';
     if (share.expires_at && new Date(share.expires_at) < new Date()) return 'expired';
     return 'active';
   };
 
   const activeCount = shares.filter(s => getStatus(s) === 'active').length;
 
+  const filteredShares = shares.filter(share => {
+    const status = getStatus(share);
+    if (filterStatus !== 'all' && status !== filterStatus) return false;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const name = (share.file_name || share.filename || share.original_name || '').toLowerCase();
+      const rec = (share.recipient_email || '').toLowerCase();
+      if (!name.includes(q) && !rec.includes(q)) return false;
+    }
+    return true;
+  });
+
   return (
     <div className="ss-card ss-history-panel">
       <div className="ss-history-header">
-        <h3 className="ss-history-title">Sharing History</h3>
-        <span className="ss-history-count">{activeCount} share{activeCount !== 1 ? 's' : ''}</span>
+        <div>
+          <h3 className="ss-history-title">Sharing History</h3>
+          <span className="ss-history-count" style={{ display: 'inline-block', marginTop: 4 }}>
+            {activeCount} active share{activeCount !== 1 ? 's' : ''} (Real-time live tracking)
+          </span>
+        </div>
+
+        {/* Filter Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', width: 180 }}>
+            <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+            <input
+              type="text"
+              placeholder="Search file/email…"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '6px 10px 6px 26px',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 8,
+                fontSize: '0.8rem',
+                color: '#fff',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 2 }}>
+            {['all', 'active', 'expired', 'revoked'].map(st => (
+              <button
+                key={st}
+                type="button"
+                onClick={() => setFilterStatus(st)}
+                style={{
+                  background: filterStatus === st ? 'rgba(59,130,246,0.25)' : 'none',
+                  color: filterStatus === st ? '#38bdf8' : '#94a3b8',
+                  border: 'none',
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textTransform: 'capitalize',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {st}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {loading ? (
         <div className="ss-state-center">
           <RefreshCw size={24} className="spin" color="#3b82f6" />
-          <span>Loading history…</span>
+          <span>Loading live history…</span>
         </div>
       ) : error ? (
         <div className="ss-state-center">
           <AlertCircle size={24} color="#ef4444" />
           <span style={{ color: '#ef4444' }}>{error}</span>
         </div>
-      ) : shares.length === 0 ? (
+      ) : filteredShares.length === 0 ? (
         <div className="ss-state-center">
           <Shield size={40} color="#334155" />
-          <p style={{ color: '#64748b', marginTop: 8 }}>No shares created yet</p>
+          <p style={{ color: '#64748b', marginTop: 8 }}>No shares matching your search or filter</p>
         </div>
       ) : (
         <div className="ss-history-table-wrap">
@@ -665,23 +795,32 @@ function SharingHistoryTab() {
                 <th>ACCESSED</th>
                 <th>EXPIRES</th>
                 <th>STATUS</th>
-                <th></th>
+                <th style={{ textAlign: 'right' }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
-              {shares.map(share => {
+              {filteredShares.map(share => {
                 const fileName = share.file_name || share.filename || share.original_name || 'File';
                 const recipient = share.recipient_email || share.recipient_emails?.[0] || 'Link Share';
                 const perm = share.permission || 'view';
-                const accessed = share.access_count != null ? `${share.access_count}×` : '—';
+                const accessed = share.access_count != null ? `${share.access_count}×` : '0×';
                 const expires = share.expires_at ? formatDate(share.expires_at) : 'Never';
                 const status = getStatus(share);
                 const badge = STATUS_BADGE[status] || STATUS_BADGE.active;
                 const permBadge = PERM_BADGE[perm] || PERM_BADGE.view;
                 const isExpiredOrRevoked = status !== 'active';
+                const isHighlighted = highlightedId === share.id;
+                const shareUrl = `${window.location.origin}/share/${share.token}`;
 
                 return (
-                  <tr key={share.id} className="ss-history-row">
+                  <tr
+                    key={share.id}
+                    className={`ss-history-row ${isHighlighted ? 'ss-row-highlight' : ''}`}
+                    style={{
+                      transition: 'background 0.3s',
+                      background: isHighlighted ? 'rgba(59, 130, 246, 0.18)' : undefined,
+                    }}
+                  >
                     <td className="ss-cell-file">
                       <span title={fileName}>
                         {fileName.length > 24 ? fileName.substring(0, 24) + '…' : fileName}
@@ -691,7 +830,9 @@ function SharingHistoryTab() {
                     <td>
                       <span className={`ss-perm-badge ${permBadge.cls}`}>{permBadge.label}</span>
                     </td>
-                    <td className="ss-cell-accessed">{accessed}</td>
+                    <td className="ss-cell-accessed" style={{ fontWeight: isHighlighted ? 700 : 500, color: isHighlighted ? '#38bdf8' : undefined }}>
+                      {accessed}
+                    </td>
                     <td className="ss-cell-expires">
                       <span className={status === 'expired' ? 'ss-expired-text' : ''}>
                         {status === 'expired' ? 'Expired' : expires}
@@ -701,17 +842,42 @@ function SharingHistoryTab() {
                       <span className={`ss-status-badge ${badge.cls}`}>{badge.label}</span>
                     </td>
                     <td>
-                      {!isExpiredOrRevoked && (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
+                        {/* Copy Link */}
                         <button
                           type="button"
                           className="ss-revoke-btn"
-                          onClick={() => handleRevoke(share.id)}
-                          disabled={revoking === share.id}
-                          title="Revoke share"
+                          onClick={() => handleCopyLink(share.token, share.id)}
+                          title="Copy share URL"
                         >
-                          {revoking === share.id ? <RefreshCw size={13} className="spin" /> : <X size={13} />}
+                          {copiedId === share.id ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
                         </button>
-                      )}
+
+                        {/* Test / Open in new tab */}
+                        <a
+                          href={shareUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="ss-revoke-btn"
+                          title="Open / Test share link"
+                          style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <ExternalLink size={13} color="#38bdf8" />
+                        </a>
+
+                        {/* Revoke */}
+                        {!isExpiredOrRevoked && (
+                          <button
+                            type="button"
+                            className="ss-revoke-btn"
+                            onClick={() => handleRevoke(share.id)}
+                            disabled={revoking === share.id}
+                            title="Revoke share link"
+                          >
+                            {revoking === share.id ? <RefreshCw size={13} className="spin" /> : <X size={13} />}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

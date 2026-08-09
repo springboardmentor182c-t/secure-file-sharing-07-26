@@ -10,6 +10,7 @@ from src.analytics.controller import router as analytics_router
 from src.admin.controller import router as admin_router
 from src.users.controller import router as users_router
 from src.encryption.controller import router as encryption_router
+from src.realtime.router import router as realtime_router
 from src.exceptions import AppException, app_exception_handler
 from src.database.init_db import init_db
 
@@ -52,6 +53,7 @@ def create_app() -> FastAPI:
     app.include_router(analytics_router,     prefix="/api/analytics",     tags=["Analytics"])
     app.include_router(admin_router,         prefix="/api/admin",         tags=["Admin"])
     app.include_router(encryption_router,    prefix="/api/encryption",    tags=["Encryption"])
+    app.include_router(realtime_router,      tags=["Realtime"])
 
     # ── Health check ──────────────────────────────────────────────────────────
     @app.get("/health", tags=["System"])

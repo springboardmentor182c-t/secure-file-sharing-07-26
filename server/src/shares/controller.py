@@ -70,12 +70,77 @@ class CreateShareRequest(BaseModel):
     recipient_emails: Optional[list[str]] = None
 
 
+from fastapi.responses import FileResponse
+
+
+class ShareInfoResponse(BaseModel):
+    id: uuid.UUID
+    token: str
+    file_id: uuid.UUID
+    file_name: str
+    size_bytes: int
+    mimetype: str
+    has_password: bool
+    permission: str
+    expires_at: Optional[datetime] = None
+    access_count: int
+    max_access: Optional[int] = None
+    is_active: bool
+    is_expired: bool
+    is_limit_reached: bool
+    is_encrypted: bool
+    created_at: datetime
+
+
+class VerifyPasswordRequest(BaseModel):
+    password: str
+
+
 class AccessShareResponse(BaseModel):
     file_id: uuid.UUID
     access_count: int
+    permission: str = "view"
+    file_name: Optional[str] = None
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
+@router.get("/info/{token}", response_model=ShareInfoResponse, summary="Get public info about a share link")
+def get_share_info(
+    token: str,
+    db: Session = Depends(get_db),
+):
+    info = service.get_share_info(db, token)
+    if not info:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Share link not found or inactive")
+    return info
+
+
+@router.get("/download/{token}", summary="Download a shared file publicly (with token and optional password)")
+def download_shared_file(
+    token: str,
+    password: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    path, original_name, is_encrypted, mimetype = service.get_shared_file_download(db, token, password)
+    return FileResponse(
+        path=str(path),
+        filename=original_name,
+        media_type=mimetype or "application/octet-stream",
+    )
+
+
+@router.post("/verify/{token}", summary="Verify share link password")
+def verify_share_password(
+    token: str,
+    body: VerifyPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    link, err = service.access_share(db, token, body.password)
+    if err:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=err)
+    return {"valid": True, "token": token, "file_id": link.file_id}
+
+
 @router.get("/", response_model=list[ShareOut])
 def list_shares(
     current_user: User = Depends(get_current_user),
@@ -128,4 +193,11 @@ def access_share(
     link, err = service.access_share(db, token, password)
     if err:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=err)
-    return AccessShareResponse(file_id=link.file_id, access_count=link.access_count)
+    fname = link.file.original_name if getattr(link, "file", None) else None
+    return AccessShareResponse(
+        file_id=link.file_id,
+        access_count=link.access_count,
+        permission=getattr(link, "permission", "view") or "view",
+        file_name=fname,
+    )
+

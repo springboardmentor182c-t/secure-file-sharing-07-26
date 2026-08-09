@@ -355,10 +355,8 @@ export const foldersAPI = {
 
 export const sharesAPI = {
 
-
   list:() =>
     api.get("/api/shares/"),
-
 
   create:(data)=>
     api.post(
@@ -366,12 +364,22 @@ export const sharesAPI = {
       data
     ),
 
-
   revoke:(id)=>
     api.delete(
       `/api/shares/${id}`
     ),
 
+  getInfo: (token) =>
+    api.get(`/api/shares/info/${token}`),
+
+  verifyPassword: (token, password) =>
+    api.post(`/api/shares/verify/${token}`, { password }),
+
+  downloadPublic: (token, password) =>
+    api.get(`/api/shares/download/${token}`, {
+      params: { password },
+      responseType: "blob",
+    }),
 
   access:(token,password)=>
     api.get(
@@ -384,6 +392,7 @@ export const sharesAPI = {
     ),
 
 };
+
 
 
 

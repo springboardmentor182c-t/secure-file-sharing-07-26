@@ -8,7 +8,7 @@ load_dotenv()
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+psycopg2://SecureShare:SecureShare@localhost:5432/SecureShareDB",
+    "sqlite:///./app.db",
 )
 
 is_sqlite = DATABASE_URL.startswith("sqlite")

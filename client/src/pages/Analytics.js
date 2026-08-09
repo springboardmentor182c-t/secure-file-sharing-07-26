@@ -19,9 +19,6 @@ import {
   FaSignInAlt,
   FaSyncAlt,
   FaInfoCircle,
-  FaCheckCircle,
-  FaExclamationTriangle,
-  FaTimesCircle,
 } from "react-icons/fa";
 
 // ── Colour palette for bar chart ────────────────────────────────────────────
@@ -52,7 +49,7 @@ const KPI_META = [
 
 // ── Action icon look-up ──────────────────────────────────────────────────────
 function actionIcon(action) {
-  const a = action.toLowerCase();
+  const a = (action || "").toLowerCase();
   if (a.includes("upload"))   return <FaUpload />;
   if (a.includes("download")) return <FaDownload />;
   if (a.includes("share"))    return <FaShareAlt />;
@@ -60,15 +57,6 @@ function actionIcon(action) {
   if (a.includes("login"))    return <FaSignInAlt />;
   if (a.includes("encrypt"))  return <FaLock />;
   return <FaFile />;
-}
-
-function levelIcon(level) {
-  switch (level) {
-    case "success": return <FaCheckCircle />;
-    case "warn":    return <FaExclamationTriangle />;
-    case "error":   return <FaTimesCircle />;
-    default:        return <FaInfoCircle />;
-  }
 }
 
 // ── Fallback data for offline / unauthenticated state ───────────────────────
@@ -299,7 +287,7 @@ export default function Analytics() {
             recent_actions.map((a, i) => (
               <div key={i} className="an-action-row">
                 <div className={`an-action-icon ${a.level}`}>
-                  {levelIcon(a.level)}
+                  {actionIcon(a.action)}
                 </div>
                 <div className="an-action-info">
                   <div className="an-action-name">{a.action}</div>
