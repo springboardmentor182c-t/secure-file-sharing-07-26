@@ -283,7 +283,21 @@ input,textarea,select{font-family:inherit;outline:none;border:none}
   display:flex;flex-direction:column;padding:40px;
   position:relative;overflow:hidden;
   transition:background var(--transition);
+  --auth-panel-primary:#fff;
+  --auth-panel-secondary:rgba(255,255,255,.84);
+  --auth-panel-muted:rgba(255,255,255,.7);
+  color:var(--auth-panel-primary);
 }
+.auth-panel-left .logo-name,
+.auth-panel-left h2{color:var(--auth-panel-primary)}
+.auth-panel-left .auth-panel-copy,
+.auth-panel-left .auth-panel-feature{color:var(--auth-panel-secondary)!important}
+.auth-panel-left .auth-panel-stat{
+  background:rgba(255,255,255,.1);
+  border-color:rgba(255,255,255,.18);
+}
+.auth-panel-left .auth-panel-stat-value{color:var(--auth-panel-primary)!important}
+.auth-panel-left .auth-panel-stat-label{color:var(--auth-panel-muted)!important}
 .auth-panel-left::before{
   content:'';position:absolute;inset:0;
   background:radial-gradient(ellipse at 30% 40%,rgba(59,130,246,.15) 0%,transparent 60%),
@@ -468,6 +482,12 @@ body.dark .my-files-page .my-files-surface:hover {
   border:1px solid var(--border-subtle);
   border-radius:8px;
   box-shadow:none;
+}
+
+.my-files-folder--drop-target {
+  background:var(--bg-hover)!important;
+  border-color:var(--primary)!important;
+  box-shadow:0 0 0 3px rgba(59,130,246,.18)!important;
 }
 
 .my-files-file-icon {

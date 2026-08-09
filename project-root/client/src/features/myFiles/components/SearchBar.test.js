@@ -5,13 +5,21 @@ import '@testing-library/jest-dom';
 import SearchBar from './SearchBar';
 
 
-test('renders one search field without duplicate clear or upload controls', () => {
+test('shows a clear button only for a populated query and keeps one search icon', () => {
   const onChange = jest.fn();
-  const { container } = render(<SearchBar value="report" onChange={onChange} />);
+  const onClear = jest.fn();
+  const { container, rerender } = render(
+    <SearchBar value="" onChange={onChange} onClear={onClear} />
+  );
+
+  expect(screen.queryByRole('button', { name: 'Clear file search' })).not.toBeInTheDocument();
+
+  rerender(<SearchBar value="report" onChange={onChange} onClear={onClear} />);
 
   fireEvent.change(screen.getByRole('textbox', { name: 'Search files' }), { target: { value: 'budget' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Clear file search' }));
 
   expect(onChange).toHaveBeenCalledWith('budget');
-  expect(screen.queryByRole('button')).not.toBeInTheDocument();
-  expect(container.querySelectorAll('svg')).toHaveLength(1);
+  expect(onClear).toHaveBeenCalledTimes(1);
+  expect(container.querySelectorAll('svg.lucide-search')).toHaveLength(1);
 });

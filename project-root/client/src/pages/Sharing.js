@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { sharesAPI, filesAPI, sharedWithMeAPI } from '../utils/api';
+import { events, EVENTS } from '../utils/events';
 
 export const getShareStatus = (share, now = new Date()) => {
   if (!share.is_active) return 'revoked';
@@ -44,6 +45,7 @@ export default function Sharing() {
         expires_at: form.expires_at || null,
       };
       await sharesAPI.create(payload);
+      events.emit(EVENTS.NOTIFICATIONS_CHANGED);
       showToast('Share link created!');
       setShowCreate(false);
       setForm({ file_id: '', permission: 'view', max_views: '', password: '', expires_at: '' });
@@ -68,6 +70,7 @@ export default function Sharing() {
         recipient_email: directForm.recipient_email.trim(),
         permission: directForm.permission,
       });
+      events.emit(EVENTS.NOTIFICATIONS_CHANGED);
       showToast('File shared with teammate!');
       setDirectForm({ file_id: '', recipient_email: '', permission: 'view' });
       setShowDirectShare(false);

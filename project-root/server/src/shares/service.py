@@ -12,6 +12,7 @@ from src.entities.share_link import ShareLink
 from src.entities.file import File
 from src.entities.audit_log import AuditLog
 from src.auth.dependencies import hash_password, verify_password
+from src.notifications.service import create_notification
 
 from src.analytics.services import log_event
 from src.analytics.constants import (
@@ -175,6 +176,15 @@ def create_share(
         level="info",
     )
     db.add(log)
+    create_notification(
+        db,
+        user_id=user_id,
+        type="share",
+        category="shares",
+        title="Share link created",
+        message=f'A secure share link was created for "{file.original_name}".',
+        icon="share",
+    )
     db.commit()
     db.refresh(share)
 

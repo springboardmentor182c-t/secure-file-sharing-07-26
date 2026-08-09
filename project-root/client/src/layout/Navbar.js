@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, Moon, Sun, CheckCheck, Sparkles } from "lucide-react";
@@ -16,6 +16,7 @@ import {
   RiShieldCheckLine,
 } from "react-icons/ri";
 import { searchAPI, notificationsAPI } from "../utils/api";
+import { events, EVENTS } from "../utils/events";
 import ContentSearchModal from "../features/search/ContentSearchModal";
 import "./Navbar.css";
 
@@ -143,19 +144,23 @@ export default function Navbar({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Load notifications when opened
+  const loadNotifications = useCallback(async () => {
+    try {
+      const res = await notificationsAPI.list();
+      setNotifications(res.data.slice(0, 5));
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  // Load notifications when opened and refresh an open dropdown after local actions.
   useEffect(() => {
-    if (!showNotifications) return;
-    const load = async () => {
-      try {
-        const res = await notificationsAPI.list();
-        setNotifications(res.data.slice(0, 5));
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    load();
-  }, [showNotifications]);
+    if (showNotifications) loadNotifications();
+  }, [showNotifications, loadNotifications]);
+
+  useEffect(() => events.on(EVENTS.NOTIFICATIONS_CHANGED, () => {
+    if (showNotifications) loadNotifications();
+  }), [showNotifications, loadNotifications]);
 
   // Flatten search results for keyboard navigation
   const flatResults = useMemo(() => {
@@ -225,6 +230,7 @@ export default function Navbar({
     try {
       await notificationsAPI.markAllRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      events.emit(EVENTS.NOTIFICATIONS_CHANGED);
     } catch (err) {
       console.error("Failed to mark all as read:", err);
     } finally {

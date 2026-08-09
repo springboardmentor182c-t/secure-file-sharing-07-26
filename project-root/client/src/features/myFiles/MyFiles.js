@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import FolderCard from './components/FolderCard';
 import FileCard from './components/FileCard';
 import FilterChips from './components/FilterChips';
@@ -23,15 +23,18 @@ export default function MyFiles() {
     deleteFile,
     deleteFolder,
     downloadFile,
+    moveFile,
     openFolder,
     goToFolder,
     goToRoot,
   } = useMyFilesData();
 
   const fileInputRef = useRef(null);
+  const moveInProgressRef = useRef(false);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [statusMessage, setStatusMessage] = useState(null);
+  const [pointerDraggedFile, setPointerDraggedFile] = useState(null);
 
   const showNotification = (msg, isError = false) => {
     setStatusMessage({ text: msg, isError });
@@ -88,6 +91,27 @@ export default function MyFiles() {
       await downloadFile(file);
     } catch (err) {
       showNotification('File download failed. Please try again.', true);
+    }
+  };
+
+  useEffect(() => {
+    if (!pointerDraggedFile) return undefined;
+    const clearPointerDrag = () => setPointerDraggedFile(null);
+    window.addEventListener('pointerup', clearPointerDrag);
+    return () => window.removeEventListener('pointerup', clearPointerDrag);
+  }, [pointerDraggedFile]);
+
+  const handleFileDrop = async (folder, file) => {
+    if (moveInProgressRef.current) return;
+    moveInProgressRef.current = true;
+    setPointerDraggedFile(null);
+    try {
+      await moveFile(file.id, folder.id);
+      showNotification(`${file.name} moved to ${folder.name}`);
+    } catch (err) {
+      showNotification('File could not be moved. Please try again.', true);
+    } finally {
+      moveInProgressRef.current = false;
     }
   };
 
@@ -160,6 +184,7 @@ export default function MyFiles() {
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
+            onClear={() => setSearchQuery('')}
           />
         </div>
       </header>
@@ -204,7 +229,14 @@ export default function MyFiles() {
           <h2 className="my-files-muted text-xs font-bold uppercase tracking-[0.2em] text-[#64748B]">Folders ({folderCards.length})</h2>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {folderCards.map((folder) => (
-              <FolderCard key={folder.id} {...folder} onDelete={handleDeleteFolder} onOpen={openFolder} />
+              <FolderCard
+                key={folder.id}
+                {...folder}
+                onDelete={handleDeleteFolder}
+                onOpen={openFolder}
+                onFileDrop={handleFileDrop}
+                pointerDraggedFile={pointerDraggedFile}
+              />
             ))}
           </div>
         </section>
@@ -239,6 +271,7 @@ export default function MyFiles() {
               file={file}
               onDelete={handleDeleteFile}
               onDownload={handleDownload}
+              onPointerDragStart={setPointerDraggedFile}
             />
           ))}
         </section>

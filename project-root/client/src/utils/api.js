@@ -102,6 +102,7 @@ export const filesAPI = {
   get: (id) => api.get(`/api/files/${id}`),
   download: (id) =>
     api.get(`/api/files/${id}/download`, { responseType: 'blob' }),
+  move: (id, folderId) => api.patch(`/api/files/${id}/move`, { folder_id: folderId }),
   delete: (id) => api.delete(`/api/files/${id}`),
 };
 

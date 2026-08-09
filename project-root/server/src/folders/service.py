@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from src.entities.folder import Folder
 from src.entities.file import File
+from src.notifications.service import create_notification
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
@@ -52,6 +53,15 @@ def list_folders(db: Session, owner_id: int, parent_id: int | None = None) -> li
 def create_folder(db: Session, data: FolderCreate, owner_id: int) -> FolderOut:
     folder = Folder(name=data.name, owner_id=owner_id, parent_id=data.parent_id)
     db.add(folder)
+    create_notification(
+        db,
+        user_id=owner_id,
+        type="upload",
+        category="uploads",
+        title="Folder created",
+        message=f'Folder "{data.name}" was created.',
+        icon="folder",
+    )
     db.commit()
     db.refresh(folder)
     return folder

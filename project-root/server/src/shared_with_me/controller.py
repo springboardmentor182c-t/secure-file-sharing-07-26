@@ -54,7 +54,12 @@ def shared_with_me(db: Session = Depends(get_db), current_user: User = Depends(g
 @router.get("/{file_id}/download")
 def download_shared_file(file_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     file = get_downloadable_shared_file(db, file_id, current_user.id)
-    path, original_name = get_file_path(db, file.id, current_user.id)
+    path, original_name = get_file_path(
+        db,
+        file.id,
+        file.owner_id,
+        notification_user_id=current_user.id,
+    )
     try:
         with open(path, "rb") as source:
             data = source.read()

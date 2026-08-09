@@ -60,6 +60,7 @@ export default function Notifications() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => events.on(EVENTS.NOTIFICATIONS_CHANGED, load), [load]);
 
   const unread = items.filter((notification) => !notification.is_read);
   const categoryFor = (notification) => {
