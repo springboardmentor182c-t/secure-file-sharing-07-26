@@ -77,12 +77,14 @@ export default function MyFiles() {
   };
 
   const handleDeleteFolder = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this folder?')) return;
+    const folder = folderCards.find((item) => item.id === id);
+    const folderName = folder?.title || 'this folder';
+    if (!window.confirm(`Delete "${folderName}" and all files and subfolders inside it? This cannot be undone.`)) return;
     try {
       await deleteFolder(id);
-      showNotification('Folder deleted.');
+      showNotification(`Folder "${folderName}" and its contents were deleted.`);
     } catch (err) {
-      showNotification('Failed to delete folder.', true);
+      showNotification(err.response?.data?.detail || 'Failed to delete folder.', true);
     }
   };
 

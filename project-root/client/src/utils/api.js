@@ -118,7 +118,7 @@ export const fileSummaryAPI = {
 export const foldersAPI = {
   list: (parentId) => api.get('/api/folders/', { params: { parent_id: parentId } }),
   create: (name, parentId) => api.post('/api/folders/', { name, parent_id: parentId }),
-  delete: (id) => api.delete(`/api/folders/${id}`),
+  delete: (id, recursive = false) => api.delete(`/api/folders/${id}`, { params: { recursive } }),
 };
 
 // ── Shares ────────────────────────────────────────────────────────────────

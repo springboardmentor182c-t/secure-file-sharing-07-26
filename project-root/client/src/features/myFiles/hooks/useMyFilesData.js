@@ -140,8 +140,9 @@ export function useMyFilesData() {
   // Delete folder handler
   const deleteFolder = async (id) => {
     try {
-      await foldersAPI.delete(id);
+      await foldersAPI.delete(id, true);
       setFolders((prev) => prev.filter((f) => f.id !== id));
+      events.emit(EVENTS.STORAGE_CHANGED);
     } catch (err) {
       console.error('Delete folder failed:', err);
       throw err;

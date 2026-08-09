@@ -54,6 +54,10 @@ function getNotificationIcon(notification) {
   return <RiNotification3Line className="notification-type-icon" />;
 }
 
+export function getUnreadNotificationPreview(items) {
+  return items.filter((notification) => !notification.is_read).slice(0, 5);
+}
+
 // FIX ISS-L3: Removed unused darkMode and setDarkMode props
 // Theme is controlled via useTheme() hook — props were dead parameters
 export default function Navbar({
@@ -147,7 +151,7 @@ export default function Navbar({
   const loadNotifications = useCallback(async () => {
     try {
       const res = await notificationsAPI.list();
-      setNotifications(res.data.slice(0, 5));
+      setNotifications(getUnreadNotificationPreview(res.data));
     } catch (err) {
       console.error(err);
     }
@@ -229,12 +233,25 @@ export default function Navbar({
     setMarkingAllRead(true);
     try {
       await notificationsAPI.markAllRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setNotifications([]);
       events.emit(EVENTS.NOTIFICATIONS_CHANGED);
     } catch (err) {
       console.error("Failed to mark all as read:", err);
     } finally {
       setMarkingAllRead(false);
+    }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    setNotifications((previous) => previous.filter((item) => item.id !== notification.id));
+    try {
+      await notificationsAPI.markRead(notification.id);
+      events.emit(EVENTS.NOTIFICATIONS_CHANGED);
+      setShowNotifications(false);
+      navigate("/notifications");
+    } catch (err) {
+      console.error("Failed to mark notification as read:", err);
+      loadNotifications();
     }
   };
 
@@ -494,10 +511,7 @@ export default function Navbar({
                   <motion.div
                     key={notification.id}
                     className="notification-item"
-                    onClick={() => {
-                      setShowNotifications(false);
-                      navigate("/notifications");
-                    }}
+                    onClick={() => handleNotificationClick(notification)}
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{
