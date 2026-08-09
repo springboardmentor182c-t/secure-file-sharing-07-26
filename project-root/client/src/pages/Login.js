@@ -61,7 +61,7 @@ export default function Login() {
         </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, textAlign: 'center' }}>
           <div style={{ fontSize: '5rem', marginBottom: 24, animation: 'float 3s ease-in-out infinite' }}>🔐</div>
-          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: 12 }}>Zero-Trust Security</h2>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: 12 }}>Security</h2>
           <p style={{ color: 'var(--text-secondary)', maxWidth: 300, lineHeight: 1.7 }}>
             Every file encrypted. Every access logged. Every user verified with AES-256.
           </p>
