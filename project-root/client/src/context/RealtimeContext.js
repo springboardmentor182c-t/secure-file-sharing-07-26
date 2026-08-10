@@ -60,12 +60,14 @@ export function RealtimeProvider({ children }) {
   const connect = useCallback(() => {
     const token = localStorage.getItem('access_token');
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // Use window.location.hostname and default port 8000 for local dev
     const host = process.env.REACT_APP_WS_URL || `${protocol}//${window.location.hostname || '127.0.0.1'}:8000/ws`;
     const url = token ? `${host}?token=${encodeURIComponent(token)}` : host;
 
     try {
       if (wsRef.current) {
+        if (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING) {
+          return;
+        }
         wsRef.current.close();
       }
 
@@ -140,6 +142,7 @@ export function RealtimeProvider({ children }) {
         // Exponential backoff reconnect
         const timeout = Math.min(backoffRef.current, 15000);
         backoffRef.current *= 1.5;
+        if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = setTimeout(() => {
           connect();
         }, timeout);
@@ -153,14 +156,22 @@ export function RealtimeProvider({ children }) {
     }
   }, [addToast, emitLocal]);
 
+  const userRef = useRef(user);
   useEffect(() => {
-    connect();
+    const prevUser = userRef.current;
+    userRef.current = user;
+    
+    // Connect on mount or if user changes
+    if (!wsRef.current || prevUser?.id !== user?.id) {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      connect();
+    }
+
     return () => {
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-      if (wsRef.current) {
-        if (wsRef.current._pingInterval) clearInterval(wsRef.current._pingInterval);
-        wsRef.current.close();
-      }
     };
   }, [connect, user]);
 
