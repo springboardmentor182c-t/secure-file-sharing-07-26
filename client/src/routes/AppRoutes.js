@@ -13,6 +13,7 @@ import Profile from "../pages/Profile/Profile";
 import { SecurityView } from "../pages/security/security";
 import Trash from "../pages/Trash";
 
+
 import { AnalyticsView } from "../analytics/analytics";
 
 function AppRoutes() {

@@ -27,6 +27,7 @@ from src.shared_links.controller import (
 )
 
 from src.trash.api import router as trash_router
+from src.ai_search.api import router as ai_search_router
 
 
 def register_routes(app: FastAPI) -> None:
@@ -50,6 +51,7 @@ def register_routes(app: FastAPI) -> None:
 
     # Trash module
     app.include_router(trash_router)
+    app.include_router(ai_search_router)
 
     # app.include_router(todos_router)
     # app.include_router(users_router)
