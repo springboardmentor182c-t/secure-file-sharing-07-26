@@ -120,7 +120,9 @@ def summary(
             )
         effective = current_user.id
 
-    return service.get_summary(db, days=actual_days, user_id=effective)
+    result = service.get_summary(db, days=actual_days, user_id=effective)
+    result["current_user_role"] = current_user.role
+    return result
 
 
 @router.get("/storage", response_model=StorageResponse)
@@ -549,11 +551,12 @@ def export_csv(
             )
         writer.writerow([])
 
-        writer.writerow(["=== SHARING BY DEPARTMENT ==="])
-        writer.writerow(["Department", "Share of Activity (%)"])
-        for dept in sharing_data.get("by_department") or []:
-            writer.writerow([dept.get("name", ""), dept.get("value", 0)])
-        writer.writerow([])
+        if current_user.role == "admin":
+            writer.writerow(["=== SHARING BY DEPARTMENT ==="])
+            writer.writerow(["Department", "Share of Activity (%)"])
+            for dept in sharing_data.get("by_department") or []:
+                writer.writerow([dept.get("name", ""), dept.get("value", 0)])
+            writer.writerow([])
 
         writer.writerow(["=== RECENT ACTIVITY ==="])
         writer.writerow(["Event", "User", "File", "Time"])

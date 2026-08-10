@@ -31,14 +31,19 @@ export default function SecurityView({
   const panelsCfg = uiConfig?.panels || {};
   const severity = uiConfig?.severity || {};
 
-    // FIX ISS-3: Use analyticsAPI.users() instead of analyticsAPI.get()
-  // analyticsAPI has a dedicated users() method — use it properly
+  const isAdmin = data?.current_user_role === "admin";
+
   useEffect(() => {
+    if (!isAdmin) {
+      setUsers([]);
+      return;
+    }
+
     analyticsAPI
       .users()
       .then((r) => setUsers(r.data.users || []))
       .catch(() => setUsers([]));
-  }, []);
+  }, [isAdmin]);
 
   const kpiData = {
     login_events: data?.security?.login_events ?? 0,

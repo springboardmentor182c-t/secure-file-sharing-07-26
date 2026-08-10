@@ -38,6 +38,38 @@ from src.entities.file import File
 from src.entities.user import User
 from src.entities.share_link import ShareLink
 
+import httpx
+from functools import lru_cache
+
+@lru_cache(maxsize=256)
+def _geolocate_ip(ip: str) -> dict:
+    
+    private_prefixes = (
+        "127.", "10.", "192.168.", "172.16.", "172.17.",
+        "172.18.", "172.19.", "172.20.", "172.21.", "172.22.",
+        "172.23.", "172.24.", "172.25.", "172.26.", "172.27.",
+        "172.28.", "172.29.", "172.30.", "172.31.", "::1", "localhost"
+    )
+    if not ip or any(ip.startswith(p) for p in private_prefixes):
+        return {"city": "Localhost", "country": "Local Network"}
+
+    try:
+        response = httpx.get(
+            f"http://ip-api.com/json/{ip}",
+            timeout=3.0,
+        )
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("status") == "success":
+                return {
+                    "city":    data.get("city",        ""),
+                    "country": data.get("countryCode", ""),
+                }
+    except Exception:
+        pass
+
+    return {"city": "", "country": ""}
+
 
 class AnalyticsRepository:
 
@@ -707,13 +739,21 @@ class AnalyticsRepository:
 
         result = []
         for row in rows:
-            meta      = row.event_metadata or {}
-            blocked   = row.event_type == AnalyticsEventType.SECURITY
-            loc_parts = [p for p in [row.city, row.country] if p]
-            location  = ", ".join(loc_parts) if loc_parts else "Unknown"
+            meta    = row.event_metadata or {}
+            blocked = row.event_type == AnalyticsEventType.SECURITY
+            ip      = row.ip_address or "0.0.0.0"
+
+            if row.city or row.country:
+                loc_parts = [p for p in [row.city, row.country] if p]
+                location  = ", ".join(loc_parts)
+            else:
+                geo       = _geolocate_ip(ip)
+                loc_parts = [p for p in [geo["city"], geo["country"]] if p]
+                location  = ", ".join(loc_parts) if loc_parts else "Unknown"
+
             result.append({
                 "id":       row.id,
-                "ip":       row.ip_address or "0.0.0.0",
+                "ip":       ip,
                 "location": location,
                 "target":   meta.get("target", "Unknown resource"),
                 "attempts": int(meta.get("attempts", 1)),
@@ -908,7 +948,7 @@ class AnalyticsRepository:
         this_shares = sq_this.count()
         last_shares = sq_last.count()
 
-        # File access history — scoped to user's own files
+            # File access history — scoped to user's own files
         fah_q = (
             db.query(
                 AnalyticsEvent.id, AnalyticsEvent.event_type,
@@ -1421,4 +1461,207 @@ class AnalyticsRepository:
             "events_per_minute":           events_per_minute,
             "events_last_hour":            events_last_hour,
             "hourly_activity":             hourly_activity,
+            "encryption_speed_mbs":        10.0,
+        }
+
+    def count_member_uploads_last_hour(self, db: Session, user_id: int) -> int:
+        last_hour = datetime.now(timezone.utc) - timedelta(hours=1)
+        return db.query(AnalyticsEvent).filter(
+            AnalyticsEvent.event_type == AnalyticsEventType.UPLOAD,
+            AnalyticsEvent.status == AnalyticsEventStatus.SUCCESS,
+            AnalyticsEvent.user_id == user_id,
+            AnalyticsEvent.created_at >= last_hour,
+        ).count()
+
+    def count_member_downloads_last_hour(self, db: Session, user_id: int) -> int:
+        last_hour = datetime.now(timezone.utc) - timedelta(hours=1)
+        return db.query(AnalyticsEvent).filter(
+            AnalyticsEvent.event_type == AnalyticsEventType.DOWNLOAD,
+            AnalyticsEvent.user_id == user_id,
+            AnalyticsEvent.created_at >= last_hour,
+        ).count()
+
+    def count_member_shares_last_hour(self, db: Session, user_id: int) -> int:
+        last_hour = datetime.now(timezone.utc) - timedelta(hours=1)
+        return db.query(ShareLink).filter(
+            ShareLink.created_by == user_id,
+            ShareLink.created_at >= last_hour,
+        ).count()
+
+    def count_member_files(self, db: Session, user_id: int) -> int:
+        return db.query(File).filter(
+            File.owner_id == user_id,
+            File.is_deleted == False,
+        ).count()
+
+    def get_member_avg_file_size(self, db: Session, user_id: int) -> float:
+        result = db.query(func.avg(File.size)).filter(
+            File.owner_id == user_id,
+            File.is_deleted == False,
+        ).scalar() or 0
+        return round(float(result) / (1024 * 1024), 2)
+
+    def get_member_max_file_size(self, db: Session, user_id: int) -> float:
+        result = db.query(func.max(File.size)).filter(
+            File.owner_id == user_id,
+            File.is_deleted == False,
+        ).scalar() or 0
+        return round(float(result) / (1024 * 1024), 2)
+
+    def get_member_total_storage_mb(self, db: Session, user_id: int) -> float:
+        result = db.query(func.sum(File.size)).filter(
+            File.owner_id == user_id,
+            File.is_deleted == False,
+        ).scalar() or 0
+        return round(float(result) / (1024 * 1024), 2)
+
+    def get_member_avg_processing_time(self, db: Session, user_id: int) -> float:
+        avg_size = self.get_member_avg_file_size(db, user_id)
+        return round((avg_size / 10) * 1000, 2)
+
+    def get_member_db_response(self, db: Session) -> float:
+        import time
+        start = time.perf_counter()
+        db.execute(func.now())
+        return round((time.perf_counter() - start) * 1000, 2)
+
+    def get_member_api_status(self, db: Session) -> str:
+        ms = self.get_member_db_response(db)
+        if ms < 50:    return "Excellent"
+        elif ms < 100: return "Good"
+        elif ms < 200: return "Fair"
+        else:          return "Slow"
+
+    def get_member_api_color(self, db: Session) -> str:
+        ms = self.get_member_db_response(db)
+        if ms < 50:    return "#10B981"
+        elif ms < 100: return "#3B82F6"
+        elif ms < 200: return "#F59E0B"
+        else:          return "#EF4444"
+
+    def get_member_encryption_speed(self, db: Session, user_id: int) -> float:
+        result = db.query(
+            func.count(File.id).label("file_count"),
+            func.sum(File.size).label("total_size"),
+            func.avg(File.size).label("avg_size"),
+            func.max(File.size).label("max_size"),
+        ).filter(
+            File.owner_id == user_id,
+            File.is_deleted == False,
+        ).first()
+
+        if not result or not result.total_size:
+            return 10.0
+
+        total_mb  = round(float(result.total_size) / (1024 * 1024), 2)
+        avg_mb    = round(float(result.avg_size)   / (1024 * 1024), 4)
+        max_mb    = round(float(result.max_size)   / (1024 * 1024), 4)
+        count     = int(result.file_count)
+
+        size_factor  = max(0.0, min(1.0, 1.0 - (avg_mb / 50.0)))
+        count_factor = max(0.0, min(1.0, 1.0 - (count  / 200.0)))
+        speed = 6.0 + (size_factor * 2.0) + (count_factor * 2.0)
+
+        return round(min(10.0, max(6.0, speed)), 2)
+
+    def get_member_system_stats(
+        self,
+        db: Session,
+        user_id: int,
+    ) -> Dict[str, Any]:
+        import time
+        import platform
+        import sys
+
+        now       = datetime.now(timezone.utc)
+        yesterday = now - timedelta(hours=24)
+        last_hour = now - timedelta(hours=1)
+        last_week = now - timedelta(days=7)
+
+        total_events = db.query(AnalyticsEvent).filter(
+            AnalyticsEvent.user_id == user_id
+        ).count()
+
+        events_24h = db.query(AnalyticsEvent).filter(
+            AnalyticsEvent.user_id == user_id,
+            AnalyticsEvent.created_at >= yesterday,
+        ).count()
+
+        events_1h = db.query(AnalyticsEvent).filter(
+            AnalyticsEvent.user_id == user_id,
+            AnalyticsEvent.created_at >= last_hour,
+        ).count()
+
+        events_7d = db.query(AnalyticsEvent).filter(
+            AnalyticsEvent.user_id == user_id,
+            AnalyticsEvent.created_at >= last_week,
+        ).count()
+
+        total_files = db.query(File).filter(
+            File.owner_id == user_id,
+            File.is_deleted == False,
+        ).count()
+
+        total_storage_bytes = db.query(
+            func.coalesce(func.sum(File.size), 0)
+        ).filter(
+            File.owner_id == user_id,
+            File.is_deleted == False,
+        ).scalar() or 0
+        total_storage_mb = round(total_storage_bytes / (1024 * 1024), 2)
+
+        total_shares = db.query(ShareLink).filter(
+            ShareLink.created_by == user_id
+        ).count()
+
+        active_shares = db.query(ShareLink).filter(
+            ShareLink.created_by == user_id,
+            ShareLink.is_active == True,
+        ).count()
+
+        total_logins = db.query(AnalyticsEvent).filter(
+            AnalyticsEvent.user_id == user_id,
+            AnalyticsEvent.event_type == AnalyticsEventType.LOGIN,
+        ).count()
+
+        successful_logins = db.query(AnalyticsEvent).filter(
+            AnalyticsEvent.user_id == user_id,
+            AnalyticsEvent.event_type == AnalyticsEventType.LOGIN,
+            AnalyticsEvent.status == AnalyticsEventStatus.SUCCESS,
+        ).count()
+
+        success_rate = round(
+            (successful_logins / total_logins) * 100, 1
+        ) if total_logins > 0 else 100.0
+
+        start = time.perf_counter()
+        db.execute(func.now())
+        db_response_ms = round((time.perf_counter() - start) * 1000, 2)
+
+        status = (
+            "degraded" if db_response_ms > 500
+            else "slow" if db_response_ms > 200
+            else "healthy"
+        )
+
+        python_version = (
+            f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        )
+
+        return {
+            "total_events":     total_events,
+            "events_1h":        events_1h,
+            "events_24h":       events_24h,
+            "events_7d":        events_7d,
+            "total_users":      None,
+            "active_users_24h": None,
+            "total_files":      total_files,
+            "total_storage_mb": total_storage_mb,
+            "total_shares":     total_shares,
+            "active_shares":    active_shares,
+            "db_response_ms":   db_response_ms,
+            "success_rate":     success_rate,
+            "status":           status,
+            "python_version":   python_version,
+            "platform":         platform.system(),
         }

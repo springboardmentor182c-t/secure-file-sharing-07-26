@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { settingsAPI } from '../utils/api';
 import { Eye, EyeOff, Laptop, Smartphone, Monitor } from 'lucide-react';
 import MFACard from './MFACard';  // NEW: MFA setup component
+import { useSearchParams } from 'react-router-dom';
 import './Settings.css';
 
 // FIX ISS-S2: extract backend error message helper
@@ -43,7 +44,30 @@ const Settings = () => {
   const { user, setUser } = useAuth();
 
   // Active Tab state
-  const [activeTab, setActiveTab] = useState('profile');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const validTabs = ['profile', 'security', 'sessions', 'notifications'];
+  const initialTab = validTabs.includes(searchParams.get('tab')) ? searchParams.get('tab') : 'profile';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && activeTab === 'security') {
+      setTimeout(() => {
+        const el = document.querySelector(hash);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 200);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    if (urlTab && validTabs.includes(urlTab) && urlTab !== activeTab) {
+      setActiveTab(urlTab);
+      setSuccessMsg('');
+      setErrorMsg('');
+    }
+  }, [searchParams]);
 
   // Feedback states
   const [successMsg, setSuccessMsg] = useState('');
@@ -128,6 +152,7 @@ const Settings = () => {
   // Clear feedback messages on tab change
   const handleTabChange = (tab) => {
     setActiveTab(tab);
+    setSearchParams({ tab }, { replace: true });
     setSuccessMsg('');
     setErrorMsg('');
   };
@@ -545,10 +570,12 @@ const Settings = () => {
           </div>
 
           {/* NEW: MFA Setup Card */}
-          <MFACard
-            onSuccess={(msg) => { setSuccessMsg(msg); setErrorMsg(''); }}
-            onError={(msg) => { setErrorMsg(msg); setSuccessMsg(''); }}
-          />
+          <div id="mfa">
+            <MFACard
+              onSuccess={(msg) => { setSuccessMsg(msg); setErrorMsg(''); }}
+              onError={(msg) => { setErrorMsg(msg); setSuccessMsg(''); }}
+            />
+          </div>
         </>
       )}
 

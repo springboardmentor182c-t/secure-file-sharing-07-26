@@ -15,6 +15,7 @@ const SHORTCUT_GROUPS = [
     title: "Navigation",
     shortcuts: [
       { keys: ["Ctrl", "K"], label: "Open search" },
+      { keys: ["Ctrl", "/"], label: "Open AI Assistant" },
       { keys: ["Esc"], label: "Close search / dropdowns" },
       { keys: ["?"], label: "Show keyboard shortcuts" },
     ],
@@ -41,12 +42,11 @@ export default function KeyboardShortcuts() {
 
   useEffect(() => {
     const handleKey = (e) => {
-      if (
-        e.key === "?" &&
-        !["INPUT", "TEXTAREA", "SELECT"].includes(
-          document.activeElement?.tagName
-        )
-      ) {
+      const isTyping = ["INPUT", "TEXTAREA", "SELECT"].includes(
+        document.activeElement?.tagName
+      );
+
+      if (e.key === "?" && !isTyping) {
         e.preventDefault();
         setOpen((prev) => !prev);
       }
@@ -58,6 +58,12 @@ export default function KeyboardShortcuts() {
       if (e.ctrlKey && e.shiftKey && e.key === "D") {
         e.preventDefault();
         toggleTheme();
+      }
+
+      // Open AI Assistant with Ctrl+/ (or Cmd+/ on Mac)
+      if ((e.ctrlKey || e.metaKey) && e.key === "/" && !isTyping) {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent("assistant:open"));
       }
     };
 

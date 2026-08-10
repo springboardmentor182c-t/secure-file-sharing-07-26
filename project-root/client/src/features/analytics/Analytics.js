@@ -48,7 +48,10 @@ export default function Analytics() {
     nextRefreshIn,
   } = useAnalytics(days, selectedUser || null);
 
-  const [activeTab, setActiveTab] = useState("analytics");
+  const [activeTab, setActiveTab] = useState(() => {
+    const saved = sessionStorage.getItem("analytics_active_tab");
+    return saved === "security" ? "security" : "analytics";
+  });
 
   const uiConfig = data?.ui_config;
 
@@ -60,6 +63,15 @@ export default function Analytics() {
       setActiveTab(uiConfig.tabs[0].value);
     }
   }, [uiConfig, activeTab]);
+
+  useEffect(() => {
+    sessionStorage.setItem("analytics_active_tab", activeTab);
+    window.dispatchEvent(
+      new CustomEvent("analytics-tab-changed", {
+        detail: activeTab,
+      })
+    );
+  }, [activeTab]);
 
   if (error) {
     return (
