@@ -8,10 +8,10 @@ import SharedLinksTable from "./components/SharedLinksTable";
 import CreateLinkModal from "./components/CreateLinkModal";
 import EditLinkModal from "./components/EditLinkModal";
 import DeleteConfirmationModal from "./components/DeleteConfirmationModal";
-import ToastContainer from "./components/Toast";
+import ToastContainer from "../../components/common/Toast";
 
 import useSharedLinks from "./hooks/useSharedLinks";
-import useToast from "./hooks/useToast";
+import useToast from "../../hooks/useToast";
 import { LinkIcon, EyeIcon, DownloadIcon, ClockIcon } from "../../layout/icons";
 
 export default function SharedLinksPage() {
@@ -110,7 +110,7 @@ export default function SharedLinksPage() {
   }, [deleteLink, deletingLink, showToast]);
 
   return (
-    <div className="shared-links-page">
+    <div className="shared-links-page p-6 lg:p-8 space-y-6 animate-fade-in">
       <Header searchQuery={searchQuery} onSearchChange={updateSearch} onCreateClick={() => setCreateOpen(true)} />
 
       <section className="stat-grid" aria-label="Summary statistics">

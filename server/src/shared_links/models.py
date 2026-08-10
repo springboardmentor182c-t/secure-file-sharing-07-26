@@ -6,41 +6,13 @@ Pydantic request/response schemas for the Shared Links module.
 SQLAlchemy ORM models, which live under `src/entities/`.)
 """
 import uuid
-from datetime import datetime
-from typing import Generic, List, Optional, TypeVar
+from datetime import datetime, timedelta
+from typing import Any, Generic, List, Optional, TypeVar, Union
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from src.schemas import ApiResponse, PaginatedResponse, PaginationMeta  # noqa: F401 (re-exported)
 from src.shared_links.constants import LinkPermission, LinkStatus
-
-T = TypeVar("T")
-
-
-# ---------------------------------------------------------------------------
-# Generic response envelope (used across this module's endpoints; other
-# modules are welcome to reuse this same shape for consistency)
-# ---------------------------------------------------------------------------
-
-class ApiResponse(BaseModel, Generic[T]):
-    success: bool = True
-    message: str = "OK"
-    data: Optional[T] = None
-
-
-class PaginationMeta(BaseModel):
-    page: int
-    page_size: int
-    total_items: int
-    total_pages: int
-    has_next: bool
-    has_previous: bool
-
-
-class PaginatedResponse(BaseModel, Generic[T]):
-    success: bool = True
-    message: str = "OK"
-    data: List[T]
-    pagination: PaginationMeta
 
 
 # ---------------------------------------------------------------------------
@@ -50,18 +22,25 @@ class PaginatedResponse(BaseModel, Generic[T]):
 class SharedLinkCreate(BaseModel):
     """Payload for `POST /shared-links` — matches the frontend's "New Link" modal."""
 
-    file_id: uuid.UUID
-    recipient_email: EmailStr
-    permission: LinkPermission = LinkPermission.VIEW
-    expires_at: Optional[datetime] = None
-    password: Optional[str] = Field(default=None, min_length=4, max_length=128)
+    file_id: Union[uuid.UUID, int, str]
+    recipient_email: Optional[Union[EmailStr, str]] = None
+    permission: Optional[Union[LinkPermission, str]] = LinkPermission.VIEW
+    expires_at: Optional[Union[datetime, str]] = None
+    password: Optional[str] = Field(default=None, max_length=128)
     allow_download: bool = False
 
-    @field_validator("expires_at")
+    @field_validator("expires_at", mode="before")
     @classmethod
-    def _expiry_must_be_future(cls, v: Optional[datetime]) -> Optional[datetime]:
-        if v is not None and v.replace(tzinfo=None) <= datetime.utcnow():
-            raise ValueError("expires_at must be in the future")
+    def _expiry_must_be_future(cls, v: Any) -> Optional[datetime]:
+        if v is None or v == "":
+            return None
+        if isinstance(v, str):
+            try:
+                v = datetime.fromisoformat(v.replace("Z", "+00:00"))
+            except Exception:
+                return datetime.utcnow() + timedelta(days=7)
+        if isinstance(v, datetime) and v.replace(tzinfo=None) <= datetime.utcnow():
+            return datetime.utcnow() + timedelta(days=7)
         return v
 
 
@@ -86,23 +65,28 @@ class AccessLinkRequest(BaseModel):
 
 class FileSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: uuid.UUID
-    file_name: str
-    file_type: str
+
+    id: Union[uuid.UUID, int, str]
+    file_name: str = "file.pdf"
+    file_type: str = "pdf"
+    size_bytes: int = 0
+
+
+FileRead = FileSummary
 
 
 class SharedLinkRead(BaseModel):
     """Shape returned to the frontend — maps 1:1 onto the fields the
     `SharedLinksTable` / `TableRow` React components already render."""
 
-    id: uuid.UUID
+    id: Union[uuid.UUID, int, str]
     file: FileSummary
     share_url: str
     created_at: datetime
     expires_at: Optional[datetime]
     views: int
     downloads: int
-    access: LinkPermission
+    access: Union[LinkPermission, str]
     status: LinkStatus
     password_protected: bool
     allow_download: bool
@@ -160,9 +144,8 @@ class AnalyticsOverview(BaseModel):
 
 class NotificationRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     id: uuid.UUID
-    notification_type: str
+    type: str
     title: str
     message: str
     is_read: bool
@@ -170,7 +153,7 @@ class NotificationRead(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Minimal schemas for the temporary /users and /files dev-testing endpoints
+# Minimal schema for the temporary /users endpoint (until Auth lands)
 # ---------------------------------------------------------------------------
 
 class UserCreate(BaseModel):
@@ -185,10 +168,4 @@ class UserRead(BaseModel):
     full_name: str
 
 
-class FileRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: uuid.UUID
-    owner_id: uuid.UUID
-    file_name: str
-    file_type: str
-    size_bytes: int
+

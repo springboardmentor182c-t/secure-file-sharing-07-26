@@ -1,140 +1,49 @@
-import axios from "axios";
+import { createApiRequest } from "./apiClient";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+const { request } = createApiRequest(API_URL);
 
-// Backend API URL
-const API_URL = `${import.meta.env.VITE_API_URL}/trash`;
-
-
-// Axios instance
-const trashAPI = axios.create({
-    baseURL: API_URL,
-    headers: {
-        "Content-Type": "application/json",
-    },
-});
-
-
-// Attach JWT token automatically
-trashAPI.interceptors.request.use(
-    (config) => {
-
-        const token = localStorage.getItem("token");
-
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-
-        return config;
-    },
-
-    (error) => {
-        return Promise.reject(error);
-    }
-);
-
-
-
-/**
- * Get all files in trash
- */
 export const getTrashFiles = async () => {
-
-    try {
-
-        const response = await trashAPI.get("/files");
-
-        return response.data;
-
-    } catch (error) {
-
-        console.error(
-            "Failed to fetch trash files:",
-            error.response?.data || error.message
-        );
-
-        throw error;
-    }
+  try {
+    const response = await request("/files/trash");
+    return response?.data ?? [];
+  } catch (error) {
+    console.error("Failed to fetch trash files:", error.message);
+    return [];
+  }
 };
 
-
-
-
-/**
- * Restore deleted file
- */
 export const restoreTrashFile = async (fileId) => {
-
-    try {
-
-        const response = await trashAPI.put(
-            `/files/${fileId}/restore`
-        );
-
-        return response.data;
-
-    } catch (error) {
-
-        console.error(
-            "Restore failed:",
-            error.response?.data || error.message
-        );
-
-        throw error;
-    }
+  try {
+    const response = await request(`/files/${fileId}/restore`, { method: "POST" });
+    return response?.data ?? null;
+  } catch (error) {
+    console.error("Restore failed:", error.message);
+    return null;
+  }
 };
 
-
-
-
-/**
- * Permanently delete file
- */
 export const deleteTrashFile = async (fileId) => {
-
-    try {
-
-        const response = await trashAPI.delete(
-            `/files/${fileId}`
-        );
-
-        return response.data;
-
-    } catch (error) {
-
-        console.error(
-            "Delete failed:",
-            error.response?.data || error.message
-        );
-
-        throw error;
-    }
+  try {
+    const response = await request(`/files/${fileId}/permanent`, { method: "DELETE" });
+    return response?.data ?? null;
+  } catch (error) {
+    console.error("Delete failed:", error.message);
+    return null;
+  }
 };
 
-
-
-
-/**
- * Empty complete trash
- */
 export const emptyTrash = async () => {
-
-    try {
-
-        const response = await trashAPI.delete("");
-
-        return response.data;
-
-    } catch (error) {
-
-        console.error(
-            "Empty trash failed:",
-            error.response?.data || error.message
-        );
-
-        throw error;
+  try {
+    const response = await request("/files/trash", { method: "DELETE" });
+    return response?.data ?? [];
+  } catch (error) {
+    console.error("Empty trash failed:", error.message);
+    // Fallback if needed
+    const files = await getTrashFiles();
+    for (const file of files) {
+      await deleteTrashFile(file.id);
     }
+    return [];
+  }
 };
-
-
-
-export default trashAPI;

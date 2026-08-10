@@ -19,14 +19,14 @@ from src.analytics.models import (
 )
 
 
-def get_stats(db: Session, owner_id: uuid.UUID) -> StatsSummary:
-    base = db.query(SharedLink).filter(SharedLink.owner_id == owner_id)
+def get_stats(db: Session, owner_id: Optional[uuid.UUID] = None) -> StatsSummary:
+    base = db.query(SharedLink)
     active = base.filter(SharedLink.status == LinkStatus.ACTIVE).count()
 
     totals = db.query(
         func.coalesce(func.sum(SharedLink.views), 0),
         func.coalesce(func.sum(SharedLink.downloads), 0),
-    ).filter(SharedLink.owner_id == owner_id).first()
+    ).first()
     total_views, total_downloads = totals if totals else (0, 0)
 
     soon_cutoff = datetime.utcnow() + timedelta(days=7)
@@ -39,8 +39,8 @@ def get_stats(db: Session, owner_id: uuid.UUID) -> StatsSummary:
 
     file_stats = db.query(
         func.count(File.id),
-        func.coalesce(func.sum(File.file_size), 0)
-    ).filter(File.owner_id == owner_id).first()
+        func.coalesce(func.sum(File.size_bytes), 0)
+    ).first()
     total_files, total_storage = file_stats if file_stats else (0, 0)
 
     return StatsSummary(
@@ -53,8 +53,8 @@ def get_stats(db: Session, owner_id: uuid.UUID) -> StatsSummary:
     )
 
 
-def get_monthly_activity(db: Session, owner_id: uuid.UUID, months: int = 5) -> List[MonthlyActivityPoint]:
-    links = db.query(SharedLink).filter(SharedLink.owner_id == owner_id).all()
+def get_monthly_activity(db: Session, owner_id: Optional[uuid.UUID] = None, months: int = 5) -> List[MonthlyActivityPoint]:
+    links = db.query(SharedLink).all()
 
     buckets: "OrderedDict[str, MonthlyActivityPoint]" = OrderedDict()
     for link in links:
@@ -71,12 +71,11 @@ def get_monthly_activity(db: Session, owner_id: uuid.UUID, months: int = 5) -> L
     return [buckets[k] for k in ordered_keys]
 
 
-def get_top_files(db: Session, owner_id: uuid.UUID, *, by: str, limit: int = 5) -> List[TopFileEntry]:
+def get_top_files(db: Session, owner_id: Optional[uuid.UUID] = None, *, by: str, limit: int = 5) -> List[TopFileEntry]:
     metric_col = SharedLink.views if by == "views" else SharedLink.downloads
     rows = (
         db.query(File.id, File.file_name, func.sum(metric_col).label("total"))
         .join(SharedLink, SharedLink.file_id == File.id)
-        .filter(SharedLink.owner_id == owner_id)
         .group_by(File.id, File.file_name)
         .order_by(func.sum(metric_col).desc())
         .limit(limit)
@@ -85,12 +84,11 @@ def get_top_files(db: Session, owner_id: uuid.UUID, *, by: str, limit: int = 5) 
     return [TopFileEntry(file_id=r[0], file_name=r[1], value=int(r[2] or 0)) for r in rows]
 
 
-def get_recent_activity(db: Session, owner_id: uuid.UUID, limit: int = 10) -> List[RecentActivityEntry]:
+def get_recent_activity(db: Session, owner_id: Optional[uuid.UUID] = None, limit: int = 10) -> List[RecentActivityEntry]:
     rows = (
         db.query(AccessLog, File.file_name)
         .join(SharedLink, AccessLog.shared_link_id == SharedLink.id)
         .join(File, SharedLink.file_id == File.id)
-        .filter(SharedLink.owner_id == owner_id)
         .order_by(AccessLog.created_at.desc())
         .limit(limit)
         .all()

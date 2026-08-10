@@ -16,26 +16,18 @@ function ConfirmModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
       <div className="w-full max-w-md rounded-xl bg-[#1B1C28] border border-[#34364A] shadow-2xl">
-
-        {/* Header */}
         <div className="flex items-center gap-3 border-b border-[#34364A] p-6">
           <div className="rounded-full bg-red-500/20 p-3">
             <AlertTriangle className="h-6 w-6 text-red-500" />
           </div>
 
-          <h2 className="text-xl font-semibold text-white">
-            {title}
-          </h2>
+          <h2 className="text-xl font-semibold text-white">{title}</h2>
         </div>
 
-        {/* Body */}
         <div className="px-6 py-5">
-          <p className="text-sm leading-6 text-gray-300">
-            {message}
-          </p>
+          <p className="text-sm leading-6 text-gray-300">{message}</p>
         </div>
 
-        {/* Footer */}
         <div className="flex justify-end gap-3 border-t border-[#34364A] p-5">
           <button
             onClick={onCancel}
@@ -51,7 +43,6 @@ function ConfirmModal({
             {confirmText}
           </button>
         </div>
-
       </div>
     </div>
   );

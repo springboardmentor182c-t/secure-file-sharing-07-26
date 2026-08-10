@@ -1,6 +1,10 @@
 node_modules/
 .env
 __pycache__/
+.pytest_cache/
 *.pyc
 .vscode/
+server/uploads/*
+!server/uploads/.gitkeep
+*.db
 

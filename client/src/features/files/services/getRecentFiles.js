@@ -1,19 +1,22 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 export async function getRecentFiles() {
-  const token = localStorage.getItem("access_token");
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/files/recent`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-  const response = await fetch(`${API_BASE_URL}/files/recent`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
+    if (!response.ok) {
+      return [];
+    }
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch recent files");
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error("Error fetching recent files:", err);
+    return [];
   }
-
-  return response.json();
 }

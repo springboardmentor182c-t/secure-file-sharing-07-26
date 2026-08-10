@@ -21,9 +21,24 @@ function Header({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const title = pageTitles[location.pathname] || "TrustShare";
+  const inputRef = useRef(null);
 
-  const title =
-    pageTitles[location.pathname] || "TrustShare";
+  // Global Ctrl + K / Cmd + K keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -102,23 +117,7 @@ function Header({
 
   }, []);
   return (
-    <header
-      className="
-        h-20
-        shrink-0
-        flex
-        items-center
-        justify-between
-        px-6
-        lg:px-8
-        bg-[#1E1F2B]
-        border-b
-        border-[#34364A]
-      "
-    >
-
-      {/* Left Section */}
-
+    <header className="h-20 shrink-0 flex items-center justify-between px-6 lg:px-8 bg-[#1E1F2B] border-b border-[#34364A]">
       <div className="flex items-center gap-4">
 
         <button

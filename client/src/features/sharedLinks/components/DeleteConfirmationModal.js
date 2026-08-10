@@ -1,5 +1,5 @@
 import React from "react";
-import ModalShell from "./ModalShell";
+import ModalShell from "../../../components/common/ModalShell";
 
 export default function DeleteConfirmationModal({ link, onClose, onConfirm, isSaving }) {
   return (

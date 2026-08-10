@@ -1,0 +1,13 @@
+Secure File Sharing System - Project Overview
+
+This project is a secure file sharing platform that allows users to
+upload, store, and share files with encryption and access control.
+Key features include user authentication, file encryption, shared
+links with expiry, trash/recovery, activity analytics, and now an
+AI-powered file summary generation feature that automatically
+creates concise summaries of uploaded documents using Claude.
+
+The system is built with a React frontend and a FastAPI backend,
+using PostgreSQL as the database. Security is a core focus, with
+encrypted file storage, audit logging, and role-based access control
+planned across all modules.
