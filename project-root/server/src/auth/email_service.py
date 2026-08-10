@@ -19,14 +19,23 @@ EMAIL_FROM = os.getenv("EMAIL_FROM", SMTP_USER)
 FRONTEND_URL = frontend_url()
 
 
+def _is_development() -> bool:
+    return os.getenv("ENVIRONMENT", "development").strip().lower() in {
+        "development",
+        "dev",
+    }
+
+
 def _send_email(to_email: str, subject: str, html_body: str):
     """Internal helper: opens SMTP connection and sends one email."""
     if not SMTP_USER or not SMTP_PASSWORD:
-        # No SMTP credentials configured — print to console as fallback
-        print(f"\n[EMAIL FALLBACK - configure SMTP in .env to send real emails]")
+        print("\n[EMAIL FALLBACK - configure SMTP in .env to send real emails]")
         print(f"  To: {to_email}")
         print(f"  Subject: {subject}")
-        print(f"  Body preview: {html_body[:200]}\n", flush=True)
+        if _is_development():
+            print(f"  Body preview: {html_body[:200]}\n", flush=True)
+        else:
+            print("  Email was not sent because SMTP credentials are unavailable.\n", flush=True)
         return
 
     msg = MIMEMultipart("alternative")
@@ -43,8 +52,11 @@ def _send_email(to_email: str, subject: str, html_body: str):
             server.sendmail(EMAIL_FROM, to_email, msg.as_string())
         print(f"[EMAIL] Sent '{subject}' to {to_email}", flush=True)
     except Exception as exc:
-        # Log the error but don't crash the API
-        print(f"[EMAIL ERROR] Failed to send to {to_email}: {exc}", flush=True)
+        # Report the failure without exposing credentials or message contents.
+        print(
+            f"[EMAIL ERROR] Failed to send '{subject}': {type(exc).__name__}",
+            flush=True,
+        )
 
 
 def _send_in_background(to_email: str, subject: str, html_body: str):

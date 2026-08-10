@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session, aliased
 
 from src.entities.file import File
 from src.entities.file_permission import FilePermission
-from src.entities.notification import Notification
 from src.entities.user import User
+from src.notifications.service import create_notification
 from src.shared_with_me.models import (
     DirectShareCreate,
     DirectShareOut,
@@ -85,15 +85,14 @@ def grant_direct_share(db: Session, data: DirectShareCreate, owner_id: int) -> D
         db.add(permission)
 
     owner = db.query(User).filter(User.id == owner_id).first()
-    db.add(
-        Notification(
-            user_id=recipient.id,
-            type="share",
-            category="shares",
-            title="A file was shared with you",
-            message=f'{owner.name if owner else "A teammate"} shared "{file.original_name}" with you.',
-            icon="share",
-        )
+    create_notification(
+        db,
+        user_id=recipient.id,
+        type="share",
+        category="shares",
+        title="A file was shared with you",
+        message=f'{owner.name if owner else "A teammate"} shared "{file.original_name}" with you.',
+        icon="share",
     )
     db.commit()
     db.refresh(permission)

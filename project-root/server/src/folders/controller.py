@@ -24,5 +24,10 @@ def create(data: FolderCreate, db: Session = Depends(get_db), current_user: User
 
 
 @router.delete("/{folder_id}", status_code=204)
-def delete(folder_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    delete_folder(db, folder_id, current_user.id)
+def delete(
+    folder_id: int,
+    recursive: bool = Query(False),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    delete_folder(db, folder_id, current_user.id, recursive=recursive)
