@@ -9,6 +9,7 @@ from src.entities.file import File
 from src.entities.user import User
 from src.entities.audit_log import AuditLog
 from src.folders.service import get_folder_path_on_disk
+from src.realtime.manager import emit_sync
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -121,6 +122,14 @@ def upload_file(
     _audit(db, owner_id, "UPLOAD", upload.filename, level="info")
     db.commit()
     db.refresh(file)
+
+    emit_sync(owner_id, "files_updated", {
+        "action": "upload",
+        "file_id": str(file.id),
+        "file_name": file.original_name,
+        "storage_used": user.storage_used if user else None,
+    })
+
     return file
 
 
@@ -136,6 +145,13 @@ def rename_file(
     _audit(db, owner_id, "RENAME", f"{old_name} → {new_name}", resource_id=file_id, level="info")
     db.commit()
     db.refresh(f)
+
+    emit_sync(owner_id, "files_updated", {
+        "action": "rename",
+        "file_id": str(file_id),
+        "new_name": new_name,
+    })
+
     return f
 
 
@@ -155,6 +171,13 @@ def toggle_encryption(
     
     db.commit()
     db.refresh(f)
+
+    emit_sync(owner_id, "files_updated", {
+        "action": "toggle_encrypt",
+        "file_id": str(file_id),
+        "encrypted": f.encrypted,
+    })
+
     return f
 
 
@@ -175,6 +198,12 @@ def delete_file(db: Session, file_id: uuid.UUID, owner_id: uuid.UUID) -> None:
 
     db.delete(f)
     db.commit()
+
+    emit_sync(owner_id, "files_updated", {
+        "action": "delete",
+        "file_id": str(file_id),
+        "storage_used": user.storage_used if user else None,
+    })
 
     # Resolve physical parent folder path on disk
     folder_path = get_folder_path_on_disk(db, folder_id)
