@@ -22,6 +22,14 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-trustshare}:${POSTGRES_PASSWORD:-trustshare}@database:5432/${POSTGRES_DB:-trustshare}
       REQUIRE_POSTGRESQL: "true"
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DEV_DUMMY_EMAIL_DOMAINS: ${DEV_DUMMY_EMAIL_DOMAINS:-example.com,test.com,invalid,localhost}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       AI_SUMMARY_PROVIDER: ollama
       OLLAMA_BASE_URL: http://host.docker.internal:11434
       OLLAMA_MODEL: qwen2.5:1.5b

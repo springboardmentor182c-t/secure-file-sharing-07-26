@@ -16,6 +16,7 @@ import VerifyOtp from './pages/VerifyOtp';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import OAuthCallback from './pages/OAuthCallback';
+import PublicShare from './pages/PublicShare';
 
 // Protected pages
 import Dashboard from './pages/Dashboard';
@@ -32,10 +33,11 @@ import NotFound from './pages/NotFound';
 import Assistant from './pages/Assistant';
 
 import { notificationsAPI } from './utils/api';
+import { events, EVENTS } from './utils/events';
 import './assets/global.css';
 
 // Show floating ThemeToggle only on public/auth pages
-const PUBLIC_PATHS = ['/login', '/signup', '/verify-otp', '/forgot-password', '/reset-password', '/oauth-callback'];
+const PUBLIC_PATHS = ['/login', '/signup', '/verify-otp', '/forgot-password', '/reset-password', '/oauth-callback', '/s/'];
 
 function ConditionalThemeToggle() {
   const location = useLocation();
@@ -66,10 +68,12 @@ function AppShell() {
     };
 
     load();
+    const unsubscribe = events.on(EVENTS.NOTIFICATIONS_CHANGED, load);
     const iv = setInterval(load, 30000);
 
     return () => {
       isMounted = false;
+      unsubscribe();
       clearInterval(iv);
     };
   }, [user]);
@@ -122,6 +126,7 @@ export default function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password"  element={<ResetPassword />} />
               <Route path="/oauth-callback"  element={<OAuthCallback />} />
+              <Route path="/s/:token"        element={<PublicShare />} />
 
               {/* Protected app shell */}
               <Route

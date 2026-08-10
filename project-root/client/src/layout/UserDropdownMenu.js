@@ -193,7 +193,7 @@ export default function UserDropdownMenu({
   const menuItems = [
     { icon: User, label: "View Profile", onClick: () => handleNavigate("/settings") },
     { icon: KeyRound, label: "Change Password", onClick: () => handleNavigate("/settings") },
-    { icon: ShieldCheck, label: "Security & MFA", onClick: () => handleNavigate("/settings") },
+    { icon: ShieldCheck, label: "Security & MFA", onClick: () => handleNavigate("/settings?tab=security") },
   ];
 
   if (!open) return null;

@@ -170,7 +170,7 @@ describe('DashboardFeature', () => {
     expect(mockNavigate).toHaveBeenNthCalledWith(1, '/files');
     expect(mockNavigate).toHaveBeenNthCalledWith(2, '/files');
     expect(mockNavigate).toHaveBeenNthCalledWith(3, '/sharing');
-    expect(mockNavigate).toHaveBeenNthCalledWith(4, '/settings');
+    expect(mockNavigate).toHaveBeenNthCalledWith(4, '/settings?tab=security');
     expect(mockNavigate).not.toHaveBeenCalledWith('/admin');
   });
 

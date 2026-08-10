@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, Moon, Sun, CheckCheck, Sparkles } from "lucide-react";
@@ -16,6 +16,7 @@ import {
   RiShieldCheckLine,
 } from "react-icons/ri";
 import { searchAPI, notificationsAPI } from "../utils/api";
+import { events, EVENTS } from "../utils/events";
 import ContentSearchModal from "../features/search/ContentSearchModal";
 import "./Navbar.css";
 
@@ -51,6 +52,10 @@ function getNotificationIcon(notification) {
   if (text.includes("file"))
     return <RiFileTextLine className="notification-type-icon" />;
   return <RiNotification3Line className="notification-type-icon" />;
+}
+
+export function getUnreadNotificationPreview(items) {
+  return items.filter((notification) => !notification.is_read).slice(0, 5);
 }
 
 // FIX ISS-L3: Removed unused darkMode and setDarkMode props
@@ -143,19 +148,23 @@ export default function Navbar({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Load notifications when opened
+  const loadNotifications = useCallback(async () => {
+    try {
+      const res = await notificationsAPI.list();
+      setNotifications(getUnreadNotificationPreview(res.data));
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  // Load notifications when opened and refresh an open dropdown after local actions.
   useEffect(() => {
-    if (!showNotifications) return;
-    const load = async () => {
-      try {
-        const res = await notificationsAPI.list();
-        setNotifications(res.data.slice(0, 5));
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    load();
-  }, [showNotifications]);
+    if (showNotifications) loadNotifications();
+  }, [showNotifications, loadNotifications]);
+
+  useEffect(() => events.on(EVENTS.NOTIFICATIONS_CHANGED, () => {
+    if (showNotifications) loadNotifications();
+  }), [showNotifications, loadNotifications]);
 
   // Flatten search results for keyboard navigation
   const flatResults = useMemo(() => {
@@ -224,11 +233,25 @@ export default function Navbar({
     setMarkingAllRead(true);
     try {
       await notificationsAPI.markAllRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setNotifications([]);
+      events.emit(EVENTS.NOTIFICATIONS_CHANGED);
     } catch (err) {
       console.error("Failed to mark all as read:", err);
     } finally {
       setMarkingAllRead(false);
+    }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    setNotifications((previous) => previous.filter((item) => item.id !== notification.id));
+    try {
+      await notificationsAPI.markRead(notification.id);
+      events.emit(EVENTS.NOTIFICATIONS_CHANGED);
+      setShowNotifications(false);
+      navigate("/notifications");
+    } catch (err) {
+      console.error("Failed to mark notification as read:", err);
+      loadNotifications();
     }
   };
 
@@ -488,10 +511,7 @@ export default function Navbar({
                   <motion.div
                     key={notification.id}
                     className="notification-item"
-                    onClick={() => {
-                      setShowNotifications(false);
-                      navigate("/notifications");
-                    }}
+                    onClick={() => handleNotificationClick(notification)}
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{

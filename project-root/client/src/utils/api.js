@@ -102,6 +102,7 @@ export const filesAPI = {
   get: (id) => api.get(`/api/files/${id}`),
   download: (id) =>
     api.get(`/api/files/${id}/download`, { responseType: 'blob' }),
+  move: (id, folderId) => api.patch(`/api/files/${id}/move`, { folder_id: folderId }),
   delete: (id) => api.delete(`/api/files/${id}`),
 };
 
@@ -117,16 +118,21 @@ export const fileSummaryAPI = {
 export const foldersAPI = {
   list: (parentId) => api.get('/api/folders/', { params: { parent_id: parentId } }),
   create: (name, parentId) => api.post('/api/folders/', { name, parent_id: parentId }),
-  delete: (id) => api.delete(`/api/folders/${id}`),
+  delete: (id, recursive = false) => api.delete(`/api/folders/${id}`, { params: { recursive } }),
 };
 
 // ── Shares ────────────────────────────────────────────────────────────────
 export const sharesAPI = {
-  list: () => api.get('/api/shares/'),
-  create: (data) => api.post('/api/shares/', data),
-  revoke: (id) => api.delete(`/api/shares/${id}`),
-  access: (token, password) => api.get(`/api/shares/access/${token}`, { params: { password } }),
-};
+    list: () => api.get('/api/shares/'),
+    create: (data) => api.post('/api/shares/', data),
+    revoke: (id) => api.delete(`/api/shares/${id}`),
+    access: (token, password) => api.get(`/api/shares/access/${token}`, { params: { password } }),
+    publicDetails: (token, password) => axios.get(`${API_BASE_URL}/api/shares/public/${token}`, { params: { password } }),
+    publicContent: (token, password) => axios.get(`${API_BASE_URL}/api/shares/public/${token}/content`, {
+      params: { password },
+      responseType: 'blob',
+    }),
+  };
 
 // ── Notifications ─────────────────────────────────────────────────────────
 export const notificationsAPI = {

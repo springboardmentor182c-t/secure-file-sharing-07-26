@@ -101,6 +101,7 @@ export function useMyFilesData() {
       await loadData();
       events.emit(EVENTS.FILE_UPLOADED);
       events.emit(EVENTS.STORAGE_CHANGED);
+      events.emit(EVENTS.NOTIFICATIONS_CHANGED);
     } catch (err) {
       console.error('File upload failed:', err);
       throw err;
@@ -116,6 +117,7 @@ export function useMyFilesData() {
     try {
       await foldersAPI.create(folderName.trim(), activeFolder?.id);
       await loadData();
+      events.emit(EVENTS.NOTIFICATIONS_CHANGED);
     } catch (err) {
       console.error('Create folder failed:', err);
       throw err;
@@ -138,8 +140,9 @@ export function useMyFilesData() {
   // Delete folder handler
   const deleteFolder = async (id) => {
     try {
-      await foldersAPI.delete(id);
+      await foldersAPI.delete(id, true);
       setFolders((prev) => prev.filter((f) => f.id !== id));
+      events.emit(EVENTS.STORAGE_CHANGED);
     } catch (err) {
       console.error('Delete folder failed:', err);
       throw err;
@@ -156,6 +159,13 @@ export function useMyFilesData() {
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
+    events.emit(EVENTS.NOTIFICATIONS_CHANGED);
+  };
+
+  const moveFile = async (fileId, folderId) => {
+    const response = await filesAPI.move(fileId, folderId);
+    await loadData();
+    return response.data;
   };
 
   const openFolder = (folder) => {
@@ -196,6 +206,7 @@ export function useMyFilesData() {
     deleteFile,
     deleteFolder,
     downloadFile,
+    moveFile,
     openFolder,
     goToFolder,
     goToRoot: () => {

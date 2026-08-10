@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { settingsAPI } from '../utils/api';
 import { Eye, EyeOff, Laptop, Smartphone, Monitor } from 'lucide-react';
@@ -41,9 +42,13 @@ const formatLastActive = (isoString) => {
 
 const Settings = () => {
   const { user, setUser } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Active Tab state
-  const [activeTab, setActiveTab] = useState('profile');
+  const requestedTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(
+    ['profile', 'security', 'sessions', 'notifications'].includes(requestedTab) ? requestedTab : 'profile'
+  );
 
   // Feedback states
   const [successMsg, setSuccessMsg] = useState('');
@@ -128,9 +133,20 @@ const Settings = () => {
   // Clear feedback messages on tab change
   const handleTabChange = (tab) => {
     setActiveTab(tab);
+    if (tab === 'profile') {
+      setSearchParams({}, { replace: true });
+    } else {
+      setSearchParams({ tab }, { replace: true });
+    }
     setSuccessMsg('');
     setErrorMsg('');
   };
+
+  useEffect(() => {
+    if (['profile', 'security', 'sessions', 'notifications'].includes(requestedTab)) {
+      setActiveTab(requestedTab);
+    }
+  }, [requestedTab]);
 
   // ── Handlers ───────────────────────────────────────────────
 

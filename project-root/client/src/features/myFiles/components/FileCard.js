@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const getFileIcon = (file) => {
   const mime = file?.mimetype || file?.file_type || '';
   const name = file?.name || file?.original_name || '';
@@ -26,16 +28,39 @@ function Tag({ label }) {
   );
 }
 
-export default function FileCard({ file, onDelete, onDownload }) {
+export default function FileCard({ file, onDelete, onDownload, onPointerDragStart }) {
   const fileName = file?.name || file?.original_name || 'Untitled File';
   const category = file?.category || file?.file_type || file?.mimetype?.split('/')[1]?.toUpperCase() || 'General';
   const displaySize = formatSize(file?.size);
   const displayModified = file?.modified || file?.last_modified || (file?.created_at ? new Date(file.created_at).toLocaleDateString() : 'Recent');
   const isEncrypted = file?.encrypted !== false; // Default encrypted badge to true if not specified
   const tags = Array.isArray(file?.tags) ? file.tags : [];
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragStart = (event) => {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData(
+      'application/x-trustshare-file',
+      JSON.stringify({ id: file.id, name: fileName })
+    );
+    setIsDragging(true);
+  };
+
+  const handlePointerDown = (event) => {
+    if (event.button !== 0 || event.target.closest('button')) return;
+    onPointerDragStart?.({ id: file.id, name: fileName });
+    setIsDragging(true);
+    window.addEventListener('pointerup', () => setIsDragging(false), { once: true });
+  };
 
   return (
-    <article className="my-files-card group relative p-5 transition hover:-translate-y-0.5">
+    <article
+      className={`my-files-card group relative p-5 transition hover:-translate-y-0.5 ${isDragging ? 'opacity-60' : ''}`}
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={() => setIsDragging(false)}
+      onPointerDown={handlePointerDown}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="my-files-file-icon inline-flex h-11 w-11 items-center justify-center text-xl">
           {getFileIcon(file)}
