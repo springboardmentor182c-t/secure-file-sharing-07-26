@@ -2,8 +2,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import os
-from fastapi import FastAPI
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 
 from src.activity.controller import router as activity_router
 from src.admin.controller import router as admin_router
@@ -28,6 +32,16 @@ from src.file_summaries.controller import router as file_summaries_router
 from src.assistant.controller import router as assistant_router
 from src.assistant.admin_controller import router as assistant_admin_router
 
+class HealthCheckAwareHTTPSRedirectMiddleware(HTTPSRedirectMiddleware):
+    """Keep the internal load-balancer health probe on HTTP in production."""
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and scope["path"] == "/health":
+            await self.app(scope, receive, send)
+            return
+        await super().__call__(scope, receive, send)
+
+
 def create_app() -> FastAPI:
     # Initialize DB tables
     init_db()
@@ -46,16 +60,22 @@ def create_app() -> FastAPI:
     # automatically redirected to HTTPS.
     # In development, HTTP is allowed (localhost does not need TLS).
     _env = os.getenv("ENVIRONMENT", "development").lower().strip()
-    if _env in ("production", "prod"):
-        from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
-        app.add_middleware(HTTPSRedirectMiddleware)
+    # API Gateway terminates public TLS before forwarding to the protected ECS
+    # service through an HTTP ALB. Redirecting inside ECS would otherwise send
+    # users to the private ALB hostname instead of the public gateway URL.
+    _behind_api_gateway = bool(os.getenv("ECS_CONTAINER_METADATA_URI_V4"))
+    if _env in ("production", "prod") and not _behind_api_gateway:
+        app.add_middleware(HealthCheckAwareHTTPSRedirectMiddleware)
 
-    origins = [
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-    ]
+    configured_origins = os.getenv("BACKEND_CORS_ORIGINS", "")
+    origins = [origin.strip().rstrip("/") for origin in configured_origins.split(",") if origin.strip()]
+    if not origins:
+        origins = [
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:3001",
+        ]
 
     # ── CORS ──────────────────────────────────────────────────────────────────
     app.add_middleware(
@@ -100,6 +120,32 @@ def create_app() -> FastAPI:
         prefix="/api/search",
         tags=["Search"],
     )
+
+    # The production image bundles the React build with the API. Keep this
+    # catch-all last so API and documentation routes continue to take priority.
+    frontend_dir = Path(
+        os.getenv(
+            "FRONTEND_DIST_DIR",
+            Path(__file__).resolve().parents[2] / "client" / "build",
+        )
+    )
+    frontend_index = frontend_dir / "index.html"
+
+    if frontend_index.is_file():
+        @app.get("/{full_path:path}", include_in_schema=False)
+        def serve_frontend(full_path: str):
+            if full_path.startswith("api/"):
+                raise HTTPException(status_code=404, detail="API route not found")
+
+            requested_file = (frontend_dir / full_path).resolve()
+            try:
+                requested_file.relative_to(frontend_dir.resolve())
+            except ValueError:
+                raise HTTPException(status_code=404, detail="File not found")
+
+            if requested_file.is_file():
+                return FileResponse(requested_file)
+            return FileResponse(frontend_index)
 
     return app
 

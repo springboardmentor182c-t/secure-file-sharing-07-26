@@ -31,6 +31,8 @@ import platform
 from pathlib import Path
 from typing import Optional
 
+from src.config import KEYS_DIR
+
 from .exceptions import KeyManagementError
 from .encryption import (
     encrypt_bytes,
@@ -40,9 +42,6 @@ from .encryption import (
 )
 
 # CONFIGURATION
-
-# Directory to securely store encryption keys
-KEYS_DIR = Path("keys")
 
 # File permissions (Unix)
 # Directory: rwx for owner only (0700)
@@ -76,7 +75,7 @@ __all__ = [
 def _initialize_keys_directory() -> None:
     """Initialize keys directory with secure permissions."""
     try:
-        KEYS_DIR.mkdir(exist_ok=True)
+        KEYS_DIR.mkdir(exist_ok=True, parents=True)
 
         # Set restricted permissions (Unix only)
         if not IS_WINDOWS:

@@ -1,0 +1,61 @@
+name: Group D AWS deployment checks
+
+on:
+  pull_request:
+    branches:
+      - main-group-D
+      - Group-D-feature/Deployment-Abhishek
+    paths:
+      - ".github/workflows/aws-deployment*.yml"
+      - "aws/**"
+      - "project-root/**"
+  push:
+    branches:
+      - Group-D-feature/AWS-Deployment-Abhishek
+    paths:
+      - ".github/workflows/aws-deployment*.yml"
+      - "aws/**"
+      - "project-root/**"
+
+jobs:
+  infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Validate CloudFormation
+        run: |
+          python -m pip install cfn-lint
+          cfn-lint aws/infrastructure.yml
+
+  production-container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build production image
+        run: |
+          docker build \
+            --build-arg REACT_APP_API_URL=https://example.invalid \
+            --tag trustshare-ci:${{ github.sha }} \
+            project-root
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: project-root/client
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: project-root/client/package-lock.json
+      - run: npm ci
+      - run: npm run build
+        env:
+          CI: "false"
+          REACT_APP_API_URL: https://example.invalid

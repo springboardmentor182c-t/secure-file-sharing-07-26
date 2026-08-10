@@ -25,13 +25,15 @@ References:
 - PRD 4.Key.ii: Keys managed securely on server
 """
 
+import hashlib
 import os
 import stat
 import logging
 import secrets
 import platform
-from pathlib import Path
 from typing import Optional
+
+from src.config import MASTER_KEY_FILE
 
 from .exceptions import KeyManagementError
 
@@ -39,12 +41,10 @@ from .exceptions import KeyManagementError
 
 # Environment variable name (production)
 MASTER_KEY_ENV_VAR = "MASTER_KEY_HEX"
+AWS_MASTER_KEY_ENV_VAR = "MASTER_KEY"
 
 # Environment name variable — used to detect production
 ENVIRONMENT_VAR = "ENVIRONMENT"
-
-# Fallback file (development only)
-MASTER_KEY_FILE = Path("master.key")
 
 # Key specifications
 MASTER_KEY_SIZE_BYTES = 32  # 256-bit
@@ -225,6 +225,16 @@ def load_master_key(force_reload: bool = False) -> bytes:
         except KeyManagementError as e:
             logger.critical(f"Invalid {MASTER_KEY_ENV_VAR}: {e}")
             raise
+
+    # Existing AWS stacks inject a high-entropy Secrets Manager value as
+    # MASTER_KEY. Derive a stable 256-bit key from it so updating the service
+    # does not make already uploaded files unreadable.
+    aws_secret = os.getenv(AWS_MASTER_KEY_ENV_VAR)
+    if aws_secret:
+        key = hashlib.sha256(aws_secret.encode("utf-8")).digest()
+        _master_key_cache = key
+        logger.info(f"Loaded master key derived from {AWS_MASTER_KEY_ENV_VAR}")
+        return key
 
     # ═══ Priority 2: File Fallback (development) ═══
     if MASTER_KEY_FILE.exists():

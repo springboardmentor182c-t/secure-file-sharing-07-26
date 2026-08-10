@@ -7,8 +7,12 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from src.database.core import get_db
 from src.entities.user import User
+from src.config import ENVIRONMENT
 
-SECRET_KEY = os.getenv("SECRET_KEY", "trustshare-super-secret-key-change-in-prod-2026")
+DEFAULT_SECRET_KEY = "trustshare-super-secret-key-change-in-prod-2026"
+SECRET_KEY = os.getenv("SECRET_KEY", DEFAULT_SECRET_KEY)
+if ENVIRONMENT == "production" and SECRET_KEY == DEFAULT_SECRET_KEY:
+    raise RuntimeError("SECRET_KEY must be set to a strong, unique value in production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REFRESH_TOKEN_EXPIRE_DAYS = 30
