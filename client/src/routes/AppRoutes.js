@@ -9,6 +9,7 @@ import {
 import MainLayout from "../layout/MainLayout";
 
 import Dashboard from "../pages/Dashboard/Dashboard";
+
 import MyFilesPage from "../features/myFiles/MyFilesPage";
 import SharedLinksPage from "../features/sharedLinks/SharedLinksPage";
 import Recent from "../pages/Recent/Recent";
@@ -31,6 +32,9 @@ function AppRoutes() {
 
         <Route element={<MainLayout />}>
           <Route path="/" element={<Dashboard />} />
+
+         
+
           <Route path="/files" element={<MyFilesPage initialView="files" />} />
           <Route path="/starred" element={<MyFilesPage initialView="starred" />} />
           <Route path="/shared-files" element={<SharedFilesView />} />

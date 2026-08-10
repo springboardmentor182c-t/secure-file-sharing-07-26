@@ -12,8 +12,10 @@ import {
   Clock,
   BarChart3,
   Share2,
-  Bell
+  Bell,
+  Sparkles
 } from "lucide-react";
+
 import { Link, useLocation } from "react-router-dom";
 
 export default function Sidebar({ users, stats, currentUser }) {
