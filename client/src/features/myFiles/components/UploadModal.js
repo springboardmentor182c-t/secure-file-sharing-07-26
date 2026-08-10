@@ -1,10 +1,24 @@
 import React, { useState } from "react";
 import ModalShell from "../../../components/common/ModalShell";
 import { FolderIcon } from "../../../layout/icons";
+import AIRecommendationCard from "../../aiRecommendation/components/AIRecommendationCard";
+import useAIRecommendation from "../../aiRecommendation/hooks/useAIRecommendation";
 
 export default function UploadModal({ folders, currentFolderId, selectedFiles, onClose, onUpload, isSaving }) {
   const [selectedFolderId, setSelectedFolderId] = useState(currentFolderId || null);
   const [uploading, setUploading] = useState(false);
+
+  // AI Smart Folder Recommendation - additive/optional. Only analyzes the
+  // first selected file; if it fails or is disabled, the rest of this
+  // modal (manual folder selection + upload) works exactly as before.
+  const { recommendation, loading: aiLoading, error: aiError } = useAIRecommendation(
+    selectedFiles?.[0] || null,
+    currentFolderId || null,
+  );
+
+  function handleUseRecommended(folderId) {
+    setSelectedFolderId(folderId);
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -45,6 +59,16 @@ export default function UploadModal({ folders, currentFolderId, selectedFiles, o
 
         <div className="form-field">
           <label>Select Destination Folder</label>
+          <AIRecommendationCard
+            loading={aiLoading}
+            error={aiError}
+            recommendation={recommendation}
+            onUseRecommended={handleUseRecommended}
+            isSelected={
+              !!recommendation?.recommended_folder_id &&
+              recommendation.recommended_folder_id === selectedFolderId
+            }
+          />
           <div className="upload-modal__folder-list">
             <button
               type="button"

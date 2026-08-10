@@ -7,6 +7,7 @@ shared, so please only ADD to it, don't remove other modules' lines.
 """
 from fastapi import FastAPI
 
+from src.ai_recommendation.controller import router as ai_recommendation_router
 from src.dashboard.controller import router as dashboard_router
 from src.files.controller import folders_router, router as files_router
 from src.recent.controller import router as recent_router
@@ -34,6 +35,7 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(recent_router)
     app.include_router(shared_router)
     app.include_router(trash_router)
+    app.include_router(ai_recommendation_router)
 
     app.include_router(shared_links_router)
     app.include_router(shared_links_public_router)

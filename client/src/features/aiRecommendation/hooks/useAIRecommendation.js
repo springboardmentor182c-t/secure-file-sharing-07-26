@@ -1,50 +1,52 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { recommendFolder } from "../services/aiRecommendationApi";
+import { getRecommendation } from "../services/aiRecommendationApi";
 
 /**
- * Fetches an AI folder recommendation for a single file and exposes
- * loading/error/data state plus a `refresh()` action. Fetches
- * automatically whenever `file` changes (e.g. the user picks a different
- * file to preview in the upload modal); pass `null`/`undefined` to skip.
+ * Fetches an AI folder recommendation for a single file, once, whenever
+ * `file` changes. Fully non-blocking: consumers get `loading`/`error`
+ * state back and decide how to render around it, and the caller's own
+ * upload flow never depends on this resolving.
  *
- * This hook never throws into the render tree - a failed request just
- * surfaces `error`, so the rest of the upload flow (folder picker,
- * Proceed button) keeps working even if the recommendation call fails.
+ * @param {File|null} file - the first selected file to analyze (or null to skip)
+ * @param {string|null} currentFolderId
  */
-export default function useAIRecommendation(file) {
+export default function useAIRecommendation(file, currentFolderId) {
   const [recommendation, setRecommendation] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const requestId = useRef(0);
 
-  const fetchRecommendation = useCallback(async (targetFile) => {
-    if (!targetFile) {
+  const fetchRecommendation = useCallback(async () => {
+    if (!file) {
       setRecommendation(null);
       setError(null);
       return;
     }
+
     const thisRequest = ++requestId.current;
-    setIsLoading(true);
+    setLoading(true);
     setError(null);
     try {
-      const data = await recommendFolder(targetFile);
-      if (thisRequest !== requestId.current) return; // a newer request superseded this one
-      setRecommendation(data);
+      const result = await getRecommendation(file, currentFolderId);
+      if (requestId.current === thisRequest) {
+        setRecommendation(result);
+      }
     } catch (err) {
-      if (thisRequest !== requestId.current) return;
-      setError(err.message || "Couldn't get a recommendation right now.");
-      setRecommendation(null);
+      if (requestId.current === thisRequest) {
+        setError(err.message || "AI recommendation is currently unavailable.");
+        setRecommendation(null);
+      }
     } finally {
-      if (thisRequest === requestId.current) setIsLoading(false);
+      if (requestId.current === thisRequest) {
+        setLoading(false);
+      }
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file, currentFolderId]);
 
   useEffect(() => {
-    fetchRecommendation(file);
-  }, [file, fetchRecommendation]);
+    fetchRecommendation();
+  }, [fetchRecommendation]);
 
-  const refresh = useCallback(() => fetchRecommendation(file), [file, fetchRecommendation]);
-
-  return { recommendation, isLoading, error, refresh };
+  return { recommendation, loading, error, retry: fetchRecommendation };
 }

@@ -1,79 +1,28 @@
 import React from "react";
+import { FolderIcon, CheckIcon } from "../../../layout/icons";
 import "../styles/AIRecommendationCard.css";
 
-function SparkleIcon({ width = 13, height = 13 }) {
-  return (
-    <svg width={width} height={height} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M8 1.5l1.2 3.3L12.5 6l-3.3 1.2L8 10.5l-1.2-3.3L3.5 6l3.3-1.2L8 1.5z"
-        fill="currentColor"
-      />
-      <path d="M13 9.5l0.6 1.6 1.6 0.6-1.6 0.6-0.6 1.6-0.6-1.6-1.6-0.6 1.6-0.6L13 9.5z" fill="currentColor" />
-    </svg>
-  );
-}
-
-function RefreshIcon({ width = 12, height = 12 }) {
-  return (
-    <svg width={width} height={height} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function confidenceTier(confidence) {
-  if (confidence >= 70) return "high";
-  if (confidence >= 40) return "medium";
-  return "low";
-}
-
-const SOURCE_LABELS = {
-  ai: "Gemini",
-  ai_adjusted: "Gemini + similarity",
-  embedding: "Semantic match",
-  fallback: "Suggested",
-};
-
 /**
- * AI Recommendation Card - shown inside the Upload modal after a file is
- * selected. The user always has final control: accepting (or picking an
- * alternative) just pre-fills the folder picker above it, it never
- * uploads or moves anything by itself.
+ * Optional suggestion shown inside the existing Upload Modal. Never forces
+ * a choice - the user can always ignore it and pick a folder manually via
+ * the existing folder list right below it.
  *
- * @param {object} props
- * @param {import("../types").AIRecommendation|null} props.recommendation
- * @param {boolean} props.isLoading
- * @param {string|null} props.error
- * @param {() => void} props.onRefresh
- * @param {() => void} props.onAccept - called when the user accepts the top recommendation.
- * @param {(folderId: string) => void} props.onSelectAlternative - called when the user picks one of the alternative folders.
- * @param {() => void} props.onChooseAnother - called when the user wants to pick a different folder manually.
- * @param {boolean} props.isAccepted - whether the recommended folder is the currently selected one.
- * @param {string|null} props.selectedFolderId - the folder currently selected in the picker below, to highlight a matching alternative.
+ * @param {{
+ *   loading: boolean,
+ *   error: string|null,
+ *   recommendation: import("../types").AIRecommendation|null,
+ *   onUseRecommended: (folderId: string) => void,
+ *   isSelected: boolean,
+ * }} props
  */
-export default function AIRecommendationCard({
-  recommendation,
-  isLoading,
-  error,
-  onRefresh,
-  onAccept,
-  onSelectAlternative,
-  onChooseAnother,
-  isAccepted,
-  selectedFolderId,
-}) {
-  if (isLoading) {
+export default function AIRecommendationCard({ loading, error, recommendation, onUseRecommended, isSelected }) {
+  if (loading) {
     return (
-      <div className="ai-rec-card">
-        <div className="ai-rec-card__loading">
-          <span className="ai-rec-card__spinner" aria-hidden="true" />
-          Analyzing content and matching folders…
+      <div className="ai-rec-card ai-rec-card--loading">
+        <span className="ai-rec-card__spinner" aria-hidden="true" />
+        <div>
+          <p className="ai-rec-card__title">Analyzing file…</p>
+          <p className="ai-rec-card__subtitle">Finding the best folder</p>
         </div>
       </div>
     );
@@ -81,102 +30,52 @@ export default function AIRecommendationCard({
 
   if (error) {
     return (
-      <div className="ai-rec-card">
-        <div className="ai-rec-card__error">{error}</div>
-        <div className="ai-rec-card__actions">
-          <button type="button" className="ai-rec-card__btn" onClick={onRefresh}>
-            <RefreshIcon /> Try again
-          </button>
-        </div>
+      <div className="ai-rec-card ai-rec-card--muted">
+        <p className="ai-rec-card__subtitle">
+          AI recommendation is currently unavailable. Please select a folder manually.
+        </p>
       </div>
     );
   }
 
   if (!recommendation) return null;
 
-  const {
-    recommended_folder,
-    confidence,
-    reason,
-    source,
-    is_new_folder_suggestion,
-    similarity_score,
-    alternative_folders,
-  } = recommendation;
-  const tier = confidenceTier(confidence);
-  const hasAlternatives = Array.isArray(alternative_folders) && alternative_folders.length > 0;
+  // No folders yet, or nothing usable to suggest - stay out of the way.
+  if (!recommendation.recommended_folder_id) {
+    if (recommendation.has_folders === false) return null;
+    return (
+      <div className="ai-rec-card ai-rec-card--muted">
+        <p className="ai-rec-card__subtitle">{recommendation.reason}</p>
+      </div>
+    );
+  }
+
+  const confidencePct = Math.round((recommendation.confidence || 0) * 100);
+  const isFallback = recommendation.source === "fallback";
 
   return (
-    <div className="ai-rec-card">
+    <div className={`ai-rec-card ${isSelected ? "ai-rec-card--active" : ""}`}>
       <div className="ai-rec-card__header">
-        <span className="ai-rec-card__badge">
-          <SparkleIcon /> AI Recommendation
-        </span>
-        <span className="ai-rec-card__source">{SOURCE_LABELS[source] || "Suggested"}</span>
+        <span className="ai-rec-card__badge">AI Recommendation</span>
+        {!isFallback && <span className="ai-rec-card__confidence">{confidencePct}% confidence</span>}
       </div>
 
-      <div className="ai-rec-card__body">
-        <div className="ai-rec-card__folder-row">
-          <span className="ai-rec-card__folder-name">{recommended_folder}</span>
-          {is_new_folder_suggestion && <span className="ai-rec-card__new-tag">New folder</span>}
-        </div>
-
-        <div className="ai-rec-card__confidence-row">
-          <div className="ai-rec-card__confidence-track">
-            <div
-              className={`ai-rec-card__confidence-fill ai-rec-card__confidence-fill--${tier}`}
-              style={{ width: `${Math.max(4, Math.min(100, confidence))}%` }}
-            />
-          </div>
-          <span className="ai-rec-card__confidence-label">{Math.round(confidence)}%</span>
-        </div>
-
-        {typeof similarity_score === "number" && (
-          <p className="ai-rec-card__similarity">
-            Content similarity: <strong>{Math.round(similarity_score * 100)}%</strong>
-          </p>
-        )}
-
-        <p className="ai-rec-card__reason">{reason}</p>
-
-        {hasAlternatives && (
-          <div className="ai-rec-card__alternatives">
-            <span className="ai-rec-card__alternatives-label">Other matches:</span>
-            <div className="ai-rec-card__alternatives-list">
-              {alternative_folders.map((alt) => (
-                <button
-                  key={alt.folder_id || alt.folder_name}
-                  type="button"
-                  className={`ai-rec-card__chip ${selectedFolderId && alt.folder_id === selectedFolderId ? "ai-rec-card__chip--active" : ""}`}
-                  onClick={() => alt.folder_id && onSelectAlternative(alt.folder_id)}
-                  disabled={!alt.folder_id}
-                >
-                  {alt.folder_name}
-                  <span className="ai-rec-card__chip-score">{Math.round(alt.similarity_score * 100)}%</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+      <div className="ai-rec-card__folder-row">
+        <FolderIcon width={16} height={16} />
+        <span className="ai-rec-card__folder-name">{recommendation.recommended_folder_name}</span>
+        {isSelected && <CheckIcon width={14} height={14} className="ai-rec-card__check" />}
       </div>
 
-      <div className="ai-rec-card__actions">
-        <button
-          type="button"
-          className={`ai-rec-card__btn ${isAccepted ? "ai-rec-card__btn--accepted" : "ai-rec-card__btn--accept"}`}
-          onClick={onAccept}
-          disabled={isAccepted || is_new_folder_suggestion}
-          title={is_new_folder_suggestion ? "Create this folder first, then choose it below" : undefined}
-        >
-          {isAccepted ? "Accepted" : "Accept Recommendation"}
-        </button>
-        <button type="button" className="ai-rec-card__btn" onClick={onChooseAnother}>
-          Choose Another Folder
-        </button>
-        <button type="button" className="ai-rec-card__btn" onClick={onRefresh}>
-          <RefreshIcon /> Refresh
-        </button>
-      </div>
+      <p className="ai-rec-card__reason">{recommendation.reason}</p>
+
+      <button
+        type="button"
+        className="btn btn--ghost ai-rec-card__action"
+        onClick={() => onUseRecommended(recommendation.recommended_folder_id)}
+        disabled={isSelected}
+      >
+        {isSelected ? "Recommended folder selected" : "Use Recommended Folder"}
+      </button>
     </div>
   );
 }

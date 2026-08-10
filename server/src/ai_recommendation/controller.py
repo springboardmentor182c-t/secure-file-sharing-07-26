@@ -1,36 +1,68 @@
 """
-Route handler functions for the AI Smart Folder Recommendation module.
-Kept separate from `router.py` so the HTTP wiring (paths, tags, response
-models) and the request-handling logic can change independently, matching
-this project's convention of small, single-responsibility files.
-"""
-import uuid
-from typing import Annotated
+AI Smart Folder Recommendation endpoint.
 
-from fastapi import Depends, File as FastAPIFile, UploadFile
+    POST /api/ai/recommend-folder
+
+Takes the same kind of multipart upload the existing `POST /files` endpoint
+takes (the file hasn't been uploaded/saved yet), and returns a suggested
+existing folder. This is a read-only, additive endpoint - it never creates,
+moves, or deletes anything; the actual save still goes through the
+existing `POST /files` endpoint untouched.
+"""
+import logging
+import uuid
+from typing import Annotated, Optional
+
+from fastapi import Depends, File as FastAPIFile, Form, UploadFile
 from sqlalchemy.orm import Session
 
-from src.ai_recommendation import service
-from src.ai_recommendation.schemas import RecommendFolderResponse
+from src.ai_recommendation.config import AI_RECOMMENDATION_ENABLED
+from src.ai_recommendation.router import router
+from src.ai_recommendation.schemas import RecommendationData
+from src.ai_recommendation.service import recommend_folder
 from src.database.core import get_db
 from src.dependencies import get_current_user_id
 from src.schemas import ApiResponse
 
+logger = logging.getLogger("app.ai_recommendation")
 
-async def recommend_folder(
+
+@router.post(
+    "/recommend-folder",
+    response_model=ApiResponse[RecommendationData],
+    summary="Suggest the best existing folder for a not-yet-uploaded file",
+)
+async def recommend_folder_endpoint(
     owner_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
     db: Annotated[Session, Depends(get_db)],
     upload: UploadFile = FastAPIFile(...),
-) -> ApiResponse[RecommendFolderResponse]:
-    """
-    POST /api/ai/recommend-folder
+    current_folder_id: Optional[uuid.UUID] = Form(default=None),
+):
+    if not AI_RECOMMENDATION_ENABLED:
+        return ApiResponse(
+            message="AI recommendation is disabled",
+            data=RecommendationData(
+                confidence=0.0,
+                reason="AI recommendation is currently unavailable. Please select a folder manually.",
+                source="fallback",
+            ),
+        )
 
-    Recommends the best destination folder for a file the user is about
-    to upload, using Gemini reasoning enhanced and validated by semantic
-    (sentence-transformers) embeddings. Does NOT save the file - the
-    existing `POST /files` endpoint remains solely responsible for
-    persisting uploads. This endpoint never raises on AI/embedding
-    failure; it always returns a usable recommendation.
-    """
-    recommendation = await service.get_folder_recommendation(db, owner_id=owner_id, upload=upload)
-    return ApiResponse(message="Recommendation generated", data=recommendation)
+    contents = await upload.read()
+    try:
+        result = recommend_folder(
+            db, owner_id=owner_id, filename=upload.filename or "upload",
+            mime_type=upload.content_type or "application/octet-stream",
+            contents=contents, current_folder_id=current_folder_id,
+        )
+    except Exception:
+        # Absolute last resort - the endpoint must never 500 the frontend
+        # out of the upload flow. Details are logged, not surfaced.
+        logger.exception("AI recommendation crashed unexpectedly for user=%s", owner_id)
+        result = RecommendationData(
+            confidence=0.0,
+            reason="AI recommendation is currently unavailable. Please select a folder manually.",
+            source="fallback",
+        )
+
+    return ApiResponse(message="Recommendation generated", data=result)
