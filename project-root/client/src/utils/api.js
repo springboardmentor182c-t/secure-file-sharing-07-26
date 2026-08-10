@@ -160,7 +160,7 @@ export const settingsAPI = {
     api.put("/settings/profile", data),
 
   changePassword: (data) =>
-    api.post("/settings/change-password", data),
+    api.post("/api/auth/change-password", data),
 
   getSessions: () =>
     api.get("/settings/sessions"),

@@ -69,7 +69,6 @@ def swagger_login(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
-    request: Request = None,
 ):
     ip = _get_client_ip(request)
 
@@ -381,7 +380,9 @@ def disable_mfa(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return service.disable_mfa(db, current_user) 
+    return service.disable_mfa(db, current_user)
+
+
 @router.post("/change-password")
 def change_password(
     body: models.ChangePasswordRequest,
@@ -390,7 +391,6 @@ def change_password(
 ):
     service.change_password(db, current_user, body.current_password, body.new_password)
     return {"status": "success", "message": "Password changed successfully"}
-    return service.disable_mfa(db, current_user)
 
 
 # ── User Storage Breakdown ────────────────────────────────────────────────

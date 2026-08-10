@@ -56,9 +56,18 @@ export default function Files() {
       for (const file of filesToUpload) {
         const fd = new FormData();
         fd.append('file', file);
-        await filesAPI.upload(fd, pct => setUploadPct(pct));
+        const res = await filesAPI.upload(fd, pct => setUploadPct(pct));
+        const payload = res?.data;
+        if (payload?.duplicate) {
+          if (payload?.type === 'exact') {
+            showToast('Exact duplicate detected');
+          } else {
+            showToast(`Similar file detected (${Math.round(payload?.similarity_score || 0)}%)`);
+          }
+        } else {
+          showToast('No duplicate found');
+        }
       }
-      showToast(`${filesToUpload.length} file(s) uploaded successfully!`);
       events.emit(EVENTS.STORAGE_CHANGED);
       load();
     } catch (e) {

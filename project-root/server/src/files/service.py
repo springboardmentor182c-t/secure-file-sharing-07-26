@@ -5,6 +5,7 @@ import re
 import uuid
 import hashlib
 import mimetypes
+import json
 
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -43,6 +44,9 @@ from src.analytics.constants import (
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
+
+_EMBEDDER = None
+_EMBEDDING_ERROR = None
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -123,6 +127,164 @@ def _detect_suspicious_activity(
                 "attempts": failed_attempts,
             },
         )
+
+
+def _get_embedder():
+    global _EMBEDDER, _EMBEDDING_ERROR
+    if _EMBEDDER is not None:
+        return _EMBEDDER
+    try:
+        from sentence_transformers import SentenceTransformer
+        _EMBEDDER = SentenceTransformer("all-MiniLM-L6-v2")
+    except Exception as exc:
+        _EMBEDDING_ERROR = exc
+        _EMBEDDER = None
+    return _EMBEDDER
+
+
+def _extract_text_from_bytes(filename: str, file_bytes: bytes) -> str | None:
+    ext = Path(filename).suffix.lower()
+    if ext == ".pdf":
+        try:
+            from PyPDF2 import PdfReader
+            from io import BytesIO
+            reader = PdfReader(BytesIO(file_bytes))
+            pages = [page.extract_text() or "" for page in reader.pages]
+            return "\n".join(page for page in pages if page).strip()
+        except Exception:
+            return None
+    if ext == ".docx":
+        try:
+            from docx import Document
+            from io import BytesIO
+            doc = Document(BytesIO(file_bytes))
+            return "\n".join(p.text for p in doc.paragraphs if p.text).strip()
+        except Exception:
+            return None
+    if ext == ".txt":
+        try:
+            return file_bytes.decode("utf-8", errors="ignore").strip()
+        except Exception:
+            return None
+    return None
+
+
+def _build_embedding(text: str) -> list[float] | None:
+    if not text:
+        return None
+    embedder = _get_embedder()
+    if embedder is None:
+        return None
+    try:
+        embedding = embedder.encode(text, normalize_embeddings=True)
+        return [float(value) for value in embedding]
+    except Exception:
+        return None
+
+
+def _cosine_similarity(left: list[float], right: list[float]) -> float | None:
+    if not left or not right:
+        return None
+    try:
+        from sklearn.metrics.pairwise import cosine_similarity
+        similarity = cosine_similarity([left], [right])[0][0]
+        return float(max(0.0, similarity) * 100)
+    except Exception:
+        return None
+
+
+def _serialize_embedding(embedding: list[float] | None) -> str | None:
+    if not embedding:
+        return None
+    return json.dumps(embedding)
+
+
+def _deserialize_embedding(value: str | None) -> list[float] | None:
+    if not value:
+        return None
+    try:
+        payload = json.loads(value)
+        return [float(item) for item in payload]
+    except Exception:
+        return None
+
+
+def _build_duplicate_payload(file_name: str, file_size: int, mimetype: str, file_hash: str, duplicate_type: str, similarity: float | None = None) -> dict:
+    return {
+        "id": 0,
+        "original_name": file_name,
+        "mimetype": mimetype,
+        "size": file_size,
+        "encrypted": True,
+        "hash_sha256": file_hash,
+        "file_hash": file_hash,
+        "is_duplicate": True,
+        "duplicate_of": None,
+        "similarity_score": similarity,
+        "duplicate": True,
+        "type": duplicate_type,
+        "version": 1,
+        "owner_id": 0,
+        "folder_id": None,
+        "download_count": 0,
+        "last_downloaded_at": None,
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": None,
+    }
+
+
+def _detect_duplicate(
+    db: Session,
+    owner_id: int,
+    file_bytes: bytes,
+    file_name: str,
+    mimetype: str,
+    file_hash: str,
+) -> dict | None:
+    existing = (
+        db.query(File)
+        .filter(File.owner_id == owner_id, File.is_deleted == False, File.file_hash == file_hash)
+        .order_by(File.created_at.desc())
+        .first()
+    )
+    if existing:
+        return _build_duplicate_payload(file_name, len(file_bytes), mimetype, file_hash, "exact", 100.0)
+
+    ext = Path(file_name).suffix.lower()
+    if ext not in {".pdf", ".docx", ".txt"}:
+        return None
+
+    text = _extract_text_from_bytes(file_name, file_bytes)
+    if not text:
+        return None
+
+    embedding = _build_embedding(text)
+    if not embedding:
+        return None
+
+    candidates = (
+        db.query(File)
+        .filter(File.owner_id == owner_id, File.is_deleted == False, File.embedding != None)
+        .order_by(File.created_at.desc())
+        .all()
+    )
+
+    for candidate in candidates:
+        candidate_embedding = _deserialize_embedding(candidate.embedding)
+        if not candidate_embedding:
+            continue
+        similarity = _cosine_similarity(embedding, candidate_embedding)
+        if similarity is not None and similarity >= 90:
+            return _build_duplicate_payload(
+                file_name,
+                len(file_bytes),
+                mimetype,
+                file_hash,
+                "similar",
+                round(similarity, 2),
+            )
+
+    return None
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -217,7 +379,7 @@ def upload_file(
     folder_id: int | None,
     encrypted: bool,
     ip_address: str | None = None,
-) -> File:
+):
     # Read uploaded file
     upload.file.seek(0)
     file_bytes = upload.file.read()
@@ -248,6 +410,20 @@ def upload_file(
     # Sanitize filename
     safe_filename = sanitize_filename(upload.filename)
 
+    # SHA-256 integrity hash
+    hash_sha256 = hashlib.sha256(file_bytes).hexdigest()
+
+    duplicate_payload = _detect_duplicate(
+        db,
+        owner_id,
+        file_bytes,
+        safe_filename,
+        upload.content_type or mimetypes.guess_type(safe_filename)[0] or "application/octet-stream",
+        hash_sha256,
+    )
+    if duplicate_payload is not None:
+        return duplicate_payload
+
     # Unique storage filename
     stored_name = f"{uuid.uuid4().hex}{Path(safe_filename).suffix.lower()}"
 
@@ -262,15 +438,18 @@ def upload_file(
     # Store encrypted file
     save_encrypted_file(stored_name, stored_bytes)
 
-    # SHA-256 integrity hash
-    hash_sha256 = hashlib.sha256(file_bytes).hexdigest()
-
     # Detect MIME type
     mimetype = (
         upload.content_type
         or mimetypes.guess_type(safe_filename)[0]
         or "application/octet-stream"
     )
+
+    # Generate embedding for supported document types
+    embedding_text = _extract_text_from_bytes(safe_filename, file_bytes)
+    embedding_payload = None
+    if embedding_text:
+        embedding_payload = _build_embedding(embedding_text)
 
     # Save metadata
     file = File(
@@ -280,6 +459,11 @@ def upload_file(
         size=file_size,
         encrypted=encrypted,
         hash_sha256=hash_sha256,
+        file_hash=hash_sha256,
+        embedding=_serialize_embedding(embedding_payload),
+        is_duplicate=False,
+        duplicate_of=None,
+        similarity_score=None,
         owner_id=owner_id,
         folder_id=folder_id,
     )
