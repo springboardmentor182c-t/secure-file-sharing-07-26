@@ -139,6 +139,45 @@ def create_share(
             type="info",
         )
 
+        # Notify any registered users among recipients in real-time
+        try:
+            recipient_users = db.query(User).filter(User.email.in_(rec_list)).all()
+            for r_user in recipient_users:
+                create_notification(
+                    db=db,
+                    user_id=r_user.id,
+                    title="File Shared With You",
+                    message=f"{sender_addr} shared '{file.original_name}' with you ({permission.upper()} access).",
+                    type="share",
+                )
+                emit_sync(r_user.id, "share_received", {
+                    "share_id": str(link.id),
+                    "file_id": str(file.id),
+                    "file_name": file.original_name,
+                    "sender_email": sender_addr,
+                    "permission": link.permission,
+                    "share_url": share_url,
+                    "token": link.token,
+                    "expires_at": link.expires_at.isoformat() if link.expires_at else None,
+                    "has_password": bool(password),
+                    "created_at": link.created_at.isoformat() if link.created_at else None,
+                })
+        except Exception:
+            pass
+
+        # Emit email_share_sent confirmation to owner
+        emit_sync(user.id, "email_share_sent", {
+            "share_id": str(link.id),
+            "file_id": str(file.id),
+            "file_name": file.original_name,
+            "recipients": rec_list,
+            "permission": link.permission,
+            "token": link.token,
+            "share_url": share_url,
+            "expires_at": link.expires_at.isoformat() if link.expires_at else None,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+
     # Real-time event to owner
     emit_sync(user.id, "share_created", {
         "share_id": str(link.id),
@@ -254,6 +293,9 @@ def get_share_info(db: Session, token: str) -> dict | None:
     if link.max_access and link.access_count >= link.max_access:
         is_limit_reached = True
 
+    owner = db.query(User).filter(User.id == file.owner_id).first()
+    owner_email = owner.email if owner else None
+
     return {
         "id": link.id,
         "token": link.token,
@@ -270,6 +312,7 @@ def get_share_info(db: Session, token: str) -> dict | None:
         "is_expired": is_expired,
         "is_limit_reached": is_limit_reached,
         "is_encrypted": file.encrypted,
+        "owner_email": owner_email,
         "created_at": link.created_at,
     }
 

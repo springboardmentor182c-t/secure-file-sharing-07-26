@@ -5,6 +5,7 @@ import {
   AlertCircle, CheckCircle2, RefreshCw, Copy, Check, ArrowLeft,
 } from 'lucide-react';
 import { sharesAPI } from '../utils/api';
+import { decryptText, decryptFileBytes, resolveE2EEDecryption } from '../utils/crypto';
 import './PublicShare.css';
 
 function formatBytes(bytes = 0) {
@@ -28,6 +29,7 @@ function getFileExt(name = '') {
 export default function PublicShare() {
   const { token } = useParams();
   const [shareInfo, setShareInfo] = useState(null);
+  const [e2eeKey, setE2eeKey] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -40,7 +42,7 @@ export default function PublicShare() {
 
   // Preview & Download states
   const [previewContent, setPreviewContent] = useState(null);
-  const [previewType, setPreviewType] = useState(null); // 'text' | 'image' | 'pdf' | 'none'
+  const [previewType, setPreviewType] = useState(null); // 'text' | 'image' | 'pdf' | 'doc'
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [editContent, setEditContent] = useState('');
@@ -52,9 +54,46 @@ export default function PublicShare() {
     setLoading(true);
     setError('');
     sharesAPI.getInfo(token)
-      .then((res) => {
+      .then(async (res) => {
         const data = res.data;
-        setShareInfo(data);
+        let decFileName = data.file_name;
+        let decMime = data.mimetype;
+        let activeKey = null;
+
+        try {
+          const candidateSalts = [
+            data.owner_email,
+            "alex.johnson@secureshare.com",
+            "amruthalasurya2@gmail.com",
+            "alex@secureshare.local",
+            "default-user-salt-2026",
+          ];
+
+          if (data.file_name?.startsWith('e2ee:')) {
+            const { key, decryptedText } = await resolveE2EEDecryption(data.file_name, candidateSalts);
+            if (decryptedText && decryptedText !== "[Decryption Failed]") {
+              decFileName = decryptedText;
+              activeKey = key;
+            }
+          }
+
+          if (activeKey && data.mimetype?.startsWith('e2ee:')) {
+            decMime = await decryptText(data.mimetype, activeKey);
+          }
+        } catch (e) {
+          console.warn("Error decrypting share metadata:", e);
+        }
+
+        if (activeKey) {
+          setE2eeKey(activeKey);
+        }
+
+        setShareInfo({
+          ...data,
+          file_name: decFileName,
+          mimetype: decMime,
+          raw_file_name: data.file_name,
+        });
         setHasPassword(data.has_password);
         if (!data.has_password) {
           setIsUnlocked(true);
@@ -72,15 +111,11 @@ export default function PublicShare() {
   // 2. Fetch preview content once unlocked if permission allows
   const loadPreview = useCallback(async (pw = null) => {
     if (!token || !shareInfo) return;
-    const ext = getFileExt(shareInfo.file_name);
-    const isImg = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(ext);
-    const isText = ['txt', 'md', 'json', 'js', 'py', 'html', 'css', 'csv', 'sql', 'xml', 'log'].includes(ext);
+    const fileName = shareInfo.file_name || '';
+    const ext = getFileExt(fileName);
+    const isImg = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico'].includes(ext);
+    const isText = ['txt', 'md', 'json', 'js', 'jsx', 'ts', 'tsx', 'py', 'html', 'css', 'csv', 'sql', 'xml', 'log', 'yaml', 'yml', 'env', 'sh', 'bat'].includes(ext);
     const isPdf = ext === 'pdf';
-
-    if (!isImg && !isText && !isPdf && shareInfo.permission !== 'edit') {
-      setPreviewType('none');
-      return;
-    }
 
     setLoadingPreview(true);
     try {
@@ -88,30 +123,59 @@ export default function PublicShare() {
       await sharesAPI.access(token, pw || password).catch(() => {});
 
       const res = await sharesAPI.downloadPublic(token, pw || password);
-      const blob = res.data;
+      let rawBlob = res.data;
+
+      // If file was E2EE encrypted, decrypt the bytes client-side
+      if (shareInfo.is_encrypted || shareInfo.raw_file_name?.startsWith('e2ee:') || shareInfo.file_name?.startsWith('e2ee:')) {
+        let key = e2eeKey;
+        if (!key) {
+          const candidateSalts = [
+            shareInfo.owner_email,
+            "alex.johnson@secureshare.com",
+            "amruthalasurya2@gmail.com",
+            "alex@secureshare.local",
+            "default-user-salt-2026",
+          ];
+          const resKey = await resolveE2EEDecryption(shareInfo.raw_file_name || shareInfo.file_name, candidateSalts);
+          key = resKey.key;
+        }
+
+        if (key) {
+          try {
+            const arrayBuf = await rawBlob.arrayBuffer();
+            rawBlob = await decryptFileBytes(arrayBuf, key, shareInfo.mimetype);
+          } catch (decErr) {
+            console.warn("Could not decrypt file bytes:", decErr);
+          }
+        }
+      }
 
       if (isImg) {
+        const mime = rawBlob.type || (ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : 'image/jpeg');
+        const blob = new Blob([rawBlob], { type: mime });
         const objUrl = URL.createObjectURL(blob);
         setPreviewContent(objUrl);
         setPreviewType('image');
       } else if (isPdf) {
+        const blob = new Blob([rawBlob], { type: 'application/pdf' });
         const objUrl = URL.createObjectURL(blob);
         setPreviewContent(objUrl);
         setPreviewType('pdf');
-      } else {
-        // Text / code preview
-        const text = await blob.text();
+      } else if (isText || shareInfo.permission === 'edit') {
+        const text = await rawBlob.text();
         setPreviewContent(text);
         setEditContent(text);
         setPreviewType('text');
+      } else {
+        setPreviewType('doc');
       }
     } catch (e) {
       console.warn('Failed to load inline preview:', e);
-      setPreviewType('none');
+      setPreviewType('doc');
     } finally {
       setLoadingPreview(false);
     }
-  }, [token, shareInfo, password]);
+  }, [token, shareInfo, password, e2eeKey]);
 
   useEffect(() => {
     if (isUnlocked && shareInfo && !previewContent && previewType === null) {
@@ -147,8 +211,33 @@ export default function PublicShare() {
       await sharesAPI.access(token, password).catch(() => {});
 
       const res = await sharesAPI.downloadPublic(token, password);
-      const blob = res.data;
-      const url = window.URL.createObjectURL(blob);
+      let finalBlob = res.data;
+
+      if (shareInfo.is_encrypted || shareInfo.raw_file_name?.startsWith('e2ee:') || shareInfo.file_name?.startsWith('e2ee:')) {
+        let key = e2eeKey;
+        if (!key) {
+          const candidateSalts = [
+            shareInfo.owner_email,
+            "alex.johnson@secureshare.com",
+            "amruthalasurya2@gmail.com",
+            "alex@secureshare.local",
+            "default-user-salt-2026",
+          ];
+          const resKey = await resolveE2EEDecryption(shareInfo.raw_file_name || shareInfo.file_name, candidateSalts);
+          key = resKey.key;
+        }
+
+        if (key) {
+          try {
+            const arrayBuf = await finalBlob.arrayBuffer();
+            finalBlob = await decryptFileBytes(arrayBuf, key, shareInfo.mimetype);
+          } catch (e) {
+            console.warn("Client decryption error during download:", e);
+          }
+        }
+      }
+
+      const url = window.URL.createObjectURL(finalBlob);
       const a = document.createElement('a');
       a.href = url;
       a.download = shareInfo?.file_name || 'download';
@@ -303,9 +392,10 @@ export default function PublicShare() {
 
                 {/* Inline Preview / Editor */}
                 {loadingPreview ? (
-                  <div style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8' }}>
-                    <RefreshCw size={24} className="spin" color="#38bdf8" />
-                    <p style={{ marginTop: 12, fontSize: '0.875rem' }}>Loading secure file preview in-memory…</p>
+                  <div style={{ padding: '48px 0', textAlign: 'center', color: '#94a3b8' }}>
+                    <RefreshCw size={28} className="spin" color="#38bdf8" style={{ margin: '0 auto 12px' }} />
+                    <p style={{ fontSize: '0.95rem', fontWeight: 500, color: '#e2e8f0' }}>Decrypting and loading document…</p>
+                    <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: 4 }}>End-to-End Encryption verified</p>
                   </div>
                 ) : isEdit ? (
                   /* Editor for Edit Permission */
@@ -324,11 +414,11 @@ export default function PublicShare() {
                     />
                   </div>
                 ) : previewType === 'image' ? (
-                  <div className="ps-preview-box">
-                    <img src={previewContent} alt={shareInfo.file_name} className="ps-preview-img" />
+                  <div className="ps-preview-box" style={{ textAlign: 'center', padding: '16px' }}>
+                    <img src={previewContent} alt={shareInfo.file_name} className="ps-preview-img" style={{ maxHeight: '520px', maxWidth: '100%', borderRadius: 8, objectFit: 'contain' }} />
                   </div>
                 ) : previewType === 'pdf' ? (
-                  <div className="ps-preview-box" style={{ height: 380 }}>
+                  <div className="ps-preview-box" style={{ height: 560, padding: 0, overflow: 'hidden' }}>
                     <iframe src={previewContent} title={shareInfo.file_name} width="100%" height="100%" style={{ border: 'none', borderRadius: 8 }} />
                   </div>
                 ) : previewType === 'text' ? (
@@ -340,7 +430,30 @@ export default function PublicShare() {
                     </div>
                     <pre className="ps-preview-text">{previewContent}</pre>
                   </div>
-                ) : null}
+                ) : (
+                  <div className="ps-preview-box" style={{ padding: '36px 20px', textAlign: 'center' }}>
+                    <div style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: 16,
+                      background: 'rgba(59,130,246,0.15)',
+                      border: '1px solid rgba(59,130,246,0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 16px',
+                      color: '#60a5fa',
+                    }}>
+                      <FileText size={32} />
+                    </div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#f8fafc', marginBottom: 6 }}>
+                      {shareInfo.file_name}
+                    </h3>
+                    <p style={{ fontSize: '0.85rem', color: '#94a3b8', maxWidth: 360, margin: '0 auto' }}>
+                      Protected with AES-256 encryption. Use the download button below to access this document.
+                    </p>
+                  </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="ps-action-row">

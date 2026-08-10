@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Shield, Link2, Mail, Clock, Copy, Check, Eye, Download,
   Edit3, Lock, Calendar, AlertCircle, ChevronDown, X, Send,
-  FileText, RefreshCw, ExternalLink, Search,
+  FileText, RefreshCw, ExternalLink, Search, Radio, Activity,
 } from 'lucide-react';
 import { filesAPI, sharesAPI } from '../utils/api';
 import { useRealtime } from '../context/RealtimeContext';
@@ -99,8 +99,19 @@ function PermSelector({ value, onChange }) {
   );
 }
 
-/* ─── Generated Link Panel ─── */
-function GeneratedLinkPanel({ link, permission, expiresAt, passwordEnabled, downloadLimitEnabled, recipientEmails, isEmail }) {
+/* ─── Generated Link Panel with Real-Time Tracking ─── */
+function GeneratedLinkPanel({
+  link,
+  permission,
+  expiresAt,
+  passwordEnabled,
+  downloadLimitEnabled,
+  recipientEmails,
+  isEmail,
+  accessCount = 0,
+  liveActivity = [],
+  isConnected = false,
+}) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -116,9 +127,32 @@ function GeneratedLinkPanel({ link, permission, expiresAt, passwordEnabled, down
 
   return (
     <div className="ss-card ss-link-panel">
-      <div className="ss-link-panel-title">
-        {isEmail ? <Mail size={16} color="#3b82f6" /> : <Shield size={16} color="#10b981" />}
-        <span>{isEmail ? 'Secure Email Dispatch' : 'Generated Link'}</span>
+      <div className="ss-link-panel-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {isEmail ? <Mail size={16} color="#3b82f6" /> : <Shield size={16} color="#10b981" />}
+          <span>{isEmail ? 'Secure Email Dispatch' : 'Generated Link'}</span>
+        </div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          fontSize: '0.72rem',
+          color: isConnected ? '#34d399' : '#94a3b8',
+          background: isConnected ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255, 255, 255, 0.05)',
+          border: `1px solid ${isConnected ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255, 255, 255, 0.08)'}`,
+          padding: '2px 8px',
+          borderRadius: 9999,
+          fontWeight: 600,
+        }}>
+          <span style={{
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            background: isConnected ? '#10b981' : '#64748b',
+            boxShadow: isConnected ? '0 0 6px #10b981' : 'none',
+          }} />
+          {isConnected ? 'Real-Time Active' : 'Offline'}
+        </div>
       </div>
 
       {link ? (
@@ -127,14 +161,26 @@ function GeneratedLinkPanel({ link, permission, expiresAt, passwordEnabled, down
             <div style={{
               background: 'rgba(59,130,246,0.1)',
               border: '1px solid rgba(59,130,246,0.25)',
-              borderRadius: '8px',
+              borderRadius: '10px',
               padding: '12px 14px',
               marginBottom: '16px',
             }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
-                Secure Email Sent To
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Secure Email Sent To
+                </span>
+                <span style={{
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  color: accessCount > 0 ? '#34d399' : '#38bdf8',
+                  background: accessCount > 0 ? 'rgba(16,185,129,0.2)' : 'rgba(59,130,246,0.2)',
+                  padding: '1px 8px',
+                  borderRadius: 6,
+                }}>
+                  {accessCount} Live View{accessCount !== 1 ? 's' : ''}
+                </span>
               </div>
-              <div style={{ fontSize: '0.8125rem', color: '#f1f5f9', fontWeight: 500, wordBreak: 'break-all' }}>
+              <div style={{ fontSize: '0.82rem', color: '#f1f5f9', fontWeight: 500, wordBreak: 'break-all' }}>
                 {recipientEmails.join(', ')}
               </div>
             </div>
@@ -156,6 +202,29 @@ function GeneratedLinkPanel({ link, permission, expiresAt, passwordEnabled, down
               <ExternalLink size={15} color="#38bdf8" />
             </a>
           </div>
+
+          {/* Real-time live activity tracker */}
+          {liveActivity && liveActivity.length > 0 && (
+            <div style={{
+              background: 'rgba(5, 12, 26, 0.7)',
+              border: '1px solid rgba(59, 130, 246, 0.2)',
+              borderRadius: '10px',
+              padding: '10px 12px',
+              margin: '14px 0',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.72rem', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase', marginBottom: 6 }}>
+                <Activity size={12} className="spin-slow" /> Live Real-Time Feed
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {liveActivity.slice(0, 3).map((act, i) => (
+                  <div key={i} style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>{act.text}</span>
+                    <span style={{ color: '#64748b', fontSize: '0.7rem' }}>{act.time}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="ss-link-meta">
             <div className="ss-meta-row">
@@ -189,7 +258,7 @@ function GeneratedLinkPanel({ link, permission, expiresAt, passwordEnabled, down
             <Check size={14} color="#10b981" style={{ flexShrink: 0 }} />
             <span>
               {isEmail
-                ? 'An email detailing the secure link and these assigned access rules & rights was dispatched to the recipient(s).'
+                ? 'Email dispatched with real-time tracking enabled. Recipient accesses are monitored live via WebSocket.'
                 : 'This link is protected with end-to-end encryption. Even SecureShare cannot access the file contents.'}
             </span>
           </div>
@@ -197,7 +266,7 @@ function GeneratedLinkPanel({ link, permission, expiresAt, passwordEnabled, down
       ) : (
         <div className="ss-link-empty">
           {isEmail ? <Mail size={32} color="#334155" /> : <Shield size={32} color="#334155" />}
-          <p>{isEmail ? 'Send a secure email to view dispatch details and assigned rights here' : 'Generate a secure link to see details here'}</p>
+          <p>{isEmail ? 'Send a secure email to view real-time dispatch and access tracking here' : 'Generate a secure link to see details here'}</p>
         </div>
       )}
     </div>
@@ -277,6 +346,19 @@ function GenerateLinkTab({ files }) {
   const [generating, setGenerating]     = useState(false);
   const [error, setError]               = useState('');
   const [shareData, setShareData]       = useState(null);
+  const [accessCount, setAccessCount]   = useState(0);
+
+  const realtime = useRealtime();
+
+  useEffect(() => {
+    if (!realtime?.subscribe || !shareData?.token) return;
+    const unsub = realtime.subscribe('share_accessed', (data) => {
+      if (data.token === shareData.token || data.share_id === shareData.id) {
+        setAccessCount(data.access_count || (c => c + 1));
+      }
+    });
+    return () => unsub();
+  }, [realtime, shareData]);
 
   const handleGenerate = async () => {
     if (!selectedFile) { setError('Please select a file first.'); return; }
@@ -293,6 +375,7 @@ function GenerateLinkTab({ files }) {
       const res = await sharesAPI.create(payload);
       const data = res.data;
       setShareData(data);
+      setAccessCount(data.access_count || 0);
       const token = data.token || data.share_token || data.id;
       const base = window.location.origin;
       setGeneratedLink(`${base}/share/${token}`);
@@ -404,13 +487,15 @@ function GenerateLinkTab({ files }) {
         expiresAt={expiresAt || shareData?.expires_at}
         passwordEnabled={passwordEnabled}
         downloadLimitEnabled={downloadLimit}
+        accessCount={accessCount}
+        isConnected={realtime?.isConnected}
       />
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════
-   TAB 2 — Email Share
+   TAB 2 — Email Share with Real-Time Tracking
 ═══════════════════════════════════════════════════ */
 function EmailShareTab({ files }) {
   const [selectedFile, setSelectedFile] = useState('');
@@ -427,6 +512,28 @@ function EmailShareTab({ files }) {
   const [shareData, setShareData]       = useState(null);
   const [sentLink, setSentLink]         = useState('');
   const [sentRecipients, setSentRecipients] = useState([]);
+  const [accessCount, setAccessCount]   = useState(0);
+  const [liveActivity, setLiveActivity] = useState([]);
+
+  const realtime = useRealtime();
+
+  // Listen for real-time access of the newly sent email share
+  useEffect(() => {
+    if (!realtime?.subscribe || !shareData) return;
+
+    const unsub = realtime.subscribe('share_accessed', (data) => {
+      if (data.token === shareData.token || data.share_id === shareData.id) {
+        setAccessCount(data.access_count || (c => c + 1));
+        const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        setLiveActivity(prev => [
+          { text: `⚡ Recipient opened file via link (Access #${data.access_count})`, time: nowStr },
+          ...prev,
+        ]);
+      }
+    });
+
+    return () => unsub();
+  }, [realtime, shareData]);
 
   const handleSend = async () => {
     if (!selectedFile) { setError('Please select a file.'); return; }
@@ -446,10 +553,16 @@ function EmailShareTab({ files }) {
       const res = await sharesAPI.create(payload);
       const data = res.data;
       setShareData(data);
+      setAccessCount(data.access_count || 0);
       const token = data.token || data.share_token || data.id;
       setSentRecipients(emailList);
       setSentLink(`${window.location.origin}/share/${token}`);
-      setSuccess(`Secure email sent to ${emailList.join(', ')} with assigned rules & rights.`);
+      
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      setLiveActivity([
+        { text: `✉️ Dispatched secure email to ${emailList.join(', ')}`, time: nowStr },
+      ]);
+      setSuccess(`Secure email dispatched in real-time to ${emailList.join(', ')} with assigned rights.`);
     } catch (err) {
       console.error(err);
       setError(err?.response?.data?.detail || 'Failed to send email. Please try again.');
@@ -470,18 +583,23 @@ function EmailShareTab({ files }) {
         />
 
         <div className="ss-field-group">
-          <label className="ss-field-label">Recipient Email(s)</label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <label className="ss-field-label">Recipient Email(s)</label>
+            <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Radio size={11} className="spin-slow" /> Real-Time Delivery
+            </span>
+          </div>
           <div className="ss-input-wrap">
             <Mail size={14} className="ss-input-icon" />
             <input
               type="text"
               className="ss-input ss-input-icon-left"
-              placeholder="james@partner.com, mary@lawfirm.com"
+              placeholder="alex@company.com, sarah@partner.org"
               value={emails}
               onChange={e => setEmails(e.target.value)}
             />
           </div>
-          <p className="ss-field-hint">Separate multiple addresses with commas</p>
+          <p className="ss-field-hint">Separate multiple addresses with commas for instant batch dispatch</p>
         </div>
 
         <div className="ss-field-group">
@@ -565,9 +683,9 @@ function EmailShareTab({ files }) {
           disabled={sending}
         >
           {sending ? (
-            <><RefreshCw size={15} className="spin" /> Sending…</>
+            <><RefreshCw size={15} className="spin" /> Dispatching in Real-Time…</>
           ) : (
-            <><Send size={15} /> Send Secure Email</>
+            <><Send size={15} /> Send Secure Email (Live)</>
           )}
         </button>
       </div>
@@ -581,13 +699,16 @@ function EmailShareTab({ files }) {
         downloadLimitEnabled={downloadLimit}
         recipientEmails={sentRecipients}
         isEmail={true}
+        accessCount={accessCount}
+        liveActivity={liveActivity}
+        isConnected={realtime?.isConnected}
       />
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════
-   TAB 3 — Sharing History
+   TAB 3 — Sharing History with Real-Time Updates
 ═══════════════════════════════════════════════════ */
 const PERM_BADGE = {
   view:     { label: 'View',     cls: 'ss-badge-view'     },
@@ -645,18 +766,47 @@ function SharingHistoryTab() {
     });
 
     const unsubCreate = realtime.subscribe('share_created', (data) => {
-      setShares(prev => [{
-        id: data.share_id,
-        file_id: data.file_id,
-        token: data.token,
-        permission: data.permission,
-        recipient_email: data.recipient_email,
-        expires_at: data.expires_at,
-        access_count: 0,
-        is_active: true,
-        created_at: data.created_at || new Date().toISOString(),
-        file_name: data.file_name,
-      }, ...prev]);
+      setShares(prev => {
+        const exists = prev.some(s => s.id === data.share_id || s.token === data.token);
+        if (exists) return prev;
+        return [{
+          id: data.share_id,
+          file_id: data.file_id,
+          token: data.token,
+          permission: data.permission,
+          recipient_email: data.recipient_email,
+          expires_at: data.expires_at,
+          access_count: 0,
+          is_active: true,
+          created_at: data.created_at || new Date().toISOString(),
+          file_name: data.file_name,
+        }, ...prev];
+      });
+      setHighlightedId(data.share_id);
+      setTimeout(() => setHighlightedId(null), 3000);
+    });
+
+    const unsubEmailSent = realtime.subscribe('email_share_sent', (data) => {
+      setShares(prev => {
+        const exists = prev.some(s => s.id === data.share_id || s.token === data.token);
+        if (exists) {
+          return prev.map(s => s.id === data.share_id ? { ...s, recipient_email: data.recipients?.join(', ') } : s);
+        }
+        return [{
+          id: data.share_id,
+          file_id: data.file_id,
+          token: data.token,
+          permission: data.permission,
+          recipient_email: data.recipients?.join(', '),
+          expires_at: data.expires_at,
+          access_count: 0,
+          is_active: true,
+          created_at: data.timestamp || new Date().toISOString(),
+          file_name: data.file_name,
+        }, ...prev];
+      });
+      setHighlightedId(data.share_id);
+      setTimeout(() => setHighlightedId(null), 3000);
     });
 
     const unsubRevoke = realtime.subscribe('share_revoked', (data) => {
@@ -666,6 +816,7 @@ function SharingHistoryTab() {
     return () => {
       unsubAccess();
       unsubCreate();
+      unsubEmailSent();
       unsubRevoke();
     };
   }, [realtime]);
@@ -715,8 +866,9 @@ function SharingHistoryTab() {
       <div className="ss-history-header">
         <div>
           <h3 className="ss-history-title">Sharing History</h3>
-          <span className="ss-history-count" style={{ display: 'inline-block', marginTop: 4 }}>
-            {activeCount} active share{activeCount !== 1 ? 's' : ''} (Real-time live tracking)
+          <span className="ss-history-count" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 6px #10b981' }} />
+            {activeCount} active share{activeCount !== 1 ? 's' : ''} (Real-time Live Sync)
           </span>
         </div>
 
@@ -790,7 +942,7 @@ function SharingHistoryTab() {
             <thead>
               <tr>
                 <th>FILE</th>
-                <th>RECIPIENT</th>
+                <th>RECIPIENT / TYPE</th>
                 <th>PERMISSION</th>
                 <th>ACCESSED</th>
                 <th>EXPIRES</th>
@@ -801,7 +953,8 @@ function SharingHistoryTab() {
             <tbody>
               {filteredShares.map(share => {
                 const fileName = share.file_name || share.filename || share.original_name || 'File';
-                const recipient = share.recipient_email || share.recipient_emails?.[0] || 'Link Share';
+                const hasEmail = Boolean(share.recipient_email || share.recipient_emails?.[0]);
+                const recipient = share.recipient_email || share.recipient_emails?.[0] || 'Public Link';
                 const perm = share.permission || 'view';
                 const accessed = share.access_count != null ? `${share.access_count}×` : '0×';
                 const expires = share.expires_at ? formatDate(share.expires_at) : 'Never';
@@ -817,7 +970,7 @@ function SharingHistoryTab() {
                     key={share.id}
                     className={`ss-history-row ${isHighlighted ? 'ss-row-highlight' : ''}`}
                     style={{
-                      transition: 'background 0.3s',
+                      transition: 'background 0.3s, border-color 0.3s',
                       background: isHighlighted ? 'rgba(59, 130, 246, 0.18)' : undefined,
                     }}
                   >
@@ -826,7 +979,12 @@ function SharingHistoryTab() {
                         {fileName.length > 24 ? fileName.substring(0, 24) + '…' : fileName}
                       </span>
                     </td>
-                    <td className="ss-cell-email">{recipient}</td>
+                    <td className="ss-cell-email">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {hasEmail ? <Mail size={13} color="#60a5fa" /> : <Link2 size={13} color="#94a3b8" />}
+                        <span title={recipient}>{recipient}</span>
+                      </div>
+                    </td>
                     <td>
                       <span className={`ss-perm-badge ${permBadge.cls}`}>{permBadge.label}</span>
                     </td>
@@ -920,7 +1078,7 @@ export default function Sharing() {
       {/* Page heading */}
       <div className="ss-page-header">
         <h1 className="ss-page-title">Secure Sharing</h1>
-        <p className="ss-page-sub">Generate encrypted share links with granular access control</p>
+        <p className="ss-page-sub">Generate encrypted share links with real-time email dispatch and live access tracking</p>
       </div>
 
       {/* Tabs */}

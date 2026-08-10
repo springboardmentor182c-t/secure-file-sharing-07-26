@@ -3,7 +3,9 @@ import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from dotenv import load_dotenv
 
+load_dotenv()
 logger = logging.getLogger("uvicorn.error")
 
 def send_secure_share_email(
@@ -122,24 +124,29 @@ def send_secure_share_email(
     smtp_port = int(os.getenv("SMTP_PORT", 587))
     smtp_user = os.getenv("SMTP_USER")
     smtp_password = os.getenv("SMTP_PASSWORD")
-    smtp_from = os.getenv("SMTP_FROM", sender_email or "noreply@secureshare.io")
+    if smtp_password:
+        smtp_password = smtp_password.replace(" ", "").strip()
+    
+    smtp_from = os.getenv("SMTP_FROM") or smtp_user or "noreply@secureshare.io"
 
     if smtp_host and smtp_user and smtp_password:
         try:
             msg = MIMEMultipart("alternative")
             msg["Subject"] = f"Secure File Shared: {file_name}"
-            msg["From"] = smtp_from
+            msg["From"] = f"SecureShare <{smtp_from}>"
             msg["To"] = ", ".join(recipients)
             msg.attach(MIMEText(html_content, "html"))
 
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+                server.ehlo()
                 server.starttls()
+                server.ehlo()
                 server.login(smtp_user, smtp_password)
                 server.sendmail(smtp_from, recipients, msg.as_string())
-            logger.info(f"Successfully sent secure share email to {recipients}")
+            logger.info(f"Successfully dispatched real secure share email to {recipients} via {smtp_host}")
             return True
         except Exception as e:
-            logger.error(f"Failed to send email via SMTP: {e}")
+            logger.error(f"Failed to send email via SMTP ({smtp_host}:{smtp_port}): {e}", exc_info=True)
 
     logger.info(f"[SECURE EMAIL SIMULATION] Sent secure share email to {recipients} for file {file_name} with URL: {share_url}")
     return True

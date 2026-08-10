@@ -98,6 +98,20 @@ export function RealtimeProvider({ children }) {
                 title: 'Share Link Accessed',
                 message: `Someone just accessed '${payload.data?.file_name || 'your file'}' (${payload.data?.permission?.toUpperCase()} - Access #${payload.data?.access_count})`,
               });
+            } else if (payload.event === 'email_share_sent') {
+              addToast({
+                type: 'success',
+                title: 'Secure Email Sent (Real-Time)',
+                message: `Email dispatched to ${payload.data?.recipients?.join(', ')} with ${payload.data?.permission?.toUpperCase()} rights.`,
+                duration: 4500,
+              });
+            } else if (payload.event === 'share_received') {
+              addToast({
+                type: 'share',
+                title: 'New Secure File Shared',
+                message: `${payload.data?.sender_email || 'A user'} shared '${payload.data?.file_name}' with you (${payload.data?.permission?.toUpperCase()} rights).`,
+                duration: 6000,
+              });
             } else if (payload.event === 'notification_new') {
               addToast({
                 type: payload.data?.type || 'info',

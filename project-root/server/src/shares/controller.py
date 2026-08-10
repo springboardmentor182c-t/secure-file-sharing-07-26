@@ -89,6 +89,7 @@ class ShareInfoResponse(BaseModel):
     is_expired: bool
     is_limit_reached: bool
     is_encrypted: bool
+    owner_email: Optional[str] = None
     created_at: datetime
 
 
