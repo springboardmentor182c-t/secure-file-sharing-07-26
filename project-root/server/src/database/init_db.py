@@ -6,6 +6,7 @@ from src.entities.folder import Folder    # noqa  (kept for FK on File.folder_id
 from src.entities.file import File        # noqa
 from src.entities.audit_log import AuditLog  # noqa
 from src.entities.blocked_ip import BlockedIP  # noqa
+from src.entities.notification import Notification  # noqa
 
 
 def init_db():

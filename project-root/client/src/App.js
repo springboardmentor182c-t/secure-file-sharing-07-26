@@ -27,11 +27,8 @@ function AppShell() {
   const [collapsed, setCollapsed]     = useState(false);
 
   useEffect(() => {
-    notificationsAPI.list()
-      .then(res => {
-        const items = res.data || [];
-        setUnreadCount(items.filter(n => !n.read).length);
-      })
+    notificationsAPI.summary()
+      .then(res => setUnreadCount(res.data?.unread ?? 0))
       .catch(() => {});
   }, []);
 
@@ -54,7 +51,7 @@ function AppShell() {
             <Route path="/sharing"       element={<Sharing />} />
             <Route path="/analytics"     element={<Analytics />} />
             <Route path="/activity"      element={<ActivityLogs />} />
-            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/notifications" element={<Notifications onUnreadChange={setUnreadCount} />} />
             <Route path="/admin"         element={<Admin />} />
             <Route path="/settings"      element={<Settings />} />
             <Route path="*"              element={<Navigate to="/dashboard" replace />} />
