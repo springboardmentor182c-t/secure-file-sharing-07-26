@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { settingsAPI } from '../utils/api';
 import { Eye, EyeOff, Laptop, Smartphone, Monitor } from 'lucide-react';
-import MFACard from './MFACard';  // NEW: MFA setup component
-import { useSearchParams } from 'react-router-dom';
+import MFACard from './MFACard';
 import './Settings.css';
 
 // FIX ISS-S2: extract backend error message helper
@@ -42,14 +42,15 @@ const formatLastActive = (isoString) => {
 
 const Settings = () => {
   const { user, setUser } = useAuth();
-
-  // Active Tab state
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Active Tab state
+  // ── KEPT YOUR HEAD version — has hash scrolling + URL sync ──
   const validTabs = ['profile', 'security', 'sessions', 'notifications'];
   const initialTab = validTabs.includes(searchParams.get('tab')) ? searchParams.get('tab') : 'profile';
   const [activeTab, setActiveTab] = useState(initialTab);
 
+  // ── KEPT YOUR HEAD version — scrolls to #mfa on security tab ──
   useEffect(() => {
     const hash = window.location.hash;
     if (hash && activeTab === 'security') {
@@ -60,6 +61,7 @@ const Settings = () => {
     }
   }, [activeTab]);
 
+  // ── KEPT YOUR HEAD version — syncs tab from URL changes ──
   useEffect(() => {
     const urlTab = searchParams.get('tab');
     if (urlTab && validTabs.includes(urlTab) && urlTab !== activeTab) {
@@ -104,43 +106,35 @@ const Settings = () => {
   const [digestFrequency, setDigestFrequency] = useState('daily');
 
   // FIX ISS-S4: separate one-time loads from user-dependent hydration
-  // Load initial data ONCE on mount (not on every user context change)
   useEffect(() => {
-    // Load profile details
     settingsAPI.getProfile().then(({ data }) => {
       setFullName(data.name || '');
       setEmailAddress(data.email || '');
       setOrganization(data.organization || '');
       setAvatarUrl(data.avatar_url || null);
     }).catch((err) => {
-      // FIX ISS-S1: surface errors instead of swallowing them
       setErrorMsg(getApiErrorMessage(err, 'Failed to load profile.'));
     });
 
-    // Load active sessions
     setLoadingSessions(true);
     settingsAPI.getSessions()
       .then(({ data }) => setSessions(data))
       .catch((err) => {
-        // FIX ISS-S1: surface sessions load errors
         setErrorMsg(getApiErrorMessage(err, 'Failed to load active sessions.'));
       })
       .finally(() => setLoadingSessions(false));
 
-    // Load notification preferences
     settingsAPI.getNotificationPreferences().then(({ data }) => {
       const { digest_frequency, ...rest } = data;
       setNotifPrefs(rest);
       setDigestFrequency(digest_frequency);
     }).catch((err) => {
-      // FIX ISS-S1: surface notification prefs load errors
       setErrorMsg(getApiErrorMessage(err, 'Failed to load notification preferences.'));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // FIX ISS-S4: run once on mount only, not on user change
+  }, []);
 
-  // FIX ISS-S4: sync form fields when user context changes (login, refresh)
-  // WITHOUT re-fetching from API
+  // FIX ISS-S4: sync form fields when user context changes
   useEffect(() => {
     if (user) {
       setFullName((prev) => prev || user.name || '');
@@ -152,19 +146,22 @@ const Settings = () => {
   // Clear feedback messages on tab change
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    setSearchParams({ tab }, { replace: true });
+    // ── KEPT origin/main-group-D version — cleaner URL for profile tab ──
+    if (tab === 'profile') {
+      setSearchParams({}, { replace: true });
+    } else {
+      setSearchParams({ tab }, { replace: true });
+    }
     setSuccessMsg('');
     setErrorMsg('');
   };
 
   // ── Handlers ───────────────────────────────────────────────
 
-  // Trigger file selection for avatar upload
   const triggerFileInput = () => {
     fileInputRef.current.click();
   };
 
-  // Avatar file change preview
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -183,7 +180,6 @@ const Settings = () => {
     }
   };
 
-  // Save profile edits
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     setSuccessMsg('');
@@ -203,7 +199,6 @@ const Settings = () => {
       };
       const { data } = await settingsAPI.updateProfile(updateData);
 
-      // FIX ISS-S3: sync ALL updated fields to global user context including organization
       if (setUser) {
         setUser((prev) => ({
           ...prev,
@@ -216,12 +211,10 @@ const Settings = () => {
 
       setSuccessMsg('Profile updated successfully!');
     } catch (err) {
-      // FIX ISS-S2: surface actual backend error
       setErrorMsg(getApiErrorMessage(err, 'Failed to update profile.'));
     }
   };
 
-  // Update Password
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
     setSuccessMsg('');
@@ -250,22 +243,18 @@ const Settings = () => {
       setSuccessMsg(
         'Password changed successfully! Other devices have been signed out for security.'
       );
-      // Reset inputs
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
 
-      // Refresh sessions list to reflect the security cleanup
       settingsAPI.getSessions()
         .then(({ data }) => setSessions(data))
         .catch(() => { });
     } catch (err) {
-      // FIX ISS-S2: surface actual backend error (e.g. "Current password is incorrect")
       setErrorMsg(getApiErrorMessage(err, 'Failed to update password.'));
     }
   };
 
-  // Revoke single session
   const handleSignOutSession = async (id) => {
     if (!window.confirm('Sign out this device? It will need to authenticate again.')) return;
     setSuccessMsg('');
@@ -275,12 +264,10 @@ const Settings = () => {
       setSessions((prev) => prev.filter((s) => s.id !== id));
       setSuccessMsg('Signed out of session successfully.');
     } catch (err) {
-      // FIX ISS-S2: surface backend error
       setErrorMsg(getApiErrorMessage(err, 'Failed to sign out session.'));
     }
   };
 
-  // Revoke all other sessions
   const handleSignOutAllOthers = async () => {
     if (!window.confirm('Sign out every other device? Your current session will remain active.')) return;
     setSuccessMsg('');
@@ -290,12 +277,10 @@ const Settings = () => {
       setSessions((prev) => prev.filter((s) => s.is_current));
       setSuccessMsg('Signed out of all other sessions successfully.');
     } catch (err) {
-      // FIX ISS-S2: surface backend error
       setErrorMsg(getApiErrorMessage(err, 'Failed to sign out other sessions.'));
     }
   };
 
-  // Toggle notification rows
   const handleTogglePref = (activityKey, channel) => {
     setNotifPrefs((prev) => ({
       ...prev,
@@ -306,7 +291,6 @@ const Settings = () => {
     }));
   };
 
-  // Save preferences
   const handleSavePreferences = async () => {
     setSuccessMsg('');
     setErrorMsg('');
@@ -321,12 +305,10 @@ const Settings = () => {
       setDigestFrequency(digest_frequency);
       setSuccessMsg('Notification preferences saved successfully!');
     } catch (err) {
-      // FIX ISS-S2: surface backend error
       setErrorMsg(getApiErrorMessage(err, 'Failed to update notification preferences.'));
     }
   };
 
-  // Helpers
   const getInitials = (name) => {
     if (!name) return 'TS';
     return name
@@ -400,7 +382,6 @@ const Settings = () => {
           </div>
 
           <form onSubmit={handleSaveProfile}>
-            {/* Avatar Selection */}
             <div className="avatar-section">
               <div
                 className="avatar-preview-container"
@@ -434,7 +415,6 @@ const Settings = () => {
               </div>
             </div>
 
-            {/* Inputs Grid */}
             <div className="form-group">
               <label className="form-label" htmlFor="fullName">Full Name</label>
               <input
@@ -569,7 +549,7 @@ const Settings = () => {
             </form>
           </div>
 
-          {/* NEW: MFA Setup Card */}
+          {/* MFA Setup Card */}
           <div id="mfa">
             <MFACard
               onSuccess={(msg) => { setSuccessMsg(msg); setErrorMsg(''); }}
@@ -621,7 +601,6 @@ const Settings = () => {
                         {s.is_current && <span className="session-badge-current">Current</span>}
                       </div>
                       <span className="session-details">
-                        {/* FIX ISS-S6: human-readable last_active + skip empty values */}
                         {[s.browser_name, s.location, s.ip_address, formatLastActive(s.last_active)]
                           .filter(Boolean)
                           .join(' • ')}
@@ -653,7 +632,6 @@ const Settings = () => {
             <p className="settings-card-subtitle">Choose how you want to be notified for each activity.</p>
           </div>
 
-          {/* Matrix Checklist */}
           <div className="notification-matrix">
             <div className="notification-matrix-header">
               <span>Activity Type</span>
@@ -661,7 +639,6 @@ const Settings = () => {
               <span style={{ textAlign: 'center' }}>Email</span>
             </div>
 
-            {/* Matrix Rows */}
             {[
               { key: 'file_shares', label: 'File Shares', desc: 'When someone shares a file or folder with you' },
               { key: 'downloads', label: 'Downloads', desc: 'When someone downloads your shared file' },
@@ -703,7 +680,6 @@ const Settings = () => {
             ))}
           </div>
 
-          {/* Frequency Selector */}
           <div className="digest-section">
             <h3 className="digest-title">Email Digest Frequency</h3>
             <p className="digest-subtitle">Select how often you would like to receive general notification digests.</p>

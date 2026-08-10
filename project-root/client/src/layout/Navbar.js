@@ -18,6 +18,7 @@ import {
   RiUserLine,
 } from "react-icons/ri";
 import { searchAPI, notificationsAPI } from "../utils/api";
+import { events, EVENTS } from "../utils/events";
 import ContentSearchModal from "../features/search/ContentSearchModal";
 import { useAssistantStatus } from "../features/assistant/hooks/useAssistantStatus";
 import AssistantBubbleWindow from "../features/assistant/AssistantBubbleWindow";
@@ -56,6 +57,11 @@ function getNotificationIcon(notification) {
   if (text.includes("file"))
     return <RiFileTextLine className="notification-type-icon" />;
   return <RiNotification3Line className="notification-type-icon" />;
+}
+
+// ── KEPT from origin/main-group-D — useful unread preview helper ──
+export function getUnreadNotificationPreview(items) {
+  return items.filter((notification) => !notification.is_read).slice(0, 5);
 }
 
 export default function Navbar({
@@ -216,18 +222,23 @@ export default function Navbar({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // ── KEPT from origin/main-group-D — notification loader with unread filter ──
+  const loadNotifications = useCallback(async () => {
+    try {
+      const res = await notificationsAPI.list();
+      setNotifications(getUnreadNotificationPreview(res.data));
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!showNotifications) return;
-    const load = async () => {
-      try {
-        const res = await notificationsAPI.list();
-        setNotifications(res.data.slice(0, 5));
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    load();
-  }, [showNotifications]);
+    if (showNotifications) loadNotifications();
+  }, [showNotifications, loadNotifications]);
+
+  useEffect(() => events.on(EVENTS.NOTIFICATIONS_CHANGED, () => {
+    if (showNotifications) loadNotifications();
+  }), [showNotifications, loadNotifications]);
 
   // Flatten search results for keyboard navigation
   const flatResults = useMemo(() => {
@@ -286,7 +297,6 @@ export default function Navbar({
     setActiveIndex(-1);
 
     if (type === "user") {
-
       navigate("/admin", { state: { highlightUserId: data.id } });
       return;
     }
@@ -307,11 +317,25 @@ export default function Navbar({
     setMarkingAllRead(true);
     try {
       await notificationsAPI.markAllRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setNotifications([]);
+      events.emit(EVENTS.NOTIFICATIONS_CHANGED);
     } catch (err) {
       console.error("Failed to mark all as read:", err);
     } finally {
       setMarkingAllRead(false);
+    }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    setNotifications((previous) => previous.filter((item) => item.id !== notification.id));
+    try {
+      await notificationsAPI.markRead(notification.id);
+      events.emit(EVENTS.NOTIFICATIONS_CHANGED);
+      setShowNotifications(false);
+      navigate("/notifications");
+    } catch (err) {
+      console.error("Failed to mark notification as read:", err);
+      loadNotifications();
     }
   };
 
@@ -377,7 +401,6 @@ export default function Navbar({
             {getLabel()}
           </span>
 
-          {/* content snippet */}
           {item.type === "content" && item.data.snippet && (
             <span
               style={{ fontSize: "0.75rem", opacity: 0.8, marginTop: 2 }}
@@ -640,10 +663,7 @@ export default function Navbar({
                   <motion.div
                     key={notification.id}
                     className="notification-item"
-                    onClick={() => {
-                      setShowNotifications(false);
-                      navigate("/notifications");
-                    }}
+                    onClick={() => handleNotificationClick(notification)}
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{

@@ -198,7 +198,7 @@ export default function DashboardOverview({ dashboardData = {}, user }) {
                 ['Upload file', Upload, '/files'],
                 ['Browse files', FolderOpen, '/files'],
                 ['Create share', Share2, '/sharing'],
-                ['Security', ShieldCheck, '/settings'],
+                ['Security', ShieldCheck, '/settings?tab=security'],
               ].map(([label, Icon, route]) => (
                 <button
                   className="dashboard-action"

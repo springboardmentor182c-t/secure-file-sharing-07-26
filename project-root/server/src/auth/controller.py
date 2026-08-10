@@ -11,6 +11,7 @@ from src.auth.dependencies import (
     create_refresh_token,
 )
 from src.entities.user import User
+from src.notifications.service import create_notification
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -57,7 +58,18 @@ def login(
         return service.build_mfa_pending_response(user)
 
     # Store session when building token response (teammate's session tracking)
-    return service._build_token_response(user, db=db, request=request)
+    response = service._build_token_response(user, db=db, request=request)
+    create_notification(
+        db,
+        user_id=user.id,
+        type="security",
+        category="security",
+        title="New login to your account",
+        message="A successful sign-in to TrustShare was completed.",
+        icon="security",
+        commit=True,
+    )
+    return response
 
 
 @router.post("/login/swagger", response_model=models.TokenResponse)
@@ -87,7 +99,18 @@ def swagger_login(
             detail="Account suspended",
         )
 
-    return service._build_token_response(user, db=db, request=request)
+    response = service._build_token_response(user, db=db, request=request)
+    create_notification(
+        db,
+        user_id=user.id,
+        type="security",
+        category="security",
+        title="New login to your account",
+        message="A successful sign-in to TrustShare was completed.",
+        icon="security",
+        commit=True,
+    )
+    return response
 
 
 @router.post(
@@ -182,7 +205,18 @@ def verify_otp(
         )
 
     # FIX ISS-D3: pass db and request for session tracking after MFA success
-    return service._build_token_response(user, db=db, request=request)
+    response = service._build_token_response(user, db=db, request=request)
+    create_notification(
+        db,
+        user_id=user.id,
+        type="security",
+        category="security",
+        title="New login to your account",
+        message="A successful MFA sign-in to TrustShare was completed.",
+        icon="security",
+        commit=True,
+    )
+    return response
 
 
 @router.post("/resend-otp")

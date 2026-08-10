@@ -4,6 +4,37 @@ from sqlalchemy.orm import Session
 from src.entities.notification import Notification
 
 
+def create_notification(
+    db: Session,
+    user_id: int,
+    type: str,
+    category: str,
+    title: str,
+    message: str,
+    icon: str | None = None,
+    commit: bool = False,
+) -> Notification:
+    """Create a persisted notification within the caller's transaction."""
+    values = {
+        "user_id": user_id,
+        "type": type,
+        "category": category,
+        "title": title,
+        "message": message,
+    }
+    if icon is not None:
+        values["icon"] = icon
+
+    notification = Notification(**values)
+    db.add(notification)
+    if commit:
+        db.commit()
+        db.refresh(notification)
+    else:
+        db.flush()
+    return notification
+
+
 def get_user_notifications(db: Session, user_id: int) -> list[Notification]:
     return (
         db.query(Notification)
