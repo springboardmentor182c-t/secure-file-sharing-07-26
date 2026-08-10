@@ -29,7 +29,6 @@ import Users from "./pages/Users";
 import Activity from "./pages/Activity";
 import Storage from "./pages/Storage";
 import ActivityMonitorPage from "./pages/ActivityMonitorPage";
-import AdminDashboard from "./pages/AdminDashboard";
 
 // Features
 import Dashboard from "./features/dashboard/Dashboard";
@@ -41,9 +40,20 @@ import Analytics from "./features/analytics/Analytics";
 import ProtectedRoute from "./features/authentication/components/ProtectedRoute";
 import AdminRoute from "./features/authentication/components/AdminRoute";
 
-import AdminDashboard from "./pages/AdminDashboard";
 import Profile from './features/profile/Profile';
+import AdminDashboard from "./pages/AdminDashboard";
+// File Management
+import FileManagementPage from "./filemanagement/FileManagementPage";
+import FileDetailsPage from "./filemanagement/FileDetailsPage";
 
+// File Management CSS
+import "./assets/css/layout.css";
+import "./assets/css/sidebar.css";
+import "./assets/css/header.css";
+import "./assets/css/folders.css";
+import "./assets/css/table.css";
+import "./assets/css/fileDetails.css";
+import "./assets/css/responsive.css";
 
 function App() {
   return (
@@ -198,13 +208,25 @@ function App() {
           element={
             <ProtectedRoute>
               <PageContainer>
-                <Files />
+                <FileManagementPage />
               </PageContainer>
             </ProtectedRoute>
           }
         />
 
-        {/* Users */}
+        {/* File Details */}
+        <Route
+          path="/file-details"
+          element={
+            <ProtectedRoute>
+              <PageContainer>
+                <FileDetailsPage />
+              </PageContainer>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* USERS */}
         <Route
           path="/users"
           element={
@@ -232,9 +254,9 @@ function App() {
         <Route
           path="/admin"
           element={
-            <AdminRoute>
-              <AdminHome />
-            </AdminRoute>
+            <PageContainer>
+              <Dashboard />
+            </PageContainer>
           }
         />
 
@@ -251,6 +273,7 @@ function App() {
         />
 
 
+        {/* PROFILE */}
         <Route
          path="/profile"
          element={
@@ -259,16 +282,6 @@ function App() {
            </PageContainer>
           } 
         />
-        
-        <Route
-  path="/admin"
-  element={
-    <PageContainer>
-      <Dashboard />
-    </PageContainer>
-  }
-/>
-
 
         {/* Invalid Route */}
         <Route

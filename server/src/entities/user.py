@@ -18,6 +18,10 @@ from src.database.core import Base
 
 
 class User(Base):
+    """
+    User model matching schema.sql users table structure.
+    This model is for the main authentication system.
+    """
     __tablename__ = "users"
 
     id = Column(

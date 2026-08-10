@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
@@ -64,6 +64,15 @@ const menuItems = [
 
 
 const Sidebar = () => {
+    const location = useLocation();
+
+    const isActiveLink = (path) => {
+        if (path === "/files") {
+            return location.pathname === "/files" || location.pathname === "/file-details";
+        }
+
+        return location.pathname === path;
+    };
 
     return (
         <aside className="sidebar">
@@ -92,9 +101,7 @@ const Sidebar = () => {
                             <NavLink
                                 key={item.name}
                                 to={item.path}
-                                className={({ isActive }) =>
-                                    isActive ? "menu active" : "menu"
-                                }
+                                className={isActiveLink(item.path) ? "menu active" : "menu"}
                             >
 
                                 {item.icon}
