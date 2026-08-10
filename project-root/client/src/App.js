@@ -32,8 +32,12 @@ function AppShell() {
   useEffect(() => {
     notificationsAPI.list()
       .then(res => {
-        const items = Array.isArray(res.data) ? res.data : (res.data?.notifications || []);
-        setUnreadCount(items.filter(n => !n.read).length);
+        if (res.data?.unread !== undefined) {
+          setUnreadCount(res.data.unread);
+        } else {
+          const items = Array.isArray(res.data) ? res.data : (res.data?.notifications || []);
+          setUnreadCount(items.filter(n => !n.read).length);
+        }
       })
       .catch(() => {});
   }, []);
@@ -84,7 +88,7 @@ function AppShell() {
             <Route path="/sharing"       element={<Sharing />} />
             <Route path="/analytics"     element={<Analytics />} />
             <Route path="/activity"      element={<ActivityLogs />} />
-            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/notifications" element={<Notifications onUnreadChange={setUnreadCount} />} />
             <Route path="/admin"         element={<Admin />} />
             <Route path="/settings"      element={<Settings />} />
             <Route path="*"              element={<Navigate to="/dashboard" replace />} />

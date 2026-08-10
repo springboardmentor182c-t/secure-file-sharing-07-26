@@ -91,7 +91,6 @@ export default function Notifications() {
           }}
         >
           <ArrowLeft size={15} />
-          Back to Dashboard
         </button>
       </div>
     </div>
