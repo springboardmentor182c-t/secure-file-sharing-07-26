@@ -31,8 +31,9 @@ import stat
 import logging
 import secrets
 import platform
-from pathlib import Path
 from typing import Optional
+
+from src.config import MASTER_KEY_FILE
 
 from .exceptions import KeyManagementError
 
@@ -44,9 +45,6 @@ AWS_MASTER_KEY_ENV_VAR = "MASTER_KEY"
 
 # Environment name variable — used to detect production
 ENVIRONMENT_VAR = "ENVIRONMENT"
-
-# Fallback file (development only)
-MASTER_KEY_FILE = Path("master.key")
 
 # Key specifications
 MASTER_KEY_SIZE_BYTES = 32  # 256-bit

@@ -33,13 +33,14 @@ from pathlib import Path
 from typing import Optional, Iterator, BinaryIO
 from contextlib import contextmanager
 
+from src.config import UPLOADS_DIR
 from .exceptions import EncryptionError
 from src.security.config_loader import get_config_int
 
 # CONFIGURATION
 
-# Storage directory
-STORAGE_DIR = Path("uploads")
+# Storage directory. DATA_DIR points at EFS in the AWS task definition.
+STORAGE_DIR = UPLOADS_DIR
 
 # File permissions
 STORAGE_DIR_MODE = 0o755  # Directory: rwxr-xr-x

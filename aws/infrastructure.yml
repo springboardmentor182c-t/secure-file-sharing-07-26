@@ -54,10 +54,15 @@ Parameters:
     Type: String
     Default: ""
     Description: Optional Secrets Manager ARN containing the Hugging Face token under the token JSON key.
+  SmtpCredentialsSecretArn:
+    Type: String
+    Default: ""
+    Description: Optional Secrets Manager ARN containing Gmail SMTP credentials under username and password JSON keys.
 
 Conditions:
   ShouldCreateGitHubOidcProvider: !Equals [!Ref CreateGitHubOidcProvider, "true"]
   UseHuggingFaceSummaries: !Not [!Equals [!Ref HuggingFaceTokenSecretArn, ""]]
+  UseSmtpEmail: !Not [!Equals [!Ref SmtpCredentialsSecretArn, ""]]
 
 Resources:
   Vpc:
@@ -326,6 +331,7 @@ Resources:
                   - !Ref JwtSecret
                   - !Ref MasterKeySecret
                   - !If [UseHuggingFaceSummaries, !Ref HuggingFaceTokenSecretArn, !Ref "AWS::NoValue"]
+                  - !If [UseSmtpEmail, !Ref SmtpCredentialsSecretArn, !Ref "AWS::NoValue"]
   TaskRole:
     Type: AWS::IAM::Role
     Properties:
@@ -447,6 +453,8 @@ Resources:
           Environment:
             - Name: ENVIRONMENT
               Value: production
+            - Name: REQUIRE_POSTGRESQL
+              Value: "true"
             - Name: PORT
               Value: "8000"
             - Name: DATA_DIR
@@ -465,6 +473,10 @@ Resources:
               Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"
             - Name: BACKEND_CORS_ORIGINS
               Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"
+            - Name: SMTP_HOST
+              Value: smtp.gmail.com
+            - Name: SMTP_PORT
+              Value: "587"
             - Name: AI_SUMMARY_PROVIDER
               Value: !If [UseHuggingFaceSummaries, huggingface, ollama]
             - Name: ALLOW_EXTERNAL_AI
@@ -502,6 +514,21 @@ Resources:
               ValueFrom: !Ref JwtSecret
             - Name: MASTER_KEY
               ValueFrom: !Ref MasterKeySecret
+            - !If
+              - UseSmtpEmail
+              - Name: SMTP_USER
+                ValueFrom: !Sub "${SmtpCredentialsSecretArn}:username::"
+              - !Ref "AWS::NoValue"
+            - !If
+              - UseSmtpEmail
+              - Name: SMTP_PASSWORD
+                ValueFrom: !Sub "${SmtpCredentialsSecretArn}:password::"
+              - !Ref "AWS::NoValue"
+            - !If
+              - UseSmtpEmail
+              - Name: EMAIL_FROM
+                ValueFrom: !Sub "${SmtpCredentialsSecretArn}:username::"
+              - !Ref "AWS::NoValue"
             - !If
               - UseHuggingFaceSummaries
               - Name: HF_API_TOKEN

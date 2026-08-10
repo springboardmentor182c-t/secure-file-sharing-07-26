@@ -17,7 +17,8 @@ changing or replacing the Render deployment in PR #68.
   ECS task security group.
 - **ECR** stores the production Docker image.
 - **Secrets Manager** generates the database password, JWT secret, and separate
-  file-encryption master key.
+  file-encryption master key. Optional hosted-AI and SMTP credentials are read
+  from separately managed secrets.
 - **GitHub Actions OIDC** supplies short-lived AWS credentials. No AWS access
   key is stored in GitHub or committed to the repository.
 
@@ -92,6 +93,10 @@ infrastructure updates, update the CloudFormation stack with
 `aws/infrastructure.yml`, set `DesiredCount` to `1`, and retain the existing
 parameters unless the change requires otherwise.
 
+Before an application deployment, merge the latest `main-group-D` into the
+deployment branch. This keeps the production image aligned with modules already
+accepted into the Group D integration branch.
+
 ## Verification checklist
 
 1. `ApplicationUrl` opens the TrustShare login page over HTTPS.
@@ -102,15 +107,35 @@ parameters unless the change requires otherwise.
 6. An encrypted file still downloads after forcing a new ECS deployment.
 7. The load balancer's direct DNS name returns HTTP 403.
 8. RDS is marked **Not publicly accessible**.
+9. A file uploaded before an ECS force deployment remains downloadable after
+   the replacement task becomes healthy.
 
 API Gateway HTTP APIs accept payloads up to 10 MB. Keep demonstration uploads
 below that limit even though the application itself can validate larger files.
 
 ## Optional integrations
 
-SMTP, Google OAuth, and Microsoft OAuth are not enabled by this stack. If the
-demo requires them, store their credentials in Secrets Manager and extend the
-ECS task definition to inject them. Never commit those credentials.
+### Gmail SMTP for MFA and password reset
+
+Production does not print OTP values. To enable MFA and password-reset email,
+create a Secrets Manager secret containing this JSON structure:
+
+```json
+{
+  "username": "sender@gmail.com",
+  "password": "gmail-app-password"
+}
+```
+
+Use a Gmail App Password, not the account password. Pass the secret ARN as the
+`SmtpCredentialsSecretArn` CloudFormation parameter when updating the stack.
+The task receives `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USER`,
+`SMTP_PASSWORD`, and `EMAIL_FROM`; no SMTP credential is committed or exposed
+to the React application.
+
+Google OAuth and Microsoft OAuth are not enabled by this stack. If the demo
+requires them, store their credentials in Secrets Manager and add equivalent
+task-definition secret mappings. Never commit those credentials.
 
 ## Cleanup
 
