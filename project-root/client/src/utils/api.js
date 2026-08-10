@@ -394,8 +394,24 @@ export const sharesAPI = {
 export const notificationsAPI = {
 
 
-  list:() =>
-    api.get("/api/notifications/"),
+  list:(params = {}) =>
+    api.get(
+      "/api/notifications/",
+      {
+        params,
+      }
+    ),
+
+
+  summary:() =>
+    api.get("/api/notifications/summary"),
+
+
+  create:(data)=>
+    api.post(
+      "/api/notifications/",
+      data
+    ),
 
 
   markRead:(id)=>
@@ -404,15 +420,30 @@ export const notificationsAPI = {
     ),
 
 
-  markAllRead:() =>
+  markAllRead:(type)=>
     api.patch(
-      "/api/notifications/read-all"
+      "/api/notifications/read-all",
+      null,
+      {
+        params: type ? { type } : {},
+      }
     ),
 
 
   delete:(id)=>
     api.delete(
       `/api/notifications/${id}`
+    ),
+
+
+  clear:(readOnly = false) =>
+    api.delete(
+      "/api/notifications/",
+      {
+        params:{
+          read_only: readOnly,
+        },
+      }
     ),
 
 };
