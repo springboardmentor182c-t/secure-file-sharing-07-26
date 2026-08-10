@@ -34,7 +34,8 @@ export async function getOrCreateCurrentUserId(apiBaseUrl) {
     // rejects reserved/special-use TLDs like ".local" or ".test" - so this
     // needs to look like a real (if fake) domain, not trustshare.local.
     const email = `dev-${Date.now()}@trustshare-dev-users.com`;
-    const res = await fetch(`${apiBaseUrl}/users`, {
+    const baseUrl = (apiBaseUrl || "").replace("localhost", "127.0.0.1");
+    const res = await fetch(`${baseUrl}/users`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, full_name: "Dev User" }),
