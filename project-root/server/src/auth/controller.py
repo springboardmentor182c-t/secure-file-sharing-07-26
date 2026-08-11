@@ -105,7 +105,7 @@ def signup(
     db: Session = Depends(get_db),
 ):
     ip = _get_client_ip(request)
-    return service.register_user(db, data, ip_address=ip)
+    return service.register_user(db, data, request=request, ip_address=ip)
 
 
 @router.get("/me", response_model=models.UserOut)

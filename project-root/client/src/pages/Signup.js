@@ -67,10 +67,19 @@ export default function Signup() {
 
     setLoading(true);
     try {
-      await register(form.name, form.email, form.password);
+      await register(form.name.trim(), form.email.trim().toLowerCase(), form.password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Registration failed');
+      let detail = err.response?.data?.detail;
+      if (Array.isArray(detail)) {
+        setError(detail.map(d => d.msg || JSON.stringify(d)).join('. '));
+      } else if (typeof detail === 'object' && detail !== null) {
+        setError(detail.msg || JSON.stringify(detail));
+      } else if (typeof detail === 'string') {
+        setError(detail);
+      } else {
+        setError(err.message || 'Registration failed');
+      }
     } finally { setLoading(false); }
   };
 

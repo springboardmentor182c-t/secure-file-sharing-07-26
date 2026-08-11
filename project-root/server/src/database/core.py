@@ -14,21 +14,37 @@ DATABASE_URL = os.getenv(
     "postgresql://postgres:12345@localhost:5432/trustshare",
 )
 
-# Configure engine based on dialect
-if DATABASE_URL.startswith("sqlite"):
-    engine = create_engine(
-        DATABASE_URL,
-        connect_args={"check_same_thread": False},
-    )
-else:
-    # PostgreSQL production settings
-    engine = create_engine(
-        DATABASE_URL,
-        pool_pre_ping=True,
-        pool_size=10,
-        max_overflow=20,
-        echo=False,
-    )
+def create_db_engine():
+    if DATABASE_URL.startswith("sqlite"):
+        return create_engine(
+            DATABASE_URL,
+            connect_args={"check_same_thread": False},
+        )
+    else:
+        try:
+            pg_engine = create_engine(
+                DATABASE_URL,
+                pool_pre_ping=True,
+                pool_size=10,
+                max_overflow=20,
+                echo=False,
+            )
+            # Test database connection
+            with pg_engine.connect() as conn:
+                pass
+            return pg_engine
+        except Exception:
+            # Fallback to local SQLite if PostgreSQL is unreachable
+            sqlite_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "app.db"
+            )
+            return create_engine(
+                f"sqlite:///{sqlite_path}",
+                connect_args={"check_same_thread": False},
+            )
+
+
+engine = create_db_engine()
 
 SessionLocal = sessionmaker(
     autocommit=False,
