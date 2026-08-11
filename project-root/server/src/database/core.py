@@ -11,7 +11,22 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:12345@localhost:5432/trustshare",
+    "postgresql+psycopg2://trustshare:trustshare@localhost:5432/trustshare",
+)
+
+def is_postgresql_url(url: str) -> bool:
+    return url.startswith(("postgresql://", "postgresql+psycopg2://", "postgresql+psycopg://"))
+
+def validate_database_url(url: str, require_postgresql: bool = False) -> None:
+    if require_postgresql and not is_postgresql_url(url):
+        raise RuntimeError(
+            "TrustShare requires PostgreSQL for integration and production. "
+            "Set DATABASE_URL to a postgresql+psycopg2:// URL."
+        )
+
+validate_database_url(
+    DATABASE_URL,
+    os.getenv("REQUIRE_POSTGRESQL", "false").lower() in {"1", "true", "yes"},
 )
 
 def create_db_engine():
@@ -45,6 +60,8 @@ def create_db_engine():
 
 
 engine = create_db_engine()
+
+
 
 SessionLocal = sessionmaker(
     autocommit=False,

@@ -6,7 +6,6 @@ import uuid
 import hashlib
 import mimetypes
 import json
-
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -15,6 +14,7 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, UploadFile, status
 
 from src.entities.file import File
+from src.entities.folder import Folder
 from src.entities.user import User
 from src.entities.audit_log import AuditLog
 from src.security.exceptions import KeyManagementError
@@ -33,6 +33,7 @@ from src.security.secure_storage import (
     delete_encrypted_file,
 )
 from src.security.hashing import calculate_sha256
+from src.notifications.service import create_notification
 
 # ── Analytics event logger ────────────────────────────────────────────────
 from src.analytics.services import log_event
@@ -324,10 +325,7 @@ def get_file(
     )
 
     if not file:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="File not found",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
 
     # Owner authorization
     if file.owner_id != owner_id:
@@ -359,14 +357,12 @@ def get_file(
         )
 
         db.commit()
-
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not authorized to access this file.",
         )
 
     return file
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 # UPLOAD
@@ -474,7 +470,7 @@ def upload_file(
     # Update user storage
     user = db.query(User).filter(User.id == owner_id).first()
     if user:
-        user.storage_used += file_size
+        user.storage_used = (user.storage_used or 0) + file_size
 
     # Audit log
     _audit(
@@ -502,9 +498,59 @@ def upload_file(
         },
     )
 
+    create_notification(
+        db,
+        user_id=owner_id,
+        type="upload",
+        category="uploads",
+        title="File uploaded",
+        message=f'"{safe_filename}" was uploaded successfully.',
+        icon="upload",
+    )
+
     db.commit()
     db.refresh(file)
 
+    # Automatically index document content for AI search
+    try:
+        from src.search.service import get_or_index_file_content
+        get_or_index_file_content(db, file)
+    except Exception:
+        pass
+
+    return file
+
+
+def move_file(
+    db: Session,
+    file_id: int,
+    owner_id: int,
+    folder_id: int | None,
+) -> File:
+    file = (
+        db.query(File)
+        .filter(
+            File.id == file_id,
+            File.owner_id == owner_id,
+            File.is_deleted == False,
+        )
+        .first()
+    )
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    if folder_id is not None:
+        folder = (
+            db.query(Folder)
+            .filter(Folder.id == folder_id, Folder.owner_id == owner_id)
+            .first()
+        )
+        if not folder:
+            raise HTTPException(status_code=404, detail="Target folder not found")
+
+    file.folder_id = folder_id
+    db.commit()
+    db.refresh(file)
     return file
 
 
@@ -531,6 +577,7 @@ def delete_file(
     try:
         delete_encrypted_file(file.stored_name)
     except Exception:
+        # best-effort
         pass
 
     # Delete AES key
@@ -584,6 +631,7 @@ def get_file_path(
     file_id: int,
     owner_id: int,
     ip_address: str | None = None,
+    notification_user_id: int | None = None,
 ) -> tuple[Path, str]:
     # Fetch file metadata
     file = (
@@ -594,6 +642,9 @@ def get_file_path(
 
     if not file:
         raise HTTPException(status_code=404, detail="File not found")
+
+    if file.owner_id != owner_id:
+        raise HTTPException(status_code=403, detail="You are not authorized to download this file.")
 
     # Load stored (encrypted) file
     try:
@@ -766,6 +817,16 @@ def get_file_path(
             "target": file.original_name,
             "size_bytes": file.size,
         },
+    )
+
+    create_notification(
+        db,
+        user_id=notification_user_id or owner_id,
+        type="download",
+        category="downloads",
+        title="File downloaded",
+        message=f'"{file.original_name}" was downloaded.',
+        icon="download",
     )
 
     db.commit()

@@ -88,6 +88,16 @@ def upload_file(
     )
 
 
+@router.patch("/{file_id}/move", response_model=models.FileOut)
+def move_file(
+    file_id: int,
+    data: models.FileMoveRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return service.move_file(db, file_id, current_user.id, data.folder_id)
+
+
 @router.get("/{file_id}", response_model=models.FileOut)
 def get_file(
     file_id: int,

@@ -1,28 +1,45 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
-from src.database.core import get_db
+
 from src.auth.dependencies import get_current_user
+from src.database.core import get_db
 from src.entities.user import User
-from src.notifications.service import NotificationOut, get_notifications, mark_read, mark_all_read, delete_notification
+from src.notifications import schemas, service
+
 
 router = APIRouter()
 
 
-@router.get("/", response_model=list[NotificationOut])
-def list_notifications(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return get_notifications(db, current_user.id)
+@router.get("/", response_model=list[schemas.NotificationOut])
+def read_notifications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return service.get_user_notifications(db, current_user.id)
 
 
-@router.patch("/{notif_id}/read", status_code=204)
-def read_one(notif_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    mark_read(db, notif_id, current_user.id)
+@router.patch("/{notification_id}/read", response_model=schemas.NotificationOut)
+def mark_read(
+    notification_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return service.mark_notification_read(db, notification_id, current_user.id)
 
 
-@router.patch("/read-all", status_code=204)
-def read_all(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    mark_all_read(db, current_user.id)
+@router.patch("/read-all", response_model=schemas.MarkAllReadResponse)
+def mark_all_read(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return {"updated": service.mark_all_notifications_read(db, current_user.id)}
 
 
-@router.delete("/{notif_id}", status_code=204)
-def delete(notif_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    delete_notification(db, notif_id, current_user.id)
+@router.delete("/{notification_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_notification(
+    notification_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    service.delete_notification(db, notification_id, current_user.id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -3,6 +3,25 @@ import { authAPI } from '../utils/api';
 
 const AuthContext = createContext(null);
 
+// FIX ISS-D9: only wipe auth-related keys, preserve theme/settings/etc.
+const AUTH_STORAGE_KEYS = ['access_token', 'refresh_token', 'user'];
+
+const ASSISTANT_SESSION_KEYS = [
+  'trustshare_bubble_conversation_id',
+  'trustshare_bubble_open',
+];
+
+const clearAuthStorage = () => {
+  AUTH_STORAGE_KEYS.forEach((k) => {
+    localStorage.removeItem(k);
+    sessionStorage.removeItem(k);
+  });
+  
+  ASSISTANT_SESSION_KEYS.forEach((k) => {
+    sessionStorage.removeItem(k);
+  });
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -14,8 +33,7 @@ export function AuthProvider({ children }) {
       authAPI.me()
         .then(({ data }) => setUser(data))
         .catch(() => {
-          localStorage.clear();
-          sessionStorage.clear();
+          clearAuthStorage();        // FIX ISS-D9: targeted clear
         })
         .finally(() => setLoading(false));
     } else {
@@ -45,8 +63,7 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     try { await authAPI.logout(); } catch {}
-    localStorage.clear();
-    sessionStorage.clear();
+    clearAuthStorage();              // FIX ISS-D9: targeted clear
     setUser(null);
   }, []);
 
@@ -59,6 +76,5 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+  return ctx || { user: null, loading: false, login: () => {}, register: () => {}, logout: () => {} };
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { filesAPI, foldersAPI } from '../utils/api';
 import { events, EVENTS } from '../utils/events';
+import FileSummaryPanel from '../features/fileSummary/components/FileSummaryPanel';
 
 const FILE_ICON = (mime = '') => {
   if (mime.startsWith('image/')) return { icon: '🖼️', color: '#8b5cf6' };
@@ -32,17 +33,21 @@ export default function Files() {
   const [showUpload, setShowUpload] = useState(false);
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [folderName, setFolderName] = useState('');
+  const [folderPath, setFolderPath] = useState([]);
   const [toast, setToast] = useState(null);
+  const [summaryFile, setSummaryFile] = useState(null);
   const inputRef = useRef();
+
+  const activeFolder = folderPath[folderPath.length - 1];
 
   const load = () => {
     setLoading(true);
-    Promise.all([filesAPI.list(), foldersAPI.list()])
+    Promise.all([filesAPI.list(activeFolder?.id), foldersAPI.list(activeFolder?.id)])
       .then(([f, fo]) => { setFiles(f.data.files); setFolders(fo.data); })
       .finally(() => setLoading(false));
   };
 
-  useEffect(load, []);
+  useEffect(load, [activeFolder?.id]);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -67,6 +72,7 @@ export default function Files() {
         } else {
           showToast('No duplicate found');
         }
+        await filesAPI.upload(fd, pct => setUploadPct(pct), activeFolder?.id);
       }
       events.emit(EVENTS.STORAGE_CHANGED);
       load();
@@ -93,8 +99,31 @@ export default function Files() {
 
   const handleCreateFolder = async () => {
     if (!folderName.trim()) return;
-    try { await foldersAPI.create(folderName.trim()); showToast('Folder created'); setFolderName(''); setShowNewFolder(false); load(); }
+    try { await foldersAPI.create(folderName.trim(), activeFolder?.id); showToast('Folder created'); setFolderName(''); setShowNewFolder(false); load(); }
     catch { showToast('Failed to create folder', 'error'); }
+  };
+
+  const openFolder = (folder) => {
+    setFolderPath((current) => [...current, folder]);
+    setSearch('');
+    setSelected(null);
+  };
+
+  const goToFolder = (index) => {
+    setFolderPath((current) => current.slice(0, index + 1));
+    setSearch('');
+    setSelected(null);
+  };
+
+  const handleDeleteFolder = async (folder) => {
+    if (!window.confirm(`Delete folder "${folder.name}"? It must be empty first.`)) return;
+    try {
+      await foldersAPI.delete(folder.id);
+      showToast('Folder deleted');
+      load();
+    } catch (error) {
+      showToast(error.response?.data?.detail || 'Folder could not be deleted', 'error');
+    }
   };
 
   const filtered = files.filter(f => f.original_name.toLowerCase().includes(search.toLowerCase()));
@@ -112,6 +141,15 @@ export default function Files() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 style={{ fontSize: '1.375rem', fontWeight: 800 }}>File Manager</h1>
+          <div className="flex items-center gap-1 text-muted text-sm mt-1" aria-label="Folder path">
+            <button className="btn btn-ghost btn-sm" onClick={() => setFolderPath([])}>My Files</button>
+            {folderPath.map((folder, index) => (
+              <React.Fragment key={folder.id}>
+                <span>&gt;</span>
+                <button className="btn btn-ghost btn-sm" onClick={() => goToFolder(index)}>{folder.name}</button>
+              </React.Fragment>
+            ))}
+          </div>
           <p className="text-muted text-sm mt-1">{files.length} files · {folders.length} folders</p>
         </div>
         <div className="flex gap-2">
@@ -155,7 +193,7 @@ export default function Files() {
               <div style={{ fontSize: '3rem', marginBottom: 12 }}>📂</div>
               <div style={{ fontWeight: 700, fontSize: '1.0625rem', marginBottom: 8 }}>Drop files here or click to browse</div>
               <div className="text-sm text-muted">All files encrypted at rest with AES-256</div>
-              <button className="btn btn-primary btn-sm mt-3" onClick={e => e.stopPropagation()}>Close</button>
+              <button className="btn btn-primary btn-sm mt-3" onClick={e => { e.stopPropagation(); setShowUpload(false); }}>Close</button>
             </>
           )}
         </div>
@@ -185,14 +223,14 @@ export default function Files() {
               <div style={{ fontSize: '.8125rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 10 }}>FOLDERS</div>
               <div className="grid-4" style={{ gap: 10 }}>
                 {folders.map(fo => (
-                  <div key={fo.id} className="card flex items-center gap-3" style={{ padding: '12px 14px', cursor: 'pointer' }}>
+                  <div key={fo.id} className="card flex items-center gap-3" style={{ padding: '12px 14px', cursor: 'pointer' }} onClick={() => openFolder(fo)} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && openFolder(fo)}>
                     <span style={{ fontSize: '1.5rem' }}>📁</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="truncate" style={{ fontWeight: 600, fontSize: '.9375rem' }}>{fo.name}</div>
                       <div className="text-xs text-muted">Folder</div>
                     </div>
                     <button className="btn btn-ghost btn-icon" style={{ opacity: .5, fontSize: '.8125rem' }}
-                      onClick={() => foldersAPI.delete(fo.id).then(load)}>🗑️</button>
+                      onClick={e => { e.stopPropagation(); handleDeleteFolder(fo); }}>🗑️</button>
                   </div>
                 ))}
               </div>
@@ -235,6 +273,7 @@ export default function Files() {
                       <span className="text-muted text-sm" style={{ alignSelf: 'center' }}>{fmt(f.size)}</span>
                       <span className="text-muted text-xs" style={{ alignSelf: 'center' }}>{f.mimetype?.split('/')[1]?.toUpperCase() || 'FILE'}</span>
                       <div className="file-actions" style={{ opacity: 1, alignSelf: 'center' }}>
+                        <button className="btn btn-ghost btn-icon btn-sm" title="Generate AI Summary" aria-label={`Generate AI summary for ${f.original_name}`} onClick={e => { e.stopPropagation(); setSummaryFile(f); }}>✨</button>
                         <button className="btn btn-ghost btn-icon btn-sm" title="Download" onClick={e => { e.stopPropagation(); handleDownload(f); }}>⬇️</button>
                         <button className="btn btn-ghost btn-icon btn-sm" title="Delete" onClick={e => { e.stopPropagation(); handleDelete(f.id); }}>🗑️</button>
                       </div>
@@ -253,6 +292,7 @@ export default function Files() {
                       <div className="text-xs text-muted mb-3">{fmt(f.size)}</div>
                       {f.encrypted && <span className="badge badge-emerald" style={{ fontSize: '.625rem' }}>🔐</span>}
                       <div className="flex gap-1 justify-center mt-3">
+                        <button className="btn btn-ghost btn-icon btn-sm" title="Generate AI Summary" aria-label={`Generate AI summary for ${f.original_name}`} onClick={() => setSummaryFile(f)}>✨</button>
                         <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDownload(f)}>⬇️</button>
                         <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(f.id)}>🗑️</button>
                       </div>
@@ -264,6 +304,7 @@ export default function Files() {
           </div>
         </>
       )}
+      {summaryFile && <FileSummaryPanel file={summaryFile} onClose={() => setSummaryFile(null)} />}
     </div>
   );
 }

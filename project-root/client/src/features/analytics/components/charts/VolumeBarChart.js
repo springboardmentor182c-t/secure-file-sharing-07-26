@@ -1,30 +1,26 @@
 // client/src/features/analytics/components/charts/VolumeBarChart.js
-/**
- * Upload / Download Volume — dual bar chart.
- * Title + legend labels from backend ui_config.charts.volume.
- */
 
 import React from "react";
 import {
   BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { motion }              from "framer-motion";
-import Card, { CardHeader }    from "../shared/Card";
-import ChartTooltip            from "./ChartTooltip";
-import { ChartSkeleton }       from "../shared/Skeleton";
-import EmptyState              from "../shared/EmptyState";
-import useChartTheme           from "../../hooks/useChartTheme";
+import { motion } from "framer-motion";
+import Card, { CardHeader } from "../shared/Card";
+import ChartTooltip from "./ChartTooltip";
+import { BarChartSkeleton } from "../shared/Skeleton";
+import EmptyState from "../shared/EmptyState";
+import useChartTheme from "../../hooks/useChartTheme";
 
 export default function VolumeBarChart({
   volumeWeekly = [],
-  loading      = false,
-  config       = {},
+  loading = false,
+  config = {},
 }) {
   const ct = useChartTheme();
 
-  const title         = config.title          || "Upload / Download Volume";
-  const uploadLabel   = config.upload_label   || "Uploads";
+  const title = config.title || "Upload / Download Volume";
+  const uploadLabel = config.upload_label || "Uploads";
   const downloadLabel = config.download_label || "Downloads";
 
   const Legend = () => (
@@ -48,7 +44,7 @@ export default function VolumeBarChart({
       />
 
       {loading ? (
-        <ChartSkeleton height={200} />
+        <BarChartSkeleton height={200} />
       ) : !volumeWeekly.length ? (
         <EmptyState message="No volume data yet." />
       ) : (
@@ -57,7 +53,7 @@ export default function VolumeBarChart({
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, delay: 0.15 }}
         >
-         <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+          <ResponsiveContainer width="100%" height="100%" minHeight={200}>
             <BarChart
               data={volumeWeekly}
               barGap={3}

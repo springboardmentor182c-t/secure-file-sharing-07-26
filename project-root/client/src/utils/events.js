@@ -29,4 +29,6 @@ export const EVENTS = {
   FILE_UPLOADED: "file:uploaded",
   FILE_DELETED: "file:deleted",
   STORAGE_CHANGED: "storage:changed",
+  MY_FILES_ROOT: "my-files:root",
+  NOTIFICATIONS_CHANGED: "notifications:changed",
 };

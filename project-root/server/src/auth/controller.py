@@ -11,15 +11,15 @@ from src.auth.dependencies import (
     create_refresh_token,
 )
 from src.entities.user import User
+from src.notifications.service import create_notification
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
 router = APIRouter()
 
 
-# ── Helper: get client IP safely ──────────────────────────────────────────
+# Helper: get client IP safely
 def _get_client_ip(request: Request) -> str | None:
-    # Prefer X-Forwarded-For if behind a proxy
     xff = request.headers.get("x-forwarded-for")
     if xff:
         return xff.split(",")[0].strip()
@@ -57,11 +57,19 @@ def login(
     if user.mfa_enabled:
         return service.build_mfa_pending_response(user)
 
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Account suspended"
-        )
-    # Store session when building token response
-    return service._build_token_response(user, db=db, request=request)
+    # Store session when building token response (teammate's session tracking)
+    response = service._build_token_response(user, db=db, request=request)
+    create_notification(
+        db,
+        user_id=user.id,
+        type="security",
+        category="security",
+        title="New login to your account",
+        message="A successful sign-in to TrustShare was completed.",
+        icon="security",
+        commit=True,
+    )
+    return response
 
 
 @router.post("/login/swagger", response_model=models.TokenResponse)
@@ -74,7 +82,7 @@ def swagger_login(
 
     user = service.authenticate_user(
         db,
-        form_data.username,  # username field carries the email
+        form_data.username,
         form_data.password,
         ip_address=ip,
     )
@@ -91,7 +99,18 @@ def swagger_login(
             detail="Account suspended",
         )
 
-    return service._build_token_response(user, db=db, request=request)
+    response = service._build_token_response(user, db=db, request=request)
+    create_notification(
+        db,
+        user_id=user.id,
+        type="security",
+        category="security",
+        title="New login to your account",
+        message="A successful sign-in to TrustShare was completed.",
+        icon="security",
+        commit=True,
+    )
+    return response
 
 
 @router.post(
@@ -105,6 +124,7 @@ def signup(
     db: Session = Depends(get_db),
 ):
     ip = _get_client_ip(request)
+    # FIX ISS-D6: pass request so session tracking works for new signups
     return service.register_user(db, data, request=request, ip_address=ip)
 
 
@@ -114,7 +134,11 @@ def me(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/refresh", response_model=models.TokenResponse)
-def refresh(body: models.RefreshRequest, db: Session = Depends(get_db)):
+def refresh(
+    body: models.RefreshRequest,
+    request: Request,                       # FIX ISS-D2: accept request
+    db: Session = Depends(get_db),
+):
     payload = decode_token(body.refresh_token)
     if payload.get("type") != "refresh":
         raise HTTPException(
@@ -128,16 +152,29 @@ def refresh(body: models.RefreshRequest, db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
         )
-    return service._build_token_response(user)
+    # FIX ISS-D2: pass db and request so session row is tracked
+    return service._build_token_response(user, db=db, request=request)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(current_user: User = Depends(get_current_user)):
-    # Stateless JWT — client just discards tokens
+def logout(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # FIX ISS-D1: Actually invalidate the user's active session rows
+    try:
+        from src.entities.login_session import LoginSession
+        db.query(LoginSession).filter(
+            LoginSession.user_id == current_user.id,
+            LoginSession.is_current == True,
+        ).update({"is_current": False})
+        db.commit()
+    except Exception:
+        db.rollback()
     return None
 
 
-# ── MFA Endpoints ──────────────────────────────────────────────────────────
+# MFA Endpoints
 
 @router.post("/verify-otp", response_model=models.TokenResponse)
 def verify_otp(
@@ -167,7 +204,19 @@ def verify_otp(
             detail="Invalid or expired OTP code",
         )
 
-    return service._build_token_response(user)
+    # FIX ISS-D3: pass db and request for session tracking after MFA success
+    response = service._build_token_response(user, db=db, request=request)
+    create_notification(
+        db,
+        user_id=user.id,
+        type="security",
+        category="security",
+        title="New login to your account",
+        message="A successful MFA sign-in to TrustShare was completed.",
+        icon="security",
+        commit=True,
+    )
+    return response
 
 
 @router.post("/resend-otp")
@@ -194,7 +243,7 @@ def resend_otp(body: models.ResendOTPRequest, db: Session = Depends(get_db)):
     }
 
 
-# ── Password Recovery Endpoints ────────────────────────────────────────────
+# Password Recovery Endpoints
 
 @router.post("/forgot-password")
 def forgot_password(
@@ -224,7 +273,7 @@ def reset_password(
     return {"status": "success", "message": "Password reset successfully"}
 
 
-# ── Real OAuth2 Endpoints ─────────────────────────────────────────────────
+# OAuth2 Endpoints
 
 import os
 from src.auth.oauth_config import (
@@ -243,11 +292,8 @@ from src.auth.oauth_config import (
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 
-# ── Google OAuth2 ──────────────────────────────────────────────────────────
-
 @router.get("/oauth/google")
 async def google_login():
-    """Step 1: Redirect the user to Google's consent screen."""
     client = make_google_client()
     uri, state = client.create_authorization_url(GOOGLE_AUTHORIZE_URL)
     return RedirectResponse(url=uri)
@@ -259,7 +305,6 @@ async def google_callback(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """Step 2: Google redirects here with an authorization code."""
     ip = _get_client_ip(request)
     client = make_google_client()
 
@@ -282,11 +327,7 @@ async def google_callback(
         )
 
     user = service.get_or_create_oauth_user(
-        db,
-        "google",
-        google_email,
-        google_name,
-        ip_address=ip,
+        db, "google", google_email, google_name, ip_address=ip,
     )
 
     if not user.is_active:
@@ -295,7 +336,8 @@ async def google_callback(
             detail="Account suspended",
         )
 
-    token_resp = service._build_token_response(user)
+    # FIX ISS-D7: pass db and request for session tracking on OAuth login
+    token_resp = service._build_token_response(user, db=db, request=request)
     redirect_url = (
         f"{FRONTEND_URL}/oauth-callback"
         f"?access_token={token_resp.access_token}"
@@ -305,11 +347,8 @@ async def google_callback(
     return RedirectResponse(url=redirect_url)
 
 
-# ── Microsoft OAuth2 ───────────────────────────────────────────────────────
-
 @router.get("/oauth/microsoft")
 async def microsoft_login():
-    """Step 1: Redirect the user to Microsoft's consent screen."""
     client = make_microsoft_client()
     uri, state = client.create_authorization_url(get_ms_authorize_url())
     return RedirectResponse(url=uri)
@@ -321,7 +360,6 @@ async def microsoft_callback(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """Step 2: Microsoft redirects here with an authorization code."""
     ip = _get_client_ip(request)
     client = make_microsoft_client()
 
@@ -344,11 +382,7 @@ async def microsoft_callback(
         )
 
     user = service.get_or_create_oauth_user(
-        db,
-        "microsoft",
-        ms_email,
-        ms_name,
-        ip_address=ip,
+        db, "microsoft", ms_email, ms_name, ip_address=ip,
     )
 
     if not user.is_active:
@@ -357,7 +391,8 @@ async def microsoft_callback(
             detail="Account suspended",
         )
 
-    token_resp = service._build_token_response(user)
+    # FIX ISS-D7: pass db and request for session tracking on OAuth login
+    token_resp = service._build_token_response(user, db=db, request=request)
     redirect_url = (
         f"{FRONTEND_URL}/oauth-callback"
         f"?access_token={token_resp.access_token}"
@@ -366,6 +401,8 @@ async def microsoft_callback(
     )
     return RedirectResponse(url=redirect_url)
 
+
+# MFA Toggle
 
 @router.post("/mfa/enable", response_model=models.UserOut)
 def enable_mfa(
@@ -383,6 +420,75 @@ def disable_mfa(
     return service.disable_mfa(db, current_user)
 
 
+
+# MFA Setup Flow (Proper OTP-verified enable/disable)
+
+@router.post("/mfa/setup")
+def mfa_setup(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Step 1 of enabling MFA: send OTP to user's registered email.
+    User must then call /mfa/verify-setup with the OTP to actually enable.
+    """
+    if current_user.mfa_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MFA is already enabled",
+        )
+    service.generate_otp(
+        current_user.id,
+        to_email=current_user.email,
+        user_name=current_user.name,
+    )
+    return {
+        "status": "otp_sent",
+        "message": "Verification code sent to your registered email",
+    }
+
+
+@router.post("/mfa/verify-setup", response_model=models.UserOut)
+def mfa_verify_setup(
+    body: models.VerifyMFASetupRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Step 2 of enabling MFA: verify OTP and flip mfa_enabled=true.
+    """
+    if current_user.mfa_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MFA is already enabled",
+        )
+    if not service.verify_otp_code(current_user.id, body.code, db=db):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code",
+        )
+    return service.enable_mfa(db, current_user)
+
+
+@router.post("/mfa/disable-with-password", response_model=models.UserOut)
+def mfa_disable_with_password(
+    body: models.DisableMFARequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Secure MFA disable: requires password confirmation to prevent
+    unauthorized MFA disabling if session token is stolen.
+    """
+    from src.auth.dependencies import verify_password
+    if not verify_password(body.password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect password",
+        )
+    return service.disable_mfa(db, current_user)
+
+# Change Password (teammate's Settings module)
+
 @router.post("/change-password")
 def change_password(
     body: models.ChangePasswordRequest,
@@ -393,7 +499,7 @@ def change_password(
     return {"status": "success", "message": "Password changed successfully"}
 
 
-# ── User Storage Breakdown ────────────────────────────────────────────────
+# User Storage Breakdown (Badal's PageLayout feature)
 
 from sqlalchemy import func
 from src.entities.file import File
@@ -404,11 +510,6 @@ def storage_breakdown(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Returns storage usage broken down by file type category.
-    Used by the user dropdown for storage insights.
-    """
-    # Get all non-deleted files owned by user
     files = (
         db.query(File.mimetype, File.size)
         .filter(
@@ -418,7 +519,6 @@ def storage_breakdown(
         .all()
     )
 
-    # Categorize by mimetype
     categories = {
         "documents": {"size": 0, "count": 0, "color": "#3b82f6"},
         "media":     {"size": 0, "count": 0, "color": "#8b5cf6"},

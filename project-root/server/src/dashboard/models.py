@@ -18,6 +18,7 @@ class UploadTrend(BaseModel):
 
 class DashboardAnalytics(BaseModel):
     total_files: int
+    encrypted_files: int
     total_share_links: int
     active_share_links: int
     total_share_views: int

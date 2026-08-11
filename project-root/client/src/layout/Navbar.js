@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, Moon, Sun, CheckCheck } from "lucide-react";
+import { Bell, Moon, Sun, CheckCheck, Sparkles } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import {
   RiSearch2Line,
@@ -16,7 +16,12 @@ import {
   RiShieldCheckLine,
 } from "react-icons/ri";
 import { searchAPI, notificationsAPI } from "../utils/api";
+import { events, EVENTS } from "../utils/events";
+import ContentSearchModal from "../features/search/ContentSearchModal";
 import "./Navbar.css";
+
+
+// File type icon resolver
 
 const FILE_ICON_MAP = {
   image: ["png", "jpg", "jpeg", "gif", "svg", "webp"],
@@ -51,10 +56,18 @@ function getNotificationIcon(notification) {
   return <RiNotification3Line className="notification-type-icon" />;
 }
 
-/* ──────────────────────────────────────────────────────────────────────────
-   NAVBAR
-   ────────────────────────────────────────────────────────────────────────── */
-export default function Navbar({ unreadCount = 0, connectionStatus }) {
+export function getUnreadNotificationPreview(items) {
+  return items.filter((notification) => !notification.is_read).slice(0, 5);
+}
+
+// FIX ISS-L3: Removed unused darkMode and setDarkMode props
+// Theme is controlled via useTheme() hook — props were dead parameters
+export default function Navbar({
+  unreadCount = 0,
+  setSidebarOpen,
+  connectionStatus,
+}) {
+  const [showContentModal, setShowContentModal] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -62,8 +75,6 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [markingAllRead, setMarkingAllRead] = useState(false);
-
-  // Keyboard navigation for search results
   const [activeIndex, setActiveIndex] = useState(-1);
 
   const searchRef = useRef(null);
@@ -72,7 +83,7 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
 
-  /* ── Search (debounced) ─────────────────────────────────────────────── */
+  // Search (debounced)
   useEffect(() => {
     if (!query.trim()) {
       setResults(null);
@@ -96,7 +107,7 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
     return () => clearTimeout(timer);
   }, [query]);
 
-  /* ── Click outside handling ─────────────────────────────────────────── */
+  // Click outside handling
   useEffect(() => {
     function handleClickOutside(event) {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
@@ -114,7 +125,7 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  /* ── Global keyboard shortcuts (Ctrl+K / Esc) ───────────────────────── */
+  // Global keyboard shortcuts (Ctrl+K / Esc)
   useEffect(() => {
     function handleKeyDown(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -132,28 +143,32 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  /* ── Scroll shadow detection ────────────────────────────────────────── */
+  // Scroll shadow detection
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  /* ── Load notifications when opened ─────────────────────────────────── */
-  useEffect(() => {
-    if (!showNotifications) return;
-    const load = async () => {
-      try {
-        const res = await notificationsAPI.list();
-        setNotifications(res.data.slice(0, 5));
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    load();
-  }, [showNotifications]);
+  const loadNotifications = useCallback(async () => {
+    try {
+      const res = await notificationsAPI.list();
+      setNotifications(getUnreadNotificationPreview(res.data));
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
 
-  /* ── Flatten search results for keyboard navigation ─────────────────── */
+  // Load notifications when opened and refresh an open dropdown after local actions.
+  useEffect(() => {
+    if (showNotifications) loadNotifications();
+  }, [showNotifications, loadNotifications]);
+
+  useEffect(() => events.on(EVENTS.NOTIFICATIONS_CHANGED, () => {
+    if (showNotifications) loadNotifications();
+  }), [showNotifications, loadNotifications]);
+
+  // Flatten search results for keyboard navigation
   const flatResults = useMemo(() => {
     if (!results) return [];
     const list = [];
@@ -169,13 +184,15 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
     results.notifications?.forEach((n) =>
       list.push({ type: "notification", data: n, id: `notif-${n.id}` })
     );
+    results.content_matches?.forEach((c) =>
+      list.push({ type: "content", data: c, id: `content-${c.id}` })
+    );
     return list;
   }, [results]);
 
-  /* ── Search input keyboard navigation ──────────────────────────────── */
+  // Search input keyboard navigation
   const handleSearchKeyDown = (e) => {
     if (!results || flatResults.length === 0) return;
-
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setActiveIndex((prev) => (prev + 1) % flatResults.length);
@@ -191,7 +208,7 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
     }
   };
 
-  /* ── Scroll active item into view ──────────────────────────────────── */
+  // Scroll active item into view
   useEffect(() => {
     if (activeIndex < 0) return;
     const el = document.querySelector(`[data-result-index="${activeIndex}"]`);
@@ -203,25 +220,40 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
     setResults(null);
     setActiveIndex(-1);
     const routes = {
-      file: "/files",
-      folder: "/files",
+      file: "/my-files",
+      folder: "/my-files",
       share: "/sharing",
       notification: "/notifications",
+      content: "/my-files",
     };
     navigate(routes[type] || "/dashboard");
   };
 
-  /* ── Mark all notifications as read ────────────────────────────────── */
+  // Mark all notifications as read
   const handleMarkAllRead = async () => {
     if (markingAllRead || notifications.length === 0) return;
     setMarkingAllRead(true);
     try {
       await notificationsAPI.markAllRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setNotifications([]);
+      events.emit(EVENTS.NOTIFICATIONS_CHANGED);
     } catch (err) {
       console.error("Failed to mark all as read:", err);
     } finally {
       setMarkingAllRead(false);
+    }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    setNotifications((previous) => previous.filter((item) => item.id !== notification.id));
+    try {
+      await notificationsAPI.markRead(notification.id);
+      events.emit(EVENTS.NOTIFICATIONS_CHANGED);
+      setShowNotifications(false);
+      navigate("/notifications");
+    } catch (err) {
+      console.error("Failed to mark notification as read:", err);
+      loadNotifications();
     }
   };
 
@@ -230,31 +262,31 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
     !results.files?.length &&
     !results.folders?.length &&
     !results.shares?.length &&
-    !results.notifications?.length;
+    !results.notifications?.length &&
+    !results.content_matches?.length;
 
-  /* ── Render helpers ────────────────────────────────────────────────── */
+  // Render helpers
   const renderSearchItem = (item, globalIndex) => {
     const isActive = activeIndex === globalIndex;
-
     const iconMap = {
       file: () => getSearchFileIcon(item.data.original_name),
       folder: () => <RiFolderOpenLine className="search-icon" />,
       share: () => <RiShareForwardLine className="search-icon" />,
       notification: () => <RiNotification3Line className="search-icon" />,
+      content: () => <Sparkles className="search-icon" style={{ color: "#6366f1", width: 16, height: 16 }} />,
     };
-
     const labelMap = {
       file: item.data.original_name,
       folder: item.data.name,
       share: `Share #${item.data.id}`,
       notification: item.data.title,
+      content: item.data.original_name,
     };
-
     return (
       <motion.div
         key={item.id}
         data-result-index={globalIndex}
-        className={`search-item ${isActive ? "search-item--active" : ""}`}
+        className={`search-item ${isActive ? "search-item--active" : ""} ${item.type === "content" ? "search-item--content" : ""}`}
         onClick={() => handleResultClick(item.type)}
         onMouseEnter={() => setActiveIndex(globalIndex)}
         initial={{ opacity: 0, x: -6 }}
@@ -262,7 +294,15 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
         transition={{ delay: globalIndex * 0.02, duration: 0.2 }}
       >
         {iconMap[item.type]()}
-        <span>{labelMap[item.type]}</span>
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+          <span style={{ fontWeight: item.type === "content" ? 600 : 400 }}>{labelMap[item.type]}</span>
+          {item.type === "content" && item.data.snippet && (
+            <span
+              style={{ fontSize: "0.75rem", opacity: 0.8, marginTop: 2 }}
+              dangerouslySetInnerHTML={{ __html: item.data.snippet }}
+            />
+          )}
+        </div>
       </motion.div>
     );
   };
@@ -285,10 +325,8 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
 
   return (
     <header className={`navbar-modern ${scrolled ? "scrolled" : ""}`}>
-      {/* ── Search ────────────────────────────────── */}
       <div className="navbar-search" ref={searchRef}>
         <RiSearch2Line className="search-icon" />
-
         <input
           ref={searchInputRef}
           type="text"
@@ -302,6 +340,14 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
           onKeyDown={handleSearchKeyDown}
           aria-label="Search"
         />
+        <button
+          type="button"
+          className="ai-search-trigger-btn"
+          onClick={() => setShowContentModal(true)}
+          title="Open AI Content Search"
+        >
+          <Sparkles size={13} /> AI Search
+        </button>
 
         <AnimatePresence>
           {loading && (
@@ -331,14 +377,11 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
                 currentIndex = 0;
                 return (
                   <>
+                    {renderSection("Inside Document Content (AI)", results.content_matches, "content")}
                     {renderSection("Files", results.files, "file")}
                     {renderSection("Folders", results.folders, "folder")}
                     {renderSection("Shares", results.shares, "share")}
-                    {renderSection(
-                      "Notifications",
-                      results.notifications,
-                      "notification"
-                    )}
+                    {renderSection("Notifications", results.notifications, "notification")}
                   </>
                 );
               })()}
@@ -358,16 +401,9 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
 
               {flatResults.length > 0 && (
                 <div className="search-hints">
-                  <span>
-                    <kbd>↑</kbd>
-                    <kbd>↓</kbd> Navigate
-                  </span>
-                  <span>
-                    <kbd>↵</kbd> Select
-                  </span>
-                  <span>
-                    <kbd>Esc</kbd> Close
-                  </span>
+                  <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+                  <span><kbd>↵</kbd> Select</span>
+                  <span><kbd>Esc</kbd> Close</span>
                 </div>
               )}
             </motion.div>
@@ -377,11 +413,9 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
         <kbd className="search-shortcut">Ctrl+K</kbd>
       </div>
 
-      {/* ── Actions ────────────────────────────────── */}
       <div className="navbar-actions" ref={notificationRef}>
-        {/* Connection status indicator */}
         {connectionStatus}
-        {/* Theme toggle */}
+
         <motion.button
           className="nav-icon-btn"
           onClick={toggleTheme}
@@ -417,12 +451,10 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
           </AnimatePresence>
         </motion.button>
 
-        {/* Notifications */}
         <motion.button
           className={`nav-icon-btn ${showNotifications ? "active" : ""}`}
           onClick={() => setShowNotifications(!showNotifications)}
-          aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ""
-            }`}
+          aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ""}`}
           title="Notifications"
           whileTap={{ scale: 0.9 }}
           transition={{ duration: 0.15 }}
@@ -440,7 +472,6 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
           )}
         </motion.button>
 
-        {/* Notification dropdown */}
         <AnimatePresence>
           {showNotifications && (
             <motion.div
@@ -454,9 +485,7 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
                 <div className="notification-header-left">
                   <span>Notifications</span>
                   {unreadCount > 0 && (
-                    <span className="notification-count">
-                      {unreadCount} new
-                    </span>
+                    <span className="notification-count">{unreadCount} new</span>
                   )}
                 </div>
                 {notifications.length > 0 && unreadCount > 0 && (
@@ -484,10 +513,7 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
                   <motion.div
                     key={notification.id}
                     className="notification-item"
-                    onClick={() => {
-                      setShowNotifications(false);
-                      navigate("/notifications");
-                    }}
+                    onClick={() => handleNotificationClick(notification)}
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{
@@ -500,12 +526,8 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
                       {getNotificationIcon(notification)}
                     </div>
                     <div className="notification-content">
-                      <div className="notification-title">
-                        {notification.title}
-                      </div>
-                      <div className="notification-message">
-                        {notification.message}
-                      </div>
+                      <div className="notification-title">{notification.title}</div>
+                      <div className="notification-message">{notification.message}</div>
                     </div>
                   </motion.div>
                 ))
@@ -527,6 +549,11 @@ export default function Navbar({ unreadCount = 0, connectionStatus }) {
           )}
         </AnimatePresence>
       </div>
+
+      <ContentSearchModal
+        isOpen={showContentModal}
+        onClose={() => setShowContentModal(false)}
+      />
     </header>
   );
 }

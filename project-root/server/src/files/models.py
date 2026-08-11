@@ -30,3 +30,7 @@ class FileOut(BaseModel):
 class FileListResponse(BaseModel):
     files: list[FileOut]
     total: int
+
+
+class FileMoveRequest(BaseModel):
+    folder_id: Optional[int] = None

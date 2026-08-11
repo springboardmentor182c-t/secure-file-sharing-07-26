@@ -27,6 +27,32 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 # In-memory store for OTPs: {user_id: {"otp": str, "expires_at": datetime}}
 otp_store = {}
 
+DEFAULT_DEV_DUMMY_EMAIL_DOMAINS = "example.com,test.com,invalid,localhost"
+
+
+def _environment() -> str:
+    return os.getenv("ENVIRONMENT", "development").strip().lower()
+
+
+def _development_dummy_email_domains() -> set[str]:
+    configured = os.getenv(
+        "DEV_DUMMY_EMAIL_DOMAINS",
+        DEFAULT_DEV_DUMMY_EMAIL_DOMAINS,
+    )
+    return {
+        domain.strip().lower().lstrip("@")
+        for domain in configured.split(",")
+        if domain.strip()
+    }
+
+
+def _is_development_dummy_email(email: str) -> bool:
+    if _environment() not in {"development", "dev"}:
+        return False
+
+    _, separator, domain = email.strip().lower().rpartition("@")
+    return bool(separator and domain in _development_dummy_email_domains())
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 # AUTHENTICATION
@@ -186,8 +212,16 @@ def _build_token_response(user: User, db: Session = None, request=None) -> Token
             )
             db.add(session_row)
             db.commit()
-        except Exception:
-            # Don't fail login if session saving fails; just continue
+        except Exception as _session_err:
+            # FIX ISS-D11: log the failure so we can debug session issues
+            # (don't fail login itself if session saving breaks)
+            try:
+                print(
+                    f"[SESSION SAVE ERROR] {type(_session_err).__name__}: {_session_err}",
+                    flush=True,
+                )
+            except Exception:
+                pass
             db.rollback()
 
     return TokenResponse(
@@ -208,14 +242,29 @@ def generate_otp(user_id: int, to_email: str = "", user_name: str = "") -> str:
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
     otp_store[user_id] = {"otp": code, "expires_at": expires_at}
 
-    if to_email:
-        email_service.send_otp_email(to_email, code, user_name)
-    else:
+    if _environment() in {"development", "dev"}:
         print(
-            f"[OTP] Code for user {user_id}: {code} (expires {expires_at} UTC)",
+            f"[OTP DEV] User {user_id} -> {code} "
+            f"(expires {expires_at.strftime('%H:%M:%S')} UTC)",
             flush=True,
         )
 
+    if to_email:
+        if _is_development_dummy_email(to_email):
+            domain = to_email.strip().lower().rpartition("@")[2]
+            print(
+                f"[EMAIL DEV] Skipping SMTP for configured dummy/test domain: {domain}",
+                flush=True,
+            )
+        else:
+            try:
+                email_service.send_otp_email(to_email, code, user_name)
+            except Exception as exc:
+                print(
+                    f"[EMAIL ERROR] Failed to send MFA email: {type(exc).__name__}",
+                    flush=True,
+                )
+   
     return code
 
 
@@ -497,5 +546,19 @@ def change_password(
         )
 
     user.hashed_password = hash_password(new_password)
+
+    # FIX: Invalidate all other login sessions on password change.
+    # If password is being changed due to suspected compromise, other devices
+    # must not retain valid tokens. Industry standard (Google, GitHub, MS).
+    # Current session is preserved so user isn't logged out mid-flow.
+    try:
+        from src.entities.login_session import LoginSession
+        db.query(LoginSession).filter(
+            LoginSession.user_id == user.id,
+            LoginSession.is_current == False,
+        ).delete(synchronize_session=False)
+    except Exception as _sess_err:
+        print(f"[SESSION CLEANUP WARN] {type(_sess_err).__name__}: {_sess_err}", flush=True)
+
     db.commit()
     return True

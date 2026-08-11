@@ -1,6 +1,9 @@
 # server/src/shares/controller.py
 
 from fastapi import APIRouter, Depends, Query, Request
+from fastapi.responses import StreamingResponse
+from io import BytesIO
+import os
 from sqlalchemy.orm import Session
 from typing import Optional
 
@@ -10,10 +13,13 @@ from src.entities.user import User
 from src.shares.service import (
     ShareCreate,
     ShareOut,
+    PublicShareOut,
     create_share,
     list_shares,
     revoke_share,
     access_share,
+    inspect_public_share,
+    get_public_file_path,
 )
 
 router = APIRouter()
@@ -74,3 +80,41 @@ def public_access(
         ip_address=ip,
         user_id=None,
     )
+
+
+@router.get("/public/{token}", response_model=PublicShareOut)
+def public_details(
+    token: str,
+    password: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Return safe file metadata without consuming a link view."""
+    return inspect_public_share(db, token, password=password)
+
+
+@router.get("/public/{token}/content")
+def public_content(
+    token: str,
+    request: Request,
+    password: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Stream a validated public share and consume one allowed view."""
+    path, original_name, mimetype, permission = get_public_file_path(
+        db,
+        token,
+        password=password,
+        ip_address=_get_client_ip(request),
+    )
+    try:
+        with open(path, "rb") as file:
+            data = file.read()
+        disposition = "attachment" if permission == "download" else "inline"
+        return StreamingResponse(
+            BytesIO(data),
+            media_type=mimetype or "application/octet-stream",
+            headers={"Content-Disposition": f'{disposition}; filename="{original_name}"'},
+        )
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
