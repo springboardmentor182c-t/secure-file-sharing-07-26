@@ -1,0 +1,6 @@
+{
+  "DATABASE_URL": "postgresql://user:password@localhost:5432/trustshare",
+  "FRONTEND_URL": "http://localhost:3000",
+  "FRONTEND_URL_ALT": "http://localhost:5173",
+  "PORT": "8000"
+}

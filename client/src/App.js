@@ -21,12 +21,19 @@ import Files from "./pages/Files";
 import Users from "./pages/Users";
 import Activity from "./pages/Activity";
 import Storage from "./pages/Storage";
-import AdminDashboard from "./pages/AdminDashboard";
 
 // Features
 import NotificationFeature from "./features/notifications/NotificationFeature";
 import Analytics from "./features/analytics/Analytics";
-import Profile from "./features/profile/Profile";
+
+
+// Route Guards
+import ProtectedRoute from "./features/authentication/components/ProtectedRoute";
+import AdminRoute from "./features/authentication/components/AdminRoute";
+
+import AdminDashboard from "./pages/AdminDashboard";
+import Profile from './features/profile/Profile';
+
 
 function App() {
   return (
@@ -79,13 +86,15 @@ function App() {
         <Route
           path="/files"
           element={
-            <PageContainer title="Files">
-              <Files />
-            </PageContainer>
+            <ProtectedRoute>
+              <PageContainer>
+                <Files />
+              </PageContainer>
+            </ProtectedRoute>
           }
         />
 
-        {/* Users */}
+        {/* USERS */}
         <Route
           path="/users"
           element={
@@ -119,9 +128,9 @@ function App() {
         <Route
           path="/sharing"
           element={
-            <PageContainer title="Secure Sharing">
-              <Securesharing />
-            </PageContainer>
+            <AdminRoute>
+              <AdminHome />
+            </AdminRoute>
           }
         />
 
@@ -135,7 +144,7 @@ function App() {
           }
         />
 
-        {/* Notifications */}
+
         <Route
           path="/notifications"
           element={
@@ -144,18 +153,18 @@ function App() {
             </PageContainer>
           }
         />
-
-        {/* Analytics */}
+        
         <Route
-          path="/analytics"
-          element={
-            <PageContainer title="Analytics">
-              <Analytics />
-            </PageContainer>
-          }
-        />
+  path="/admin"
+  element={
+    <PageContainer>
+      <Dashboard />
+    </PageContainer>
+  }
+/>
 
-        {/* Profile */}
+
+        {/* Invalid Route */}
         <Route
           path="/profile"
           element={

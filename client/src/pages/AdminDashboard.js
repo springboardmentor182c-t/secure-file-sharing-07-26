@@ -17,6 +17,7 @@ import {
   MoreVertical,
 } from "lucide-react";
 const AdminDashboard = () => {
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_API_URL || "";
   const [activeTab, setActiveTab] = useState("users");
 
   const [dashboard, setDashboard] = useState({});
@@ -57,9 +58,9 @@ const shareLink = `${process.env.REACT_APP_API_URL}/shared/admin`;
   };
   const editUser = (user) => {
   setEditingUser(user);
-  setEditName(user.name);
+  setEditName(user.username);
   setEditEmail(user.email);
-  setEditRole(user.role);
+  setEditRole(user.role_id);
   setOpenMenu(null);
 };
 const updateUser = async () => {
@@ -67,12 +68,10 @@ const updateUser = async () => {
     await axios.put(
       `${process.env.REACT_APP_API_URL}/admin/users/${editingUser.id}`,
       {
-        name: editName,
+        username: editName,
         email: editEmail,
-        role: editRole,
-        storage_used: editingUser.storage_used,
-        last_login: editingUser.last_login,
-        status: editingUser.status,
+        role_id: editRole,
+        account_status: editingUser.account_status,
       }
     );
 
@@ -100,10 +99,9 @@ const updateUser = async () => {
     await axios.post(`${process.env.REACT_APP_API_URL}/admin/users`, {
       name,
       email,
-      role,
-      storage_used: "0 GB",
-      last_login: "Never",
-      status: "Active",
+      password_hash: "temp_password", // TODO: Implement proper password handling
+      role_id: role,
+      account_status: "ACTIVE",
     });
 
     alert("User added successfully");
@@ -154,7 +152,7 @@ const updateUser = async () => {
   ];
   const filteredUsers = users.filter(
   (user) =>
-    user.name.toLowerCase().includes(search.toLowerCase()) ||
+    user.username.toLowerCase().includes(search.toLowerCase()) ||
     user.email.toLowerCase().includes(search.toLowerCase())
 );
 
@@ -251,29 +249,29 @@ const updateUser = async () => {
               <div className="user-info">
                 <img
                   src={`https://i.pravatar.cc/100?img=${user.id + 20}`}
-                  alt={user.name}
+                  alt={user.username}
                 />
 
                 <div>
-                  <h4>{user.name}</h4>
+                  <h4>{user.username}</h4>
                   <span>{user.email}</span>
                 </div>
               </div>
             </td>
 
             <td>
-              <span className={`role ${user.role.toLowerCase()}`}>
-                {user.role}
+              <span className={`role ${user.role_id ? user.role_id.toString().toLowerCase() : 'viewer'}`}>
+                {user.role_id || 'Viewer'}
               </span>
             </td>
 
-            <td>{user.storage_used}</td>
+            <td>Calculated from files</td>
 
-            <td>{user.last_login}</td>
+            <td>{user.last_login || 'Never'}</td>
 
             <td>
-              <span className={`status ${user.status.toLowerCase()}`}>
-                {user.status}
+              <span className={`status ${user.account_status ? user.account_status.toLowerCase() : 'active'}`}>
+                {user.account_status || 'Active'}
               </span>
             </td>
 

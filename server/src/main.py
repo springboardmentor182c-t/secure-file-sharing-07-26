@@ -30,6 +30,14 @@ from app.api.v1.notifications.routes import router as notification_router
 # Users
 from src.users.controller import router as user_router
 
+# File Management
+from src.todos.controller import router as todos_router
+
+# =====================================================
+# ROUTERS
+# =====================================================
+
+
 # Activity Monitor
 from src.activity_monitor import models  # noqa: F401
 
@@ -40,20 +48,18 @@ from src.entities.file import File  # noqa: F401
 from src.entities.user import User  # noqa: F401
 from src.entities.system_health import SystemHealth  # noqa: F401
 
-
 # Load environment variables
 load_dotenv()
 
 
-FRONTEND_URL = os.getenv(
-    "FRONTEND_URL",
-    "http://localhost:3000"
-)
+# Configure CORS
+from app.api.v1.notifications.routes import router as notification_router
 
-FRONTEND_URL_ALT = os.getenv(
-    "FRONTEND_URL_ALT",
-    "http://localhost:5173"
-)
+
+load_dotenv()
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+FRONTEND_URL_ALT = os.getenv("FRONTEND_URL_ALT", "http://localhost:5173")
 
 
 # Create FastAPI application
@@ -68,6 +74,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         FRONTEND_URL,
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
         FRONTEND_URL_ALT,
     ],
     allow_credentials=True,
@@ -83,13 +92,22 @@ def root():
         "message": "TrustShare Backend Running Successfully"
     }
 
+# =====================================================
+# STARTUP
+# =====================================================
 
 # Startup
 @app.on_event("startup")
 def on_startup():
-    Base.metadata.create_all(bind=engine)
 
+    # Create all registered SQLAlchemy tables
+    Base.metadata.create_all(
+        bind=engine
+    )
+
+    # Activity Monitor compatibility columns
     with engine.begin() as conn:
+
         conn.execute(
             text(
                 "ALTER TABLE activity_logs "
@@ -119,6 +137,31 @@ def on_startup():
             )
         )
 
+    # Create default roles if they don't exist
+    from src.entities.role import Role
+    from sqlalchemy.orm import Session
+    
+    with Session(engine) as db:
+        # Check if default roles exist
+        admin_role = db.query(Role).filter(Role.role_name == "admin").first()
+        user_role = db.query(Role).filter(Role.role_name == "user").first()
+        
+        if not admin_role:
+            admin_role = Role(role_name="admin", description="Administrator with full access")
+            db.add(admin_role)
+        
+        if not user_role:
+            user_role = Role(role_name="user", description="Standard user with limited access")
+            db.add(user_role)
+        
+        db.commit()
+
+    # Add missing columns to users table
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(100)"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS storage_used VARCHAR(20) DEFAULT '0 GB'"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'Active'"))
+
 
 # Register Routers
 
@@ -136,9 +179,12 @@ app.include_router(sharing_router)
 
 # Analytics
 app.include_router(analytics_router)
-
-# Notifications
 app.include_router(notification_router)
-
-# Users
 app.include_router(user_router)
+
+
+@app.get("/")
+def root():
+    return {
+        "message": "TrustShare Backend Running Successfully"
+    }

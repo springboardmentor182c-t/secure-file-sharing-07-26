@@ -10,8 +10,8 @@ const SecurityTab = ({ filter }) => {
         setLoading(true);
         setError(false);
 
-        // Fetch base URL from the .env file
-        const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+        // Fetch base URL from the environment configuration
+        const baseUrl = process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_API_URL || '';
 
         // Live API Endpoint call
         axios.get(`${baseUrl}/api/v1/analytics/security?range=${encodeURIComponent(filter || 'Last 30 Days')}`)

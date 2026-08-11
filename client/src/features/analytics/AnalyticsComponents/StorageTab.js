@@ -14,8 +14,8 @@ const StorageTab = ({ filter }) => {
         setLoading(true);
         setError(false);
 
-        // Fetch base URL from the .env file
-        const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+        // Fetch base URL from the environment configuration
+        const baseUrl = process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_API_URL || '';
 
         // Pass timeRange to the API so the dropdown actually filters the backend data
         axios.get(`${baseUrl}/api/v1/analytics/storage?range=${encodeURIComponent(timeRange)}`)
