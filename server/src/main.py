@@ -28,11 +28,11 @@ configure_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Convenience for local SQLite dev only - production (Postgres) should
-    # use `alembic upgrade head` instead (see README).
-    if DATABASE_URL.startswith("sqlite"):
+    try:
         create_all_tables()
-        logger.info("SQLite dev database ready")
+        logger.info("Database tables initialized successfully.")
+    except Exception as e:
+        logger.warning(f"Could not automatically create tables: {e}")
 
     start_scheduler()
     start_files_scheduler()

@@ -1,14 +1,24 @@
 import unittest
 import io
 from PIL import Image, ImageDraw
-from backend.duplicate_detector import (
-    calculate_sha256,
-    get_file_category,
-    tokenize_text,
-    calculate_text_similarity,
-    calculate_image_ahash,
-    calculate_image_similarity
-)
+try:
+    from server.backend.duplicate_detector import (
+        calculate_sha256,
+        get_file_category,
+        tokenize_text,
+        calculate_text_similarity,
+        calculate_image_ahash,
+        calculate_image_similarity
+    )
+except ImportError:
+    from duplicate_detector import (
+        calculate_sha256,
+        get_file_category,
+        tokenize_text,
+        calculate_text_similarity,
+        calculate_image_ahash,
+        calculate_image_similarity
+    )
 
 class TestDuplicateDetector(unittest.TestCase):
 

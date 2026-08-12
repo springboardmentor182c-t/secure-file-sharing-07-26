@@ -6,37 +6,65 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse as FastAPIFileResponse
 
 # Database & detector imports
-from backend.database import (
-    init_db,
-    store_file_metadata,
-    check_exact_duplicate,
-    get_all_files,
-    get_files_by_category,
-    get_file_by_id,
-    log_duplicate_attempt,
-    get_duplicate_logs,
-    get_dashboard_stats,
-    delete_file_by_id
-)
-from backend.duplicate_detector import (
-    calculate_sha256,
-    get_file_category,
-    calculate_text_similarity,
-    calculate_image_ahash,
-    calculate_image_similarity
-)
-from backend.models import (
-    FileResponse,
-    DuplicateLogResponse,
-    DashboardStatsResponse,
-    UploadSuccessResponse,
-    UploadDuplicateResponse
-)
+try:
+    from server.backend.database import (
+        init_db,
+        store_file_metadata,
+        check_exact_duplicate,
+        get_all_files,
+        get_files_by_category,
+        get_file_by_id,
+        log_duplicate_attempt,
+        get_duplicate_logs,
+        get_dashboard_stats,
+        delete_file_by_id
+    )
+    from server.backend.duplicate_detector import (
+        calculate_sha256,
+        get_file_category,
+        calculate_text_similarity,
+        calculate_image_ahash,
+        calculate_image_similarity
+    )
+    from server.backend.models import (
+        FileResponse,
+        DuplicateLogResponse,
+        DashboardStatsResponse,
+        UploadSuccessResponse,
+        UploadDuplicateResponse
+    )
+except ImportError:
+    from database import (
+        init_db,
+        store_file_metadata,
+        check_exact_duplicate,
+        get_all_files,
+        get_files_by_category,
+        get_file_by_id,
+        log_duplicate_attempt,
+        get_duplicate_logs,
+        get_dashboard_stats,
+        delete_file_by_id
+    )
+    from duplicate_detector import (
+        calculate_sha256,
+        get_file_category,
+        calculate_text_similarity,
+        calculate_image_ahash,
+        calculate_image_similarity
+    )
+    from models import (
+        FileResponse,
+        DuplicateLogResponse,
+        DashboardStatsResponse,
+        UploadSuccessResponse,
+        UploadDuplicateResponse
+    )
 
 # Paths
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 STORAGE_DIR = os.path.join(BASE_DIR, "storage")
-FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+FRONTEND_DIR = os.path.join(BASE_DIR, "client", "frontend")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

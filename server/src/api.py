@@ -18,6 +18,7 @@ from src.shared_links.controller import (
     public_router as shared_links_public_router,
     router as shared_links_router,
 )
+from src.duplicate_controller import router as duplicate_router
 from src.trash.api import router as trash_router
 
 # When the todos/users/auth modules are implemented, import + include their
@@ -28,6 +29,7 @@ from src.trash.api import router as trash_router
 
 
 def register_routes(app: FastAPI) -> None:
+    app.include_router(duplicate_router)
     app.include_router(files_router)
     app.include_router(folders_router)
     app.include_router(dashboard_router)

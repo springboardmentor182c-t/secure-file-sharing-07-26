@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from contextlib import contextmanager
 
-DATABASE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "metadata.db")
+DATABASE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "metadata.db")
 
 def get_db_connection():
     """Establishes and returns a database connection with dictionary-like row access and foreign key enforcement."""
