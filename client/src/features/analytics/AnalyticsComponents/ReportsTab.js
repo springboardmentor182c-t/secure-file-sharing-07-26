@@ -6,8 +6,8 @@ const ReportsTab = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
-    // Fetch base URL from the .env file
-    const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+    // Fetch base URL from the environment configuration
+    const baseUrl = process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_API_URL || '';
 
     useEffect(() => {
         setLoading(true);

@@ -6,13 +6,14 @@ from src.database.core import SessionLocal
 from src.entities.user import User
 from src.schemas.user import UserCreate
 from src.entities.audit_log import AuditLog
-from src.entities.file import File
+from src.todos.models import File
 from fastapi import Body
 from src.schemas.file import FileCreate
 from fastapi.responses import StreamingResponse
 from src.entities.system_health import SystemHealth
 import io
 import csv
+import uuid
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -34,8 +35,8 @@ def dashboard(db: Session = Depends(get_db)):
     if total_size is None:
         total_size = 0
 
-    active_users = db.query(User).filter(User.status == "Active").count()
-    suspended_users = db.query(User).filter(User.status == "Suspended").count()
+    active_users = db.query(User).filter(User.account_status == "ACTIVE").count()
+    suspended_users = db.query(User).filter(User.account_status == "SUSPENDED").count()
 
     health = db.query(SystemHealth).first()
     open_issues = db.query(Issue).count()
@@ -57,24 +58,23 @@ def get_users(db: Session = Depends(get_db)):
     return [
         {
             "id": user.id,
-            "name": user.name,
+            "username": user.username,
             "email": user.email,
-            "role": user.role,
-            "storage_used": user.storage_used,
+            "role_id": user.role_id,
+            "account_status": user.account_status,
             "last_login": user.last_login,
-            "status": user.status
+            "email_verified": user.email_verified
         }
         for user in users
     ]
 @router.post("/users")
 def add_user(user: UserCreate, db: Session = Depends(get_db)):
     new_user = User(
-        name=user.name,
+        username=user.username,
         email=user.email,
-        role=user.role,
-        storage_used=user.storage_used,
-        last_login=user.last_login,
-        status=user.status
+        password_hash=user.password_hash,
+        role_id=user.role_id,
+        account_status=user.account_status
     )
 
     db.add(new_user)
@@ -86,18 +86,17 @@ def add_user(user: UserCreate, db: Session = Depends(get_db)):
         "id": new_user.id
     }
 @router.put("/users/{user_id}")
-def update_user(user_id: int, updated_user: UserCreate, db: Session = Depends(get_db)):
+def update_user(user_id: uuid.UUID, updated_user: UserCreate, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
 
     if not user:
         return {"message": "User not found"}
 
-    user.name = updated_user.name
+    user.username = updated_user.username
     user.email = updated_user.email
-    user.role = updated_user.role
-    user.storage_used = updated_user.storage_used
-    user.last_login = updated_user.last_login
-    user.status = updated_user.status
+    user.password_hash = updated_user.password_hash
+    user.role_id = updated_user.role_id
+    user.account_status = updated_user.account_status
 
     db.commit()
     db.refresh(user)
@@ -107,7 +106,7 @@ def update_user(user_id: int, updated_user: UserCreate, db: Session = Depends(ge
         "id": user.id
     }
 @router.delete("/users/{user_id}")
-def delete_user(user_id: int, db: Session = Depends(get_db)):
+def delete_user(user_id: uuid.UUID, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
 
     if not user:
@@ -127,20 +126,25 @@ def storage(db: Session = Depends(get_db)):
     user_storage = []
 
     for user in users:
-        size = float(user.storage_used.replace(" GB", "").replace("GB", ""))
-
-        used_storage += size
+        # Calculate storage from files owned by user instead of user.storage_used field
+        user_files_size = db.query(func.sum(File.file_size)).filter(
+            File.owner_id == user.id,
+            File.is_deleted == False
+        ).scalar() or 0
+        
+        size_in_gb = user_files_size / (1024 * 1024 * 1024)  # Convert bytes to GB
+        used_storage += size_in_gb
 
         user_storage.append({
-            "name": user.name,
-            "storage_used": user.storage_used
+            "username": user.username,
+            "storage_used": f"{size_in_gb:.2f} GB"
         })
 
     percentage = round((used_storage / total_storage) * 100, 1)
 
     return {
         "total_storage": f"{total_storage} GB",
-        "used_storage": f"{used_storage} GB",
+        "used_storage": f"{used_storage:.2f} GB",
         "percentage": percentage,
         "users": user_storage
     }

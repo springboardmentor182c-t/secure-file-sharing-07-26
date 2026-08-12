@@ -12,7 +12,6 @@ logs/
 
 # Environments and Secrets
 .env
-.env.*
 environment.ts
 environment.prod.ts
 
@@ -30,3 +29,6 @@ Thumbs.db
 
 # Project specific optional files
 package-lock.json
+
+# Upload directories
+server/uploads/

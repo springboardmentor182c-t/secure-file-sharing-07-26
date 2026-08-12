@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-
-const API_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://127.0.0.1:8000";
+import { API_URL } from "../../../config";
 
 export default function useDashboard() {
   const [dashboard, setDashboard] = useState(null);
