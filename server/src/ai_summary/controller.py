@@ -25,7 +25,7 @@ router = APIRouter(prefix="/ai-summary", tags=["AI Summary"])
 
 @router.post("/files/{file_id}/summary", response_model=GenerateSummaryResponse)
 async def generate_summary(
-    file_id: uuid.UUID,
+    file_id: int,
     background_tasks: BackgroundTasks,
     owner_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
     db: Annotated[Session, Depends(get_db)],
@@ -51,7 +51,7 @@ async def generate_summary(
 
 @router.get("/files/{file_id}/summary", response_model=SummaryResponse)
 def get_summary(
-    file_id: uuid.UUID,
+    file_id: int,
     owner_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
     db: Annotated[Session, Depends(get_db)],
 ):

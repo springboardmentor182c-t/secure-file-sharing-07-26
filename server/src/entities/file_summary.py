@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, String, Text, DateTime, func
+from sqlalchemy import ForeignKey, String, Text, DateTime, Integer, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.entities.base import Base
@@ -17,8 +17,8 @@ class FileSummary(Base):
         default=uuid.uuid4,
     )
 
-    file_id: Mapped[uuid.UUID] = mapped_column(
-        GUID(),
+    file_id: Mapped[int] = mapped_column(               # was uuid.UUID
+        Integer,                                          # was GUID()
         ForeignKey("files.id", ondelete="CASCADE"),
         unique=True,
         nullable=False,
@@ -36,11 +36,6 @@ class FileSummary(Base):
         default="pending",  # pending | completed | failed
     )
 
-
-    
-
-
-    
     model_used: Mapped[str | None] = mapped_column(
         String(50),
         nullable=True,
