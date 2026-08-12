@@ -18,7 +18,7 @@ export default function FileTable({
   sortBy, onSortChange, hasActiveFilters, onClearFilters, onUploadClick,
   selectedIds, onToggleSelect, onToggleSelectAll,
   onDownload, onShare, onStar, onRename, onMove, onCategory, onTrash, onRestore, onPermanentDelete,
-  onBulkTrash, onBulkPermanentDelete,
+  onBulkTrash, onBulkPermanentDelete,  onSummarize,
 }) {
   const isTrash = view === "trash";
   const allSelected = files.length > 0 && selectedIds.length === files.length;
@@ -88,6 +88,7 @@ export default function FileTable({
                     onTrash={onTrash}
                     onRestore={onRestore}
                     onPermanentDelete={onPermanentDelete}
+                    onSummarize={onSummarize} 
                   />
                 ))}
               </tbody>

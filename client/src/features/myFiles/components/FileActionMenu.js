@@ -3,10 +3,11 @@ import ReactDOM from "react-dom";
 import {
   DownloadIcon, EditIcon, MoreIcon, MoveIcon, PowerIcon, ShareIcon, StarIcon, TrashIcon,
 } from "../../../layout/icons";
+import { Sparkles as SparklesIcon } from "lucide-react";
 
 export default function FileActionMenu({
   file, isTrash,
-  onDownload, onShare, onStar, onRename, onMove, onCategory, onTrash, onRestore, onPermanentDelete,
+  onDownload, onShare, onStar, onRename, onMove, onCategory, onTrash, onRestore, onPermanentDelete,onSummarize,
 }) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
@@ -93,6 +94,11 @@ export default function FileActionMenu({
               <button type="button" onClick={() => { onShare(); close(); }}>
                 <ShareIcon width={14} height={14} /> Create shared link
               </button>
+
+              <button type="button" onClick={() => { onSummarize(); close(); }}>
+                <SparklesIcon width={14} height={14} /> Generate AI Summary
+              </button>
+
               <button type="button" onClick={() => { onStar(); close(); }}>
                 <StarIcon width={14} height={14} /> {file.is_starred ? "Unstar" : "Star"}
               </button>
