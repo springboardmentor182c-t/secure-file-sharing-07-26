@@ -4,7 +4,7 @@
 // X-User-Id auth header, JSON/multipart bodies, and turning non-2xx
 // responses into a consistent ApiError.
 
-import { getOrCreateCurrentUserId } from "./currentUser";
+import { clearCurrentUserId, getOrCreateCurrentUserId } from "./currentUser";
 
 export class ApiError extends Error {
   constructor(message, status) {
@@ -42,18 +42,20 @@ export function createApiRequest(apiBaseUrl) {
       init.body = formData; // browser sets multipart Content-Type + boundary
     }
 
-    const url = `${apiBaseUrl}${path}`.replace("localhost", "127.0.0.1");
     let res;
     try {
-      res = await fetch(url, init);
+      res = await fetch(`${apiBaseUrl}${path}`, init);
     } catch (err) {
-      console.error(`Network error: ${method} ${url}`, err);
-      throw new ApiError(`Couldn't reach the backend. Is it running on ${url}? Error: ${err.message}`, 0);
+      console.error(`Network error: ${method} ${apiBaseUrl}${path}`, err);
+      throw new ApiError(`Couldn't reach the backend. Is it running on ${apiBaseUrl}? Error: ${err.message}`, 0);
     }
 
     if (!res.ok) {
       const errorMsg = await parseErrorMessage(res);
       console.error(`API error: ${method} ${apiBaseUrl}${path} - Status ${res.status}: ${errorMsg}`);
+      if (res.status === 401 || (res.status === 404 && errorMsg.toLowerCase().includes("user"))) {
+        clearCurrentUserId();
+      }
       throw new ApiError(errorMsg, res.status);
     }
     if (res.status === 204) return null;

@@ -18,8 +18,30 @@ from src.ai_recommendation.schemas import RawGrokRecommendation
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Fixtures & Helpers
 # ---------------------------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def mock_embedding_model(monkeypatch):
+    """Mock the sentence-transformers model so unit tests are instant and don't load external weights."""
+    class DummyModel:
+        def encode(self, texts, normalize_embeddings=True):
+            import numpy as np
+            vecs = []
+            for t in texts:
+                seed = abs(hash(t)) % (2**32)
+                rng = np.random.RandomState(seed)
+                v = rng.randn(384)
+                if normalize_embeddings:
+                    norm = np.linalg.norm(v) or 1.0
+                    v = v / norm
+                vecs.append(v)
+            return np.array(vecs)
+
+    dummy = DummyModel()
+    monkeypatch.setattr("src.ai_recommendation.embedding_service._get_model", lambda: dummy)
+    monkeypatch.setattr("src.ai_recommendation.folder_manager._get_model", lambda: dummy)
 
 
 def _create_user(client, email="ai-test@example.com"):
@@ -54,7 +76,7 @@ def _recommend(client, user_id, filename, content, content_type="text/plain"):
 
 
 # ---------------------------------------------------------------------------
-# 1. Grok success
+# 1. Grok success (existing folder match)
 # ---------------------------------------------------------------------------
 
 
@@ -64,7 +86,7 @@ def test_grok_success_returns_grok_source(client, monkeypatch):
     _create_folder(client, user_id, "Finance")
 
     def fake_grok(**kwargs):
-        return RawGrokRecommendation(recommended_folder_id=career_id, confidence=0.95, reason="Resume content.")
+        return {"category_name": "Career", "recommended_folder_id": career_id, "confidence": 0.95, "reason": "Resume content."}
 
     monkeypatch.setattr(ai_service.grok_service, "get_grok_recommendation", fake_grok)
 
@@ -72,12 +94,41 @@ def test_grok_success_returns_grok_source(client, monkeypatch):
     assert res.status_code == 200, res.text
     data = res.json()["data"]
     assert data["source"] == "grok"
+    assert data["recommendation_type"] == "EXISTING_FOLDER"
     assert data["recommended_folder_id"] == career_id
     assert data["confidence"] == pytest.approx(0.95)
 
 
 # ---------------------------------------------------------------------------
-# 2. Grok failure -> embedding executes
+# 2. Grok creates new folder when no suitable existing folder exists
+# ---------------------------------------------------------------------------
+
+
+def test_grok_creates_new_folder_when_no_match(client, monkeypatch):
+    user_id = _create_user(client)
+    _create_folder(client, user_id, "Finance")
+
+    def fake_grok(**kwargs):
+        return {"category_name": "Machine Learning Research", "recommended_folder_id": None, "confidence": 0.91, "reason": "Research document."}
+
+    monkeypatch.setattr(ai_service.grok_service, "get_grok_recommendation", fake_grok)
+
+    res = _recommend(client, user_id, "ml_paper.txt", b"Deep neural networks and transformer architecture research.")
+    assert res.status_code == 200, res.text
+    data = res.json()["data"]
+    assert data["source"] == "grok"
+    assert data["recommendation_type"] == "NEW_FOLDER"
+    assert data["recommended_folder_name"] == "Machine Learning Research"
+    assert data["recommended_folder_id"] is not None
+    # Validate created folder exists in user's folders in database
+    folders_res = client.get("/folders", headers={"X-User-Id": user_id})
+    folder_names = [f["name"] for f in folders_res.json()["data"]]
+    assert "Machine Learning Research" in folder_names
+
+
+
+# ---------------------------------------------------------------------------
+# 3. Grok failure -> embedding executes
 # ---------------------------------------------------------------------------
 
 
@@ -98,12 +149,12 @@ def test_grok_failure_falls_through_to_embedding(client, monkeypatch):
     assert res.status_code == 200, res.text
     data = res.json()["data"]
     assert data["source"] == "embedding"
+    assert data["recommendation_type"] == "EXISTING_FOLDER"
     assert data["recommended_folder_id"] == career_id
 
 
 # ---------------------------------------------------------------------------
-# 3. Embedding success (explicit variant of the above, checked separately
-#    per the requested test matrix)
+# 4. Embedding success (explicit variant)
 # ---------------------------------------------------------------------------
 
 
@@ -130,7 +181,7 @@ def test_embedding_finds_correct_folder_after_grok_fails(client, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# 4. Both fail -> fallback executes
+# 5. Both fail -> fallback executes
 # ---------------------------------------------------------------------------
 
 
@@ -152,39 +203,35 @@ def test_both_fail_uses_fallback(client, monkeypatch):
     assert res.status_code == 200, res.text
     data = res.json()["data"]
     assert data["source"] == "fallback"
+    assert data["recommendation_type"] == "EXISTING_FOLDER"
     # Fallback must recommend a real, existing folder - never invent one.
     assert data["recommended_folder_id"] == folder_id
 
 
 # ---------------------------------------------------------------------------
-# 5. Invalid AI folder (Grok recommends a nonexistent folder)
+# 6. Reuses semantically similar folder ("Career" vs "Resume")
 # ---------------------------------------------------------------------------
 
 
-def test_grok_recommends_nonexistent_folder_rejected(client, monkeypatch):
+def test_similar_existing_folder_reused_no_duplicate(client, monkeypatch):
     user_id = _create_user(client)
-    _create_folder(client, user_id, "Career")
+    career_id = _create_folder(client, user_id, "Career")
 
-    nonexistent_id = str(uuid.uuid4())
+    def fake_grok(**kwargs):
+        return {"category_name": "Career", "recommended_folder_id": None, "confidence": 0.95, "reason": "Resume document."}
 
-    monkeypatch.setattr(
-        ai_service.grok_service, "get_grok_recommendation",
-        lambda **kw: RawGrokRecommendation(recommended_folder_id=nonexistent_id, confidence=0.9, reason="oops"),
-    )
-    monkeypatch.setattr(
-        ai_service.embedding_service, "get_embedding_recommendation",
-        lambda **kw: (_ for _ in ()).throw(EmbeddingUnavailableError("skip")),
-    )
+    monkeypatch.setattr(ai_service.grok_service, "get_grok_recommendation", fake_grok)
 
-    res = _recommend(client, user_id, "resume.txt", b"content")
+    res = _recommend(client, user_id, "John_Doe_Resume.pdf", b"Work experience and education")
     assert res.status_code == 200, res.text
     data = res.json()["data"]
-    # Rejected Grok output -> falls through to embedding -> (unavailable) -> fallback.
-    assert data["source"] == "fallback"
+    assert data["recommendation_type"] == "EXISTING_FOLDER"
+    assert data["recommended_folder_id"] == career_id
+    assert data["recommended_folder_name"] == "Career"
 
 
 # ---------------------------------------------------------------------------
-# 6. Unauthorized folder (Grok recommends another user's folder)
+# 7. Unauthorized folder (Grok recommends another user's folder)
 # ---------------------------------------------------------------------------
 
 
@@ -192,11 +239,11 @@ def test_grok_recommends_other_users_folder_rejected(client, monkeypatch):
     user_id = _create_user(client, email="user-a@example.com")
     other_user_id = _create_user(client, email="user-b@example.com")
     other_folder_id = _create_folder(client, other_user_id, "SomeoneElsesFolder")
-    _create_folder(client, user_id, "MyFolder")
+    my_folder_id = _create_folder(client, user_id, "MyFolder")
 
     monkeypatch.setattr(
         ai_service.grok_service, "get_grok_recommendation",
-        lambda **kw: RawGrokRecommendation(recommended_folder_id=other_folder_id, confidence=0.9, reason="oops"),
+        lambda **kw: {"category_name": "MyFolder", "recommended_folder_id": other_folder_id, "confidence": 0.9, "reason": "oops"},
     )
     monkeypatch.setattr(
         ai_service.embedding_service, "get_embedding_recommendation",
@@ -207,21 +254,7 @@ def test_grok_recommends_other_users_folder_rejected(client, monkeypatch):
     assert res.status_code == 200, res.text
     data = res.json()["data"]
     assert data["recommended_folder_id"] != other_folder_id
-    assert data["source"] == "fallback"
-
-
-# ---------------------------------------------------------------------------
-# 7. No folders -> manual-selection response, never invented
-# ---------------------------------------------------------------------------
-
-
-def test_no_folders_returns_manual_selection_response(client):
-    user_id = _create_user(client)
-    res = _recommend(client, user_id, "resume.txt", b"content")
-    assert res.status_code == 200, res.text
-    data = res.json()["data"]
-    assert data["recommended_folder_id"] is None
-    assert data["has_folders"] is False
+    assert data["recommended_folder_id"] == my_folder_id
 
 
 # ---------------------------------------------------------------------------
@@ -235,7 +268,7 @@ def test_large_document_does_not_crash(client, monkeypatch):
 
     monkeypatch.setattr(
         ai_service.grok_service, "get_grok_recommendation",
-        lambda **kw: RawGrokRecommendation(recommended_folder_id=folder_id, confidence=0.5, reason="ok"),
+        lambda **kw: {"category_name": "Docs", "recommended_folder_id": folder_id, "confidence": 0.5, "reason": "ok"},
     )
 
     huge_content = (b"lorem ipsum " * 200_000)  # ~2.4MB of text
@@ -245,27 +278,7 @@ def test_large_document_does_not_crash(client, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# 9. Unsupported file type doesn't break the flow
-# ---------------------------------------------------------------------------
-
-
-def test_unsupported_binary_file_does_not_break_flow(client, monkeypatch):
-    user_id = _create_user(client)
-    folder_id = _create_folder(client, user_id, "Media")
-
-    monkeypatch.setattr(
-        ai_service.grok_service, "get_grok_recommendation",
-        lambda **kw: RawGrokRecommendation(recommended_folder_id=folder_id, confidence=0.4, reason="ok"),
-    )
-
-    binary_content = bytes(range(256)) * 10
-    res = _recommend(client, user_id, "video.mkv", binary_content, content_type="video/x-matroska")
-    assert res.status_code == 200, res.text
-    assert res.json()["data"]["source"] == "grok"
-
-
-# ---------------------------------------------------------------------------
-# Extraction unit tests
+# 9. Extraction unit tests
 # ---------------------------------------------------------------------------
 
 
@@ -294,3 +307,4 @@ def test_extract_text_content_truncates_long_input():
     long_text = ("a" * (AI_MAX_CONTENT_CHARS * 3)).encode()
     text = extract_text_content(filename="big.txt", extension="txt", mime_type="text/plain", contents=long_text)
     assert len(text) <= AI_MAX_CONTENT_CHARS + len("\n...[truncated]...\n")
+

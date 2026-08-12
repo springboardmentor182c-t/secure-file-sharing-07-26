@@ -52,17 +52,23 @@ export default function AIRecommendationCard({ loading, error, recommendation, o
 
   const confidencePct = Math.round((recommendation.confidence || 0) * 100);
   const isFallback = recommendation.source === "fallback";
+  const isNewFolder = recommendation.recommendation_type === "NEW_FOLDER";
 
   return (
-    <div className={`ai-rec-card ${isSelected ? "ai-rec-card--active" : ""}`}>
+    <div className={`ai-rec-card ${isSelected ? "ai-rec-card--active" : ""} ${isNewFolder ? "ai-rec-card--new-folder" : ""}`}>
       <div className="ai-rec-card__header">
-        <span className="ai-rec-card__badge">AI Recommendation</span>
+        <span className={`ai-rec-card__badge ${isNewFolder ? "ai-rec-card__badge--new" : ""}`}>
+          {isNewFolder ? "New Folder Created" : "AI Recommendation"}
+        </span>
         {!isFallback && <span className="ai-rec-card__confidence">{confidencePct}% confidence</span>}
       </div>
 
       <div className="ai-rec-card__folder-row">
         <FolderIcon width={16} height={16} />
-        <span className="ai-rec-card__folder-name">{recommendation.recommended_folder_name}</span>
+        <span className="ai-rec-card__folder-name">
+          {isNewFolder ? "New folder created: " : "Recommended folder: "}
+          <strong>{recommendation.recommended_folder_name}</strong>
+        </span>
         {isSelected && <CheckIcon width={14} height={14} className="ai-rec-card__check" />}
       </div>
 
@@ -79,3 +85,4 @@ export default function AIRecommendationCard({ loading, error, recommendation, o
     </div>
   );
 }
+

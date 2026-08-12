@@ -4,18 +4,19 @@ from typing import Optional
 
 
 SYSTEM_PROMPT = (
-    "You are a file-organization assistant for a secure file sharing app. "
-    "You choose the single best EXISTING folder for a newly uploaded file. "
-    "You must pick exactly one folder from the provided list by its ID - "
-    "never invent a folder name or ID that isn't in the list. "
-    "Respond with ONLY a JSON object, no prose, no markdown fences, matching "
-    'this exact shape: {"recommended_folder_id": "<one of the given IDs>", '
-    '"confidence": <number between 0 and 1>, "reason": "<short reason>"}.'
+    "You are an AI file-organization assistant for a secure file sharing app. "
+    "Analyze the uploaded document's filename, extension, type, keywords, and extracted content. "
+    "Determine the most appropriate, concise, reusable folder category for this file. "
+    "Look at the list of existing folders (if any). If an existing folder is semantically appropriate, "
+    "use that existing folder's name/ID. Otherwise, generate a concise new category name (e.g. 'Career', 'Machine Learning Research', 'Financial Documents'). "
+    "Respond with ONLY a JSON object matching this exact shape: "
+    '{"category_name": "<concise folder/category name>", "recommended_folder_id": "<ID if existing folder matched, else null>", '
+    '"confidence": <number between 0 and 1>, "reason": "<short justification>"}.'
 )
 
 
 def build_folder_context_block(folders: list[dict]) -> str:
-    lines = ["Available folders (choose ONLY from this list):"]
+    lines = ["Available folders:"]
     for f in folders:
         sample = ", ".join(f["sample_filenames"][:8]) if f.get("sample_filenames") else "(empty folder)"
         lines.append(f'- ID: {f["id"]} | Name: "{f["name"]}" | Existing files: {sample}')
@@ -66,6 +67,7 @@ def build_user_prompt(
         sections += [history_block, ""]
 
     sections.append(
-        "Pick the single best folder ID from the list above for this file, and respond with ONLY the JSON object."
+        "Determine the single best folder category for this file, and respond with ONLY the JSON object."
     )
     return "\n".join(sections)
+

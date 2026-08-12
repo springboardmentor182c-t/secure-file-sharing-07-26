@@ -69,6 +69,18 @@ AI_EMBEDDING_MODEL = os.getenv("AI_EMBEDDING_MODEL", "all-MiniLM-L6-v2").strip()
 AI_EMBEDDING_MIN_SIMILARITY = float(os.getenv("AI_EMBEDDING_MIN_SIMILARITY", "0.20"))
 
 # ---------------------------------------------------------------------------
+# Adaptive folder creation - new
+# ---------------------------------------------------------------------------
+# Minimum cosine similarity between the AI-suggested category and an existing
+# folder for that folder to be reused. If no folder reaches this threshold a
+# new folder is created automatically.
+AI_FOLDER_SIMILARITY_THRESHOLD = float(os.getenv("AI_FOLDER_SIMILARITY_THRESHOLD", "0.50"))
+
+# Set to False to disable automatic folder creation by the AI recommendation
+# (the system will then always pick the closest existing folder or fallback).
+AI_AUTO_CREATE_FOLDERS = _env_bool("AI_AUTO_CREATE_FOLDERS", True)
+
+# ---------------------------------------------------------------------------
 # Content extraction limits
 # ---------------------------------------------------------------------------
 AI_MAX_CONTENT_CHARS = _env_int("AI_MAX_CONTENT_CHARS", 12000)

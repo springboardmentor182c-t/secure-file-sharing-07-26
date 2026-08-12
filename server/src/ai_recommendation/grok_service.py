@@ -36,10 +36,8 @@ def get_grok_recommendation(
     extracted_content: str,
     folders: list[dict],
     history: list[dict],
-) -> RawGrokRecommendation:
-    """Calls Grok and returns a *candidate* recommendation. The caller
-    (service.py) is responsible for validating it against the real folder
-    set before trusting it."""
+) -> dict:
+    """Calls Grok and returns a candidate recommendation payload with category_name and optional folder id."""
     if not grok_configured():
         raise GrokUnavailableError("XAI_API_KEY is not configured")
 
@@ -74,9 +72,6 @@ def get_grok_recommendation(
         raise GrokUnavailableError(f"Grok network error: {exc}") from exc
 
     if response.status_code != 200:
-        # Deliberately don't include response body verbatim in the raised
-        # message that might reach logs at a lower level than intended -
-        # log the detail here, raise a generic summary upward.
         logger.debug("Grok request failed: HTTP %s", response.status_code)
         raise GrokUnavailableError(f"Grok HTTP {response.status_code}")
 
@@ -91,19 +86,24 @@ def get_grok_recommendation(
 
     parsed = _parse_json_content(content)
 
-    try:
-        candidate = RawGrokRecommendation.model_validate(parsed)
-    except Exception as exc:
-        raise GrokUnavailableError(f"Grok response failed schema validation: {exc}") from exc
+    category_name = parsed.get("category_name") or parsed.get("recommended_folder_name") or ""
+    folder_id = parsed.get("recommended_folder_id")
+    confidence = float(parsed.get("confidence", 0.8))
+    reason = str(parsed.get("reason", ""))
 
-    # Folder ID must at least be a well-formed UUID; full ownership/existence
-    # validation happens in service.py against the real folder set.
-    try:
-        uuid.UUID(candidate.recommended_folder_id)
-    except ValueError as exc:
-        raise GrokUnavailableError("Grok returned a non-UUID folder id") from exc
+    if folder_id:
+        try:
+            uuid.UUID(str(folder_id))
+        except ValueError:
+            folder_id = None
 
-    return candidate
+    return {
+        "category_name": category_name,
+        "recommended_folder_id": str(folder_id) if folder_id else None,
+        "confidence": max(0.0, min(1.0, confidence)),
+        "reason": reason,
+    }
+
 
 
 def _parse_json_content(content: str) -> dict:

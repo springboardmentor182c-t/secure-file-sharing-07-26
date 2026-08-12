@@ -69,6 +69,14 @@
   color: var(--accent);
 }
 
+.ai-rec-card__badge--new {
+  color: #10B981;
+}
+
+.ai-rec-card--new-folder {
+  border-left: 3px solid #10B981;
+}
+
 .ai-rec-card__confidence {
   font-size: 11.5px;
   color: #9CA3AF;

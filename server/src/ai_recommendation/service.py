@@ -15,7 +15,7 @@ from typing import Optional
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from src.ai_recommendation import embedding_service, grok_service
+from src.ai_recommendation import embedding_service, folder_manager, grok_service
 from src.ai_recommendation.config import AI_FOLDER_CONTEXT_FILE_SAMPLE, AI_HISTORY_SAMPLE_SIZE
 from src.ai_recommendation.exceptions import EmbeddingUnavailableError, GrokUnavailableError, InvalidRecommendationError
 from src.ai_recommendation.schemas import RecommendationData
@@ -85,6 +85,8 @@ def _load_extension_history(db: Session, owner_id: uuid.UUID, extension: str) ->
 
 
 def _validate_against_real_folders(folder_id_str: str, folders: list[dict]) -> dict:
+    if not folder_id_str:
+        raise InvalidRecommendationError("No folder id supplied")
     try:
         candidate_id = uuid.UUID(folder_id_str)
     except ValueError as exc:
@@ -135,17 +137,6 @@ def recommend_folder(
     )
 
     folders = _load_user_folders(db, owner_id)
-    if not folders:
-        logger.info("AI recommendation: user %s has no folders yet", owner_id)
-        return RecommendationData(
-            recommended_folder_id=None,
-            recommended_folder_name=None,
-            confidence=0.0,
-            reason="You don't have any folders yet - create one, or upload to My Files root.",
-            source="fallback",
-            has_folders=False,
-        )
-
     history = _load_extension_history(db, owner_id, extension)
 
     # 1) Grok (primary)
@@ -156,18 +147,59 @@ def recommend_folder(
             filename=filename, extension=extension, mime_type=mime_type, size=size,
             extracted_content=extracted_content, folders=folders, history=history,
         )
-        folder = _validate_against_real_folders(candidate.recommended_folder_id, folders)
-        logger.info(
-            "AI recommendation complete source=grok confidence=%.2f user=%s", candidate.confidence, owner_id,
-        )
-        return RecommendationData(
-            recommended_folder_id=folder["id"], recommended_folder_name=folder["name"],
-            confidence=candidate.confidence, reason=candidate.reason or "Selected by Grok.", source="grok",
-        )
+
+        # Check if candidate provided an explicit existing folder ID that is valid
+        folder = None
+        if candidate.get("recommended_folder_id"):
+            try:
+                folder = _validate_against_real_folders(candidate["recommended_folder_id"], folders)
+            except InvalidRecommendationError:
+                folder = None
+
+        if folder is not None:
+            logger.info("AI recommendation complete source=grok existing_folder=%s confidence=%.2f user=%s", folder["name"], candidate["confidence"], owner_id)
+            return RecommendationData(
+                recommendation_type="EXISTING_FOLDER",
+                recommended_folder_id=folder["id"],
+                recommended_folder_name=folder["name"],
+                confidence=candidate["confidence"],
+                reason=candidate["reason"] or f"Matches existing folder '{folder['name']}'.",
+                source="grok",
+                has_folders=True,
+            )
+
+        category_name = candidate.get("category_name")
+        if not category_name and not candidate.get("recommended_folder_id"):
+            category_name = embedding_service.extract_category_from_text(filename, extracted_content)
+
+        if category_name:
+            folder_dict, is_new, _ = folder_manager.get_or_create_recommended_folder(
+                db, owner_id=owner_id, category_name=category_name, folders=folders
+            )
+            rec_type = "NEW_FOLDER" if is_new else "EXISTING_FOLDER"
+            reason = candidate["reason"]
+            if is_new:
+                reason = f"No existing folder sufficiently matches this document. Created new folder '{folder_dict['name']}'."
+            elif not reason:
+                reason = f"Document content matches existing folder '{folder_dict['name']}'."
+
+            logger.info("AI recommendation complete source=grok type=%s folder=%s confidence=%.2f user=%s", rec_type, folder_dict["name"], candidate["confidence"], owner_id)
+            return RecommendationData(
+                recommendation_type=rec_type,
+                recommended_folder_id=folder_dict["id"],
+                recommended_folder_name=folder_dict["name"],
+                confidence=candidate["confidence"],
+                reason=reason,
+                source="grok",
+                has_folders=True,
+            )
+
     except GrokUnavailableError as exc:
         logger.debug("Grok recommendation failed user=%s reason=%s", owner_id, exc)
     except InvalidRecommendationError as exc:
         logger.warning("Grok recommendation rejected user=%s reason=%s", owner_id, exc)
+    except Exception as exc:
+        logger.warning("Grok recommendation failed with unexpected error user=%s: %s", owner_id, exc)
 
     # 2) Local embeddings (second method)
     try:
@@ -175,31 +207,76 @@ def recommend_folder(
         candidate = embedding_service.get_embedding_recommendation(
             filename=filename, extension=extension, extracted_content=extracted_content, folders=folders,
         )
-        folder = _validate_against_real_folders(candidate.recommended_folder_id, folders)
-        logger.info(
-            "AI recommendation complete source=embedding confidence=%.2f user=%s", candidate.confidence, owner_id,
+
+        folder = None
+        if candidate.recommended_folder_id:
+            try:
+                folder = _validate_against_real_folders(candidate.recommended_folder_id, folders)
+            except InvalidRecommendationError:
+                folder = None
+
+        if folder is not None:
+            logger.info("AI recommendation complete source=embedding existing_folder=%s confidence=%.2f user=%s", folder["name"], candidate.confidence, owner_id)
+            return RecommendationData(
+                recommendation_type="EXISTING_FOLDER",
+                recommended_folder_id=folder["id"],
+                recommended_folder_name=folder["name"],
+                confidence=candidate.confidence,
+                reason=candidate.reason,
+                source="embedding",
+                has_folders=True,
+            )
+
+        # Fallback to category extraction + folder_manager match/create
+        category_name = embedding_service.extract_category_from_text(filename, extracted_content)
+        folder_dict, is_new, _ = folder_manager.get_or_create_recommended_folder(
+            db, owner_id=owner_id, category_name=category_name, folders=folders
         )
+        rec_type = "NEW_FOLDER" if is_new else "EXISTING_FOLDER"
+        reason = (
+            f"No existing folder matched similarity threshold. Created folder '{folder_dict['name']}'."
+            if is_new else f"Semantic similarity matched existing folder '{folder_dict['name']}'."
+        )
+
+        logger.info("AI recommendation complete source=embedding type=%s folder=%s confidence=%.2f user=%s", rec_type, folder_dict["name"], candidate.confidence, owner_id)
         return RecommendationData(
-            recommended_folder_id=folder["id"], recommended_folder_name=folder["name"],
-            confidence=candidate.confidence, reason=candidate.reason, source="embedding",
+            recommendation_type=rec_type,
+            recommended_folder_id=folder_dict["id"],
+            recommended_folder_name=folder_dict["name"],
+            confidence=candidate.confidence,
+            reason=reason,
+            source="embedding",
+            has_folders=True,
         )
+
     except EmbeddingUnavailableError as exc:
         logger.debug("Embedding recommendation failed user=%s reason=%s", owner_id, exc)
     except InvalidRecommendationError as exc:
         logger.warning("Embedding recommendation rejected user=%s reason=%s", owner_id, exc)
+    except Exception as exc:
+        logger.warning("Embedding recommendation failed with unexpected error user=%s: %s", owner_id, exc)
 
     # 3) Deterministic fallback (worst case)
     logger.info("Fallback recommendation used user=%s", owner_id)
     folder = _deterministic_fallback(folders, current_folder_id)
     if folder is None:
         return RecommendationData(
-            recommended_folder_id=None, recommended_folder_name=None, confidence=0.0,
+            recommendation_type="EXISTING_FOLDER",
+            recommended_folder_id=None,
+            recommended_folder_name=None,
+            confidence=0.0,
             reason="AI recommendation is currently unavailable. Please select a folder manually.",
-            source="fallback", has_folders=True,
+            source="fallback",
+            has_folders=bool(folders),
         )
     return RecommendationData(
-        recommended_folder_id=folder["id"], recommended_folder_name=folder["name"], confidence=0.0,
+        recommendation_type="EXISTING_FOLDER",
+        recommended_folder_id=folder["id"],
+        recommended_folder_name=folder["name"],
+        confidence=0.0,
         reason="AI recommendation is currently unavailable, so your most-used folder is suggested. "
         "Please double-check before uploading.",
         source="fallback",
+        has_folders=True,
     )
+
