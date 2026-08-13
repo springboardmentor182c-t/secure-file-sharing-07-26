@@ -13,21 +13,20 @@ body{
 }
 
 .dashboard{
-    display:flex;
+    width: 100%;
     background:#FBF7F4;
-    min-height:100vh;
+
 }
 
 /* Main Content */
 
 .dashboard-content{
-    margin-left:290px;
-    flex:1;
-    padding:32px;
+    
+    width:100%;
+    padding:20px;
     background:#FBF7F4;
-    height:100vh;
-    overflow-y:auto;
 }
+
 
 /* Header */
 

@@ -1,14 +1,9 @@
 import React from "react";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import PageContainer from "./layout/PageContainer";
 
-// Authentication Pages
+// Pages
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -18,9 +13,7 @@ import EmailVerification from "./pages/EmailVerification";
 import TwoFactorAuth from "./pages/TwoFactorAuth";
 import SessionExpired from "./pages/SessionExpired";
 
-// Main Pages
 import Home from "./pages/Home";
-import AdminHome from "./pages/AdminHome";
 import Settings from "./pages/Settings";
 import Securesharing from "./pages/Securesharing";
 import Upload from "./pages/Upload";
@@ -28,10 +21,8 @@ import Files from "./pages/Files";
 import Users from "./pages/Users";
 import Activity from "./pages/Activity";
 import Storage from "./pages/Storage";
-import ActivityMonitorPage from "./pages/ActivityMonitorPage";
 
 // Features
-import Dashboard from "./features/dashboard/Dashboard";
 import NotificationFeature from "./features/notifications/NotificationFeature";
 import Analytics from "./features/analytics/Analytics";
 
@@ -40,153 +31,44 @@ import Analytics from "./features/analytics/Analytics";
 import ProtectedRoute from "./features/authentication/components/ProtectedRoute";
 import AdminRoute from "./features/authentication/components/AdminRoute";
 
-import Profile from './features/profile/Profile';
 import AdminDashboard from "./pages/AdminDashboard";
-// File Management
-import FileManagementPage from "./filemanagement/FileManagementPage";
-import FileDetailsPage from "./filemanagement/FileDetailsPage";
+import Profile from './features/profile/Profile';
 
-// File Management CSS
-import "./assets/css/layout.css";
-import "./assets/css/sidebar.css";
-import "./assets/css/header.css";
-import "./assets/css/folders.css";
-import "./assets/css/table.css";
-import "./assets/css/fileDetails.css";
-import "./assets/css/responsive.css";
 
 function App() {
   return (
     <BrowserRouter>
-
       <Routes>
 
-        {/* Default */}
-        <Route
-          path="/"
-          element={<Navigate to="/login" replace />}
-        />
+        {/* Authentication Routes */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* Authentication */}
-        <Route
-          path="/login"
-          element={<Login />}
-        />
-
-        <Route
-          path="/signup"
-          element={<Signup />}
-        />
-
-        <Route
-          path="/forgot-password"
-          element={<ForgotPassword />}
-        />
-
-        <Route
-          path="/reset-password"
-          element={<ResetPassword />}
-        />
-
-        <Route
-          path="/otp-verification"
-          element={<OTPVerification />}
-        />
-
-        <Route
-          path="/email-verification"
-          element={<EmailVerification />}
-        />
-
-        <Route
-          path="/two-factor"
-          element={<TwoFactorAuth />}
-        />
-
-        <Route
-          path="/session-expired"
-          element={<SessionExpired />}
-        />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/otp-verification" element={<OTPVerification />} />
+        <Route path="/email-verification" element={<EmailVerification />} />
+        <Route path="/two-factor-auth" element={<TwoFactorAuth />} />
+        <Route path="/session-expired" element={<SessionExpired />} />
 
         {/* Home */}
         <Route
           path="/home"
           element={
-            <ProtectedRoute>
+            <PageContainer title="Home">
               <Home />
-            </ProtectedRoute>
+            </PageContainer>
           }
         />
 
-        {/* Dashboard */}
+        {/* Admin Dashboard */}
         <Route
-          path="/dashboard"
+          path="/admin"
           element={
-            <ProtectedRoute>
-              <PageContainer>
-                <Dashboard />
-              </PageContainer>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Secure Sharing */}
-        <Route
-          path="/sharing"
-          element={
-            <ProtectedRoute>
-              <PageContainer>
-                <Securesharing />
-              </PageContainer>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Settings */}
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <PageContainer>
-                <Settings />
-              </PageContainer>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Notifications */}
-        <Route
-          path="/notifications"
-          element={
-            <ProtectedRoute>
-              <PageContainer>
-                <NotificationFeature />
-              </PageContainer>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Activity */}
-        <Route
-          path="/activity"
-          element={
-            <ProtectedRoute>
-              <PageContainer>
-                <ActivityMonitorPage />
-              </PageContainer>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Analytics */}
-        <Route
-          path="/analytics"
-          element={
-            <ProtectedRoute>
-              <PageContainer>
-                <Analytics />
-              </PageContainer>
-            </ProtectedRoute>
+            <PageContainer title="Dashboard">
+              <AdminDashboard />
+            </PageContainer>
           }
         />
 
@@ -194,11 +76,9 @@ function App() {
         <Route
           path="/upload"
           element={
-            <ProtectedRoute>
-              <PageContainer>
-                <Upload />
-              </PageContainer>
-            </ProtectedRoute>
+            <PageContainer title="Upload Files">
+              <Upload />
+            </PageContainer>
           }
         />
 
@@ -208,19 +88,7 @@ function App() {
           element={
             <ProtectedRoute>
               <PageContainer>
-                <FileManagementPage />
-              </PageContainer>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* File Details */}
-        <Route
-          path="/file-details"
-          element={
-            <ProtectedRoute>
-              <PageContainer>
-                <FileDetailsPage />
+                <Files />
               </PageContainer>
             </ProtectedRoute>
           }
@@ -230,11 +98,19 @@ function App() {
         <Route
           path="/users"
           element={
-            <ProtectedRoute>
-              <PageContainer>
-                <Users />
-              </PageContainer>
-            </ProtectedRoute>
+            <PageContainer title="Users">
+              <Users />
+            </PageContainer>
+          }
+        />
+
+        {/* Activity */}
+        <Route
+          path="/activity"
+          element={
+            <PageContainer title="Activity">
+              <Activity />
+            </PageContainer>
           }
         />
 
@@ -242,57 +118,67 @@ function App() {
         <Route
           path="/storage"
           element={
-            <ProtectedRoute>
-              <PageContainer>
-                <Storage />
-              </PageContainer>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Admin Home */}
-        <Route
-          path="/admin"
-          element={
-            <PageContainer>
-              <Dashboard />
+            <PageContainer title="Storage">
+              <Storage />
             </PageContainer>
           }
         />
 
-        {/* Admin Dashboard */}
+        {/* Secure Sharing */}
         <Route
-          path="/admin-dashboard"
+          path="/sharing"
           element={
             <AdminRoute>
-              <PageContainer>
-                <AdminDashboard />
-              </PageContainer>
+              <AdminHome />
             </AdminRoute>
           }
         />
 
-
-        {/* PROFILE */}
+        {/* Settings */}
         <Route
-         path="/profile"
-         element={
-           <PageContainer>
-            <Profile />
-           </PageContainer>
-          } 
+          path="/settings"
+          element={
+            <PageContainer title="Settings">
+              <Settings />
+            </PageContainer>
+          }
         />
+
+
+        <Route
+          path="/notifications"
+          element={
+            <PageContainer title="Notifications">
+              <NotificationFeature />
+            </PageContainer>
+          }
+        />
+        
+        <Route
+  path="/admin"
+  element={
+    <PageContainer>
+      <Dashboard />
+    </PageContainer>
+  }
+/>
+
 
         {/* Invalid Route */}
         <Route
-          path="*"
-          element={<Navigate to="/login" replace />}
+          path="/profile"
+          element={
+            <PageContainer title="Profile">
+              <Profile />
+            </PageContainer>
+          }
         />
 
-      </Routes>
+        {/* Invalid route */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
 
+      </Routes>
     </BrowserRouter>
   );
 }
-
 export default App;

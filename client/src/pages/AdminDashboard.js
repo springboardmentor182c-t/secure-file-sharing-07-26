@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./AdminDashboard.css";
 
-import Sidebar from "../layout/Sidebar";
-import Header from "../layout/Header";
+
 
 import StorageTab from "../components/StorageTab";
 import SystemHealth from "../components/SystemHealth";
@@ -159,13 +158,7 @@ const updateUser = async () => {
 
   return (
     <div className="dashboard">
-  <Sidebar />
-
   <div className="dashboard-content">
-    <Header 
-    search={search}
-    setSearch={setSearch}
-    setShowShareModal={setShowShareModal}/>
 
     <div className="stats-grid">
       {stats.map((item, index) => (

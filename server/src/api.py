@@ -8,6 +8,7 @@ from src.activity_monitor.controller import router as activity_router
 # =====================================================
 # MAIN API ROUTER
 # =====================================================
+from src.upload.controller import router as upload_router
 
 api_router = APIRouter()
 
@@ -68,3 +69,8 @@ api_router.include_router(
 # =====================================================
 
 router = api_router
+
+api_router.include_router(
+    upload_router,
+    tags=["Upload"]
+)
