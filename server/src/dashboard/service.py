@@ -13,6 +13,20 @@ from . import models
 STORAGE_LIMIT_GB = 1000
 
 
+def _parse_size_to_bytes(size_str) -> float:
+    """Parse a string like '4.4 MB', '512 KB', '0 B' into a byte count."""
+    if not size_str:
+        return 0.0
+    try:
+        parts = str(size_str).strip().split()
+        val = float(parts[0])
+        unit = parts[1].upper() if len(parts) > 1 else "B"
+        multipliers = {"B": 1, "KB": 1024, "MB": 1024**2, "GB": 1024**3, "TB": 1024**4}
+        return val * multipliers.get(unit, 1)
+    except Exception:
+        return 0.0
+
+
 def get_dashboard_stats(db: Session) -> models.DashboardStats:
     """Return dashboard stats using raw SQL to match actual PG schema."""
     try:
@@ -23,19 +37,23 @@ def get_dashboard_stats(db: Session) -> models.DashboardStats:
         active_users = db.query(User).filter(User.account_status == "ACTIVE").count()
 
     try:
-        total_storage_bytes = db.query(
-            func.coalesce(func.sum(File.file_size), 0)
-        ).scalar()
+        all_sizes = db.execute(text("SELECT size FROM files WHERE is_deleted IS NOT TRUE")).scalars().all()
+        total_storage_bytes = sum(_parse_size_to_bytes(s) for s in all_sizes)
     except Exception:
         total_storage_bytes = 0
-    total_storage_gb = float(total_storage_bytes) / 1e9
+    total_storage_gb = float(total_storage_bytes) / (1024 ** 3)
 
     now = datetime.now(timezone.utc)
     try:
-        files_this_month = db.query(File).filter(
-            extract("month", File.uploaded_at) == now.month,
-            extract("year", File.uploaded_at) == now.year,
-        ).count()
+        all_created = db.execute(text("SELECT created_at FROM files WHERE is_deleted IS NOT TRUE")).scalars().all()
+        files_this_month = 0
+        for created_str in all_created:
+            try:
+                created_dt = datetime.strptime(str(created_str)[:16], "%Y-%m-%d %H:%M")
+                if created_dt.month == now.month and created_dt.year == now.year:
+                    files_this_month += 1
+            except Exception:
+                continue
     except Exception:
         files_this_month = 0
 
@@ -57,53 +75,62 @@ def get_dashboard_stats(db: Session) -> models.DashboardStats:
 
 
 def get_storage_by_user(db: Session) -> list[models.StorageByUser]:
-    """Return storage utilization per user, compatible with both PG schemas."""
+    """Return real storage utilization per user, computed from actual files."""
     try:
-        rows = db.execute(text("SELECT name, storage FROM users ORDER BY name")).fetchall()
-        result = []
-        for row in rows:
-            name = row[0] or "Unknown"
-            storage_str = row[1] or "0 GB"
-            val = _parse_storage_gb(storage_str)
-            result.append(models.StorageByUser(name=name, storage_used_gb=val))
-        return result
-    except Exception:
-        rows = (
-            db.query(
-                User,
-                func.coalesce(func.sum(File.file_size), 0).label("total_bytes"),
-            )
-            .outerjoin(File, File.owner_id == User.id)
-            .group_by(User.id)
-            .all()
-        )
+        rows = db.execute(text("""
+            SELECT u.id, u.name, f.size
+            FROM users u
+            LEFT JOIN files f ON f.owner_id = u.id AND (f.is_deleted IS NOT TRUE)
+            ORDER BY u.name
+        """)).fetchall()
+
+        totals: dict = {}
+        names: dict = {}
+        for user_id, name, size in rows:
+            names[user_id] = name or "Unknown"
+            totals.setdefault(user_id, 0.0)
+            totals[user_id] += _parse_size_to_bytes(size)
+
         return [
             models.StorageByUser(
-                name=user.full_name or user.username,
-                storage_used_gb=float(total_bytes) / 1e9,
+                name=names[user_id],
+                storage_used_gb=total_bytes / (1024 ** 3),
             )
-            for user, total_bytes in rows
+            for user_id, total_bytes in totals.items()
         ]
+    except Exception:
+        return []
 
 
 def get_users_with_file_counts(db: Session) -> list[models.UserOut]:
-    """Return users for the User Management table, compatible with both PG schemas."""
+    """Return users for the User Management table, computed from actual files."""
     try:
-        rows = db.execute(text(
-            "SELECT id, name, email, role, storage, files, last_login, status, mfa FROM users ORDER BY id"
+        users_rows = db.execute(text(
+            "SELECT id, name, email, role, last_login, status, mfa FROM users ORDER BY id"
         )).fetchall()
+
+        file_rows = db.execute(text(
+            "SELECT owner_id, size FROM files WHERE is_deleted IS NOT TRUE AND owner_id IS NOT NULL"
+        )).fetchall()
+
+        storage_by_user: dict = {}
+        count_by_user: dict = {}
+        for owner_id, size in file_rows:
+            storage_by_user[owner_id] = storage_by_user.get(owner_id, 0.0) + _parse_size_to_bytes(size)
+            count_by_user[owner_id] = count_by_user.get(owner_id, 0) + 1
+
         return [
             models.UserOut(
                 id=row[0],
                 name=row[1] or "Unknown",
                 email=row[2] or "",
                 role=row[3] or "Viewer",
-                mfa_enabled=bool(row[8]) if row[8] is not None else False,
-                status=row[7] or "active",
-                storage_used_gb=_parse_storage_gb(row[4]),
-                files_count=row[5] or 0,
+                mfa_enabled=bool(row[6]) if row[6] is not None else False,
+                status=row[5] or "active",
+                storage_used_gb=storage_by_user.get(row[0], 0.0) / (1024 ** 3),
+                files_count=count_by_user.get(row[0], 0),
             )
-            for row in rows
+            for row in users_rows
         ]
     except Exception:
         return []

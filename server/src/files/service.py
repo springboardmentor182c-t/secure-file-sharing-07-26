@@ -93,9 +93,10 @@ def upload_file(
     # Persist file bytes to storage backend
     backend = get_storage_backend()
     try:
-        backend.save(owner_id=owner_id, stored_filename=filename, data=contents)
+        stored_path=backend.save(owner_id=owner_id, stored_filename=filename, data=contents)
     except Exception as e:
         print("[STORAGE SAVE ERROR]:", e)
+        raise 
 
     # Infer category if default
     final_category = category or "Other"
@@ -126,7 +127,10 @@ def upload_file(
             is_starred=False,
             created_at=now_str,
             updated_at=now_str,
-            download_count=0
+            download_count=0,
+            stored_path=stored_path,
+            owner_id=owner_id,
+            owner_uuid=str(owner_id),
         )
         db.add(file_obj)
         db.commit()

@@ -115,17 +115,21 @@ def create_shared_link(
     pwd_val = payload.password.strip() if payload.password and payload.password.strip() else None
 
     try:
+        new_id = str(uuid.uuid4())
         res = db.execute(text("""
-            INSERT INTO shared_links (owner_id, file_id, recipient_email, permission, status, views, downloads, created_at, expires_at, password_hash)
-            VALUES (:owner_id, :file_id, :recipient_email, :permission, 'active', 0, 0, NOW(), :expires_at, :password_hash)
+            INSERT INTO shared_links (id, owner_id, file_id, recipient_email, permission, status, views, downloads, created_at, expires_at, password_hash, password_protected, allow_download, expiry_warning_sent, expired_notice_sent)
+            VALUES (:id, :owner_id, :file_id, :recipient_email, :permission, 'active', 0, 0, NOW(), :expires_at, :password_hash, :password_protected, :allow_download, false,false)
             RETURNING id, created_at
         """), {
+            "id": new_id,
             "owner_id": str(owner_id),
             "file_id": str(file_obj.id if file_obj else payload.file_id),
             "recipient_email": payload.recipient_email,
             "permission": perm_str,
             "expires_at": payload.expires_at,
-            "password_hash": pwd_val
+            "password_hash": pwd_val,
+            "password_protected": pwd_val is not None,
+            "allow_download": payload.allow_download,
         })
         row = res.fetchone()
         db.commit()
