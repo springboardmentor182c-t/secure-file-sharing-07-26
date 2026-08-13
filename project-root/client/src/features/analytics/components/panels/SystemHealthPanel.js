@@ -120,7 +120,7 @@ export default function SystemHealthPanel({
         <div className="an-system-sections">
           {SECTIONS.map((section, sIdx) => {
             const availableStats = section.stats.filter(
-              (k) => stats[k] !== undefined
+              (k) => stats[k] !== undefined && stats[k] !== null
             );
             if (availableStats.length === 0) return null;
 

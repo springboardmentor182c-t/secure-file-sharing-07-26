@@ -7,7 +7,6 @@ import StorageAreaChart from "../charts/StorageAreaChart";
 import VolumeBarChart from "../charts/VolumeBarChart";
 import DepartmentDonut from "../charts/DepartmentDonut";
 import TopSharedFiles from "../panels/TopSharedFiles";
-
 import FileTypeDonut from "../charts/FileTypeDonut";
 import TopActiveUsers from "../panels/TopActiveUsers";
 import PerformancePanel from "../panels/PerformancePanel";
@@ -18,6 +17,7 @@ export default function FileAnalyticsView({ data, loading, uiConfig }) {
   const kpiConfig = uiConfig?.file_kpis || [];
   const chartsCfg = uiConfig?.charts || {};
   const panelsCfg = uiConfig?.panels || {};
+  const isAdmin = data?.current_user_role === "admin";
 
   return (
     <motion.div
@@ -50,18 +50,28 @@ export default function FileAnalyticsView({ data, loading, uiConfig }) {
         />
       </div>
 
-      <div className="an-row an-row--3-2">
-        <VolumeBarChart
-          volumeWeekly={data?.uploads?.volume_weekly}
-          loading={loading}
-          config={chartsCfg.volume}
-        />
-        <DepartmentDonut
-          byDepartment={data?.sharing?.by_department}
-          loading={loading}
-          config={chartsCfg.department}
-        />
-      </div>
+      {isAdmin ? (
+        <div className="an-row an-row--3-2">
+          <VolumeBarChart
+            volumeWeekly={data?.uploads?.volume_weekly}
+            loading={loading}
+            config={chartsCfg.volume}
+          />
+          <DepartmentDonut
+            byDepartment={data?.sharing?.by_department}
+            loading={loading}
+            config={chartsCfg.department}
+          />
+        </div>
+      ) : (
+        <div className="an-row an-row--1">
+          <VolumeBarChart
+            volumeWeekly={data?.uploads?.volume_weekly}
+            loading={loading}
+            config={chartsCfg.volume}
+          />
+        </div>
+      )}
 
       <div className="an-row an-row--3-2">
         <FileTypeDonut

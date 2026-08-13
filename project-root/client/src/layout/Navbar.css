@@ -855,3 +855,90 @@ body.dark .notification-mark-all:hover:not(:disabled) {
     animation: none !important;
   }
 }
+
+/* ─── AI Assistant Button (Navbar) ─────────────────────────────── */
+
+.navbar-assistant-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.navbar-assistant-wrapper .asst-bubble-window {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  bottom: auto;
+  left: auto;
+  z-index: 1100;
+}
+
+.nav-assistant-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.10), rgba(59, 130, 246, 0.10));
+  color: #6366f1;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.nav-assistant-btn:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(59, 130, 246, 0.15));
+  border-color: rgba(99, 102, 241, 0.45);
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.22);
+  transform: translateY(-1px);
+}
+
+.nav-assistant-btn.active {
+  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+}
+
+.nav-assistant-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+body.dark .nav-assistant-btn {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(59, 130, 246, 0.12));
+  border-color: rgba(99, 102, 241, 0.35);
+  color: #a5b4fc;
+}
+
+body.dark .nav-assistant-btn:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(59, 130, 246, 0.20));
+  border-color: rgba(99, 102, 241, 0.55);
+  box-shadow: 0 2px 14px rgba(99, 102, 241, 0.35);
+}
+
+body.dark .nav-assistant-btn.active {
+  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  color: #ffffff;
+}
+
+@media (max-width: 480px) {
+  .nav-assistant-label {
+    display: none;
+  }
+  .nav-assistant-btn {
+    padding: 0 10px;
+    width: 36px;
+    justify-content: center;
+  }
+}

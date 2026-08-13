@@ -8,7 +8,7 @@
  *   <Breadcrumbs items={[{ label: "Custom", to: "/custom" }]} />
  */
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronRight, Home } from "lucide-react";
@@ -32,8 +32,26 @@ const ROUTE_LABELS = {
 export default function Breadcrumbs({ items }) {
   const location = useLocation();
 
+  const [analyticsTab, setAnalyticsTab] = useState(
+    sessionStorage.getItem("analytics_active_tab") === "security"
+      ? "security"
+      : "analytics"
+  );
+
+  useEffect(() => {
+    const handleAnalyticsTabChange = (event) => {
+      const nextTab = event.detail === "security" ? "security" : "analytics";
+      setAnalyticsTab(nextTab);
+    };
+
+    window.addEventListener("analytics-tab-changed", handleAnalyticsTabChange);
+    return () => {
+      window.removeEventListener("analytics-tab-changed", handleAnalyticsTabChange);
+    };
+  }, []);
+
   // Auto-generate from route if no custom items
-  const breadcrumbs =
+  let breadcrumbs =
     items ||
     location.pathname
       .split("/")
@@ -42,6 +60,16 @@ export default function Breadcrumbs({ items }) {
         label: ROUTE_LABELS[segment] || segment.replace(/-/g, " "),
         to: "/" + arr.slice(0, i + 1).join("/"),
       }));
+
+  if (!items && location.pathname === "/analytics") {
+    breadcrumbs = [
+      ...breadcrumbs,
+      {
+        label: analyticsTab === "security" ? "Security" : "File Analytics",
+        to: "/analytics",
+      },
+    ];
+  }
 
   // Don't show if only one level (or on dashboard)
   if (breadcrumbs.length === 0) return null;
@@ -56,7 +84,7 @@ export default function Breadcrumbs({ items }) {
         const isLast = i === breadcrumbs.length - 1;
         return (
           <motion.div
-            key={crumb.to}
+            key={`${crumb.to}-${i}`}
             className="breadcrumbs-item"
             initial={{ opacity: 0, x: -4 }}
             animate={{ opacity: 1, x: 0 }}

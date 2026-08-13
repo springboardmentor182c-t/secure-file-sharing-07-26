@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, Moon, Sun, CheckCheck, Sparkles } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 import {
   RiSearch2Line,
   RiFileTextLine,
@@ -14,10 +15,14 @@ import {
   RiCodeBoxLine,
   RiVideoLine,
   RiShieldCheckLine,
+  RiUserLine,
 } from "react-icons/ri";
 import { searchAPI, notificationsAPI } from "../utils/api";
 import { events, EVENTS } from "../utils/events";
 import ContentSearchModal from "../features/search/ContentSearchModal";
+import { useAssistantStatus } from "../features/assistant/hooks/useAssistantStatus";
+import AssistantBubbleWindow from "../features/assistant/AssistantBubbleWindow";
+import { assistantAPI } from "../features/assistant/services/assistantAPI";
 import "./Navbar.css";
 
 // File type icon resolver
@@ -54,12 +59,11 @@ function getNotificationIcon(notification) {
   return <RiNotification3Line className="notification-type-icon" />;
 }
 
+// ── KEPT from origin/main-group-D — useful unread preview helper ──
 export function getUnreadNotificationPreview(items) {
   return items.filter((notification) => !notification.is_read).slice(0, 5);
 }
 
-// FIX ISS-L3: Removed unused darkMode and setDarkMode props
-// Theme is controlled via useTheme() hook — props were dead parameters
 export default function Navbar({
   unreadCount = 0,
   setSidebarOpen,
@@ -75,11 +79,83 @@ export default function Navbar({
   const [markingAllRead, setMarkingAllRead] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
 
+  const { user } = useAuth();
+  const { status: assistantStatus } = useAssistantStatus();
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [bubbleConversationId, setBubbleConversationId] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem("trustshare_bubble_conversation_id");
+      return saved ? parseInt(saved, 10) : null;
+    } catch { return null; }
+  });
+
   const searchRef = useRef(null);
   const searchInputRef = useRef(null);
   const notificationRef = useRef(null);
+  const assistantRef = useRef(null);
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+
+  // ── get user role ──
+  const isAdmin = user?.role === "admin";
+
+  useEffect(() => {
+    try {
+      if (bubbleConversationId) {
+        sessionStorage.setItem("trustshare_bubble_conversation_id", String(bubbleConversationId));
+      } else {
+        sessionStorage.removeItem("trustshare_bubble_conversation_id");
+      }
+    } catch { }
+  }, [bubbleConversationId]);
+
+  useEffect(() => {
+    if (!user) {
+      setBubbleConversationId(null);
+      setAssistantOpen(false);
+      try { sessionStorage.removeItem("trustshare_bubble_conversation_id"); } catch { }
+      return;
+    }
+    if (!bubbleConversationId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        await assistantAPI.getMessages(bubbleConversationId);
+      } catch (err) {
+        if (cancelled) return;
+        const s = err?.response?.status;
+        if (s === 404 || s === 403 || s === 401) setBubbleConversationId(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  useEffect(() => {
+    if (!assistantOpen) return;
+    const handler = (e) => {
+      if (assistantRef.current && !assistantRef.current.contains(e.target)) {
+        setAssistantOpen(false);
+      }
+    };
+    const timer = setTimeout(() => document.addEventListener("mousedown", handler), 100);
+    return () => { clearTimeout(timer); document.removeEventListener("mousedown", handler); };
+  }, [assistantOpen]);
+
+  const handleConversationCreated = useCallback((newId) => setBubbleConversationId(newId), []);
+  const handleNewChat = useCallback(() => setBubbleConversationId(null), []);
+  const handleConversationNotFound = useCallback(() => setBubbleConversationId(null), []);
+
+  useEffect(() => {
+    const handleOpenAssistant = () => {
+      setAssistantOpen(true);
+      setTimeout(() => {
+        const textarea = document.querySelector(".asst-bubble-window .asst-input-textarea");
+        if (textarea) textarea.focus();
+      }, 250);
+    };
+    window.addEventListener("assistant:open", handleOpenAssistant);
+    return () => window.removeEventListener("assistant:open", handleOpenAssistant);
+  }, []);
 
   // Search (debounced)
   useEffect(() => {
@@ -105,7 +181,6 @@ export default function Navbar({
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Click outside handling
   useEffect(() => {
     function handleClickOutside(event) {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
@@ -123,7 +198,6 @@ export default function Navbar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Global keyboard shortcuts (Ctrl+K / Esc)
   useEffect(() => {
     function handleKeyDown(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -134,6 +208,7 @@ export default function Navbar({
         searchInputRef.current?.blur();
         setResults(null);
         setShowNotifications(false);
+        setAssistantOpen(false);
         setActiveIndex(-1);
       }
     }
@@ -141,13 +216,13 @@ export default function Navbar({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Scroll shadow detection
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // ── KEPT from origin/main-group-D — notification loader with unread filter ──
   const loadNotifications = useCallback(async () => {
     try {
       const res = await notificationsAPI.list();
@@ -157,7 +232,6 @@ export default function Navbar({
     }
   }, []);
 
-  // Load notifications when opened and refresh an open dropdown after local actions.
   useEffect(() => {
     if (showNotifications) loadNotifications();
   }, [showNotifications, loadNotifications]);
@@ -185,10 +259,15 @@ export default function Navbar({
     results.content_matches?.forEach((c) =>
       list.push({ type: "content", data: c, id: `content-${c.id}` })
     );
+    results.users?.forEach((u) =>
+      list.push({ type: "user", data: u, id: `user-${u.id}` })
+    );
+    results.people_files?.forEach((f) =>
+      list.push({ type: "people_file", data: f, id: `pfile-${f.id}` })
+    );
     return list;
   }, [results]);
 
-  // Search input keyboard navigation
   const handleSearchKeyDown = (e) => {
     if (!results || flatResults.length === 0) return;
     if (e.key === "ArrowDown") {
@@ -202,32 +281,37 @@ export default function Navbar({
     } else if (e.key === "Enter" && activeIndex >= 0) {
       e.preventDefault();
       const item = flatResults[activeIndex];
-      handleResultClick(item.type);
+      handleResultClick(item.type, item.data);
     }
   };
 
-  // Scroll active item into view
   useEffect(() => {
     if (activeIndex < 0) return;
     const el = document.querySelector(`[data-result-index="${activeIndex}"]`);
     el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [activeIndex]);
 
-  const handleResultClick = (type) => {
+  const handleResultClick = (type, data) => {
     setQuery("");
     setResults(null);
     setActiveIndex(-1);
+
+    if (type === "user") {
+      navigate("/admin", { state: { highlightUserId: data.id } });
+      return;
+    }
+
     const routes = {
       file: "/my-files",
       folder: "/my-files",
       share: "/sharing",
       notification: "/notifications",
       content: "/my-files",
+      people_file: "/shared-with-me",
     };
     navigate(routes[type] || "/dashboard");
   };
 
-  // Mark all notifications as read
   const handleMarkAllRead = async () => {
     if (markingAllRead || notifications.length === 0) return;
     setMarkingAllRead(true);
@@ -261,44 +345,79 @@ export default function Navbar({
     !results.folders?.length &&
     !results.shares?.length &&
     !results.notifications?.length &&
-    !results.content_matches?.length;
+    !results.content_matches?.length &&
+    !results.users?.length &&
+    !results.people_files?.length;
 
   // Render helpers
   const renderSearchItem = (item, globalIndex) => {
     const isActive = activeIndex === globalIndex;
-    const iconMap = {
-      file: () => getSearchFileIcon(item.data.original_name),
-      folder: () => <RiFolderOpenLine className="search-icon" />,
-      share: () => <RiShareForwardLine className="search-icon" />,
-      notification: () => <RiNotification3Line className="search-icon" />,
-      content: () => <Sparkles className="search-icon" style={{ color: "#6366f1", width: 16, height: 16 }} />,
+
+    const getLabel = () => {
+      switch (item.type) {
+        case "file": return item.data.original_name || "Unknown file";
+        case "folder": return item.data.name || "Unknown folder";
+        case "share": return `Share #${item.data.id}`;
+        case "notification": return item.data.title || "Notification";
+        case "content": return item.data.original_name || "Unknown file";
+        case "user": return `${item.data.name || ""} · ${item.data.email || ""}`;
+        case "people_file": return item.data.original_name || item.data.name || "Shared file";
+        default: return "Unknown";
+      }
     };
-    const labelMap = {
-      file: item.data.original_name,
-      folder: item.data.name,
-      share: `Share #${item.data.id}`,
-      notification: item.data.title,
-      content: item.data.original_name,
+
+    const getIcon = () => {
+      switch (item.type) {
+        case "file": return getSearchFileIcon(item.data.original_name);
+        case "folder": return <RiFolderOpenLine className="search-icon" />;
+        case "share": return <RiShareForwardLine className="search-icon" />;
+        case "notification": return <RiNotification3Line className="search-icon" />;
+        case "content": return <Sparkles className="search-icon" style={{ color: "#6366f1", width: 16, height: 16 }} />;
+        case "user": return <RiUserLine className="search-icon" style={{ color: "#10B981" }} />;
+        case "people_file": return getSearchFileIcon(item.data.original_name || item.data.name || "");
+        default: return <RiFileTextLine className="search-icon" />;
+      }
     };
+
     return (
       <motion.div
         key={item.id}
         data-result-index={globalIndex}
         className={`search-item ${isActive ? "search-item--active" : ""} ${item.type === "content" ? "search-item--content" : ""}`}
-        onClick={() => handleResultClick(item.type)}
+        onClick={() => handleResultClick(item.type, item.data)}
         onMouseEnter={() => setActiveIndex(globalIndex)}
         initial={{ opacity: 0, x: -6 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: globalIndex * 0.02, duration: 0.2 }}
       >
-        {iconMap[item.type]()}
+        {getIcon()}
         <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
-          <span style={{ fontWeight: item.type === "content" ? 600 : 400 }}>{labelMap[item.type]}</span>
+          <span style={{
+            fontWeight: item.type === "content" ? 600 : 400,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}>
+            {getLabel()}
+          </span>
+
           {item.type === "content" && item.data.snippet && (
             <span
               style={{ fontSize: "0.75rem", opacity: 0.8, marginTop: 2 }}
               dangerouslySetInnerHTML={{ __html: item.data.snippet }}
             />
+          )}
+
+          {item.type === "people_file" && item.data.shared_by && (
+            <span style={{ fontSize: "0.75rem", opacity: 0.7, marginTop: 2 }}>
+              Shared by {item.data.shared_by}
+            </span>
+          )}
+
+          {item.type === "user" && (
+            <span style={{ fontSize: "0.75rem", opacity: 0.7, marginTop: 2 }}>
+              {item.data.role} · {item.data.is_active ? "Active" : "Suspended"}
+            </span>
           )}
         </div>
       </motion.div>
@@ -320,6 +439,8 @@ export default function Navbar({
       </div>
     );
   };
+
+  const showAssistantBtn = user && assistantStatus?.is_enabled && assistantStatus?.show_bubble;
 
   return (
     <header className={`navbar-modern ${scrolled ? "scrolled" : ""}`}>
@@ -380,6 +501,8 @@ export default function Navbar({
                     {renderSection("Folders", results.folders, "folder")}
                     {renderSection("Shares", results.shares, "share")}
                     {renderSection("Notifications", results.notifications, "notification")}
+                    {isAdmin && renderSection("Users", results.users, "user")}
+                    {!isAdmin && renderSection("Files Shared by People", results.people_files, "people_file")}
                   </>
                 );
               })()}
@@ -412,6 +535,35 @@ export default function Navbar({
       </div>
 
       <div className="navbar-actions" ref={notificationRef}>
+        {showAssistantBtn && (
+          <div className="navbar-assistant-wrapper" ref={assistantRef}>
+            <motion.button
+              className={`nav-assistant-btn ${assistantOpen ? "active" : ""}`}
+              onClick={() => setAssistantOpen((prev) => !prev)}
+              aria-label="Open AI Assistant"
+              title="AI Assistant (Ctrl+/)"
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+            >
+              <Sparkles size={15} />
+              <span className="nav-assistant-label">Ask AI</span>
+            </motion.button>
+
+            <AnimatePresence>
+              {assistantOpen && (
+                <AssistantBubbleWindow
+                  status={assistantStatus}
+                  onClose={() => setAssistantOpen(false)}
+                  conversationId={bubbleConversationId}
+                  onConversationCreated={handleConversationCreated}
+                  onNewChat={handleNewChat}
+                  onConversationNotFound={handleConversationNotFound}
+                />
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
         {connectionStatus}
 
         <motion.button

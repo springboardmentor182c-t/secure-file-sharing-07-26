@@ -16,3 +16,28 @@ export async function downloadSharedFile(file) {
   link.remove();
   URL.revokeObjectURL(url);
 }
+
+export async function viewSharedFile(file) {
+  const newTab = window.open('', '_blank');
+
+  try {
+    const response = await sharedWithMeAPI.view(file.file_id);
+
+    const contentType =
+      response.headers['content-type'] ||
+      file.mimetype ||
+      'application/octet-stream';
+
+    const blob = new Blob([response.data], { type: contentType });
+    const url = URL.createObjectURL(blob);
+
+    if (newTab) {
+      newTab.location.href = url;
+    }
+
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  } catch (err) {
+    if (newTab) newTab.close();
+    throw err;
+  }
+}

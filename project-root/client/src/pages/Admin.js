@@ -1,24 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { adminAPI, auditAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const timeAgo = (d) => {
   if (!d) return '—';
   const secs = Math.floor((Date.now() - new Date(d)) / 1000);
   if (secs < 60) return 'just now';
-  if (secs < 3600) return `${Math.floor(secs/60)}m ago`;
-  if (secs < 86400) return `${Math.floor(secs/3600)}h ago`;
+  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
   return new Date(d).toLocaleDateString();
 };
 
 export default function Admin() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [users, setUsers] = useState([]);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('users');
+
+  const [highlightUserId, setHighlightUserId] = useState(
+    location.state?.highlightUserId || null
+  );
+  const highlightRef = useRef(null);
 
   useEffect(() => {
     if (user?.role !== 'admin') { navigate('/dashboard'); return; }
@@ -27,12 +33,30 @@ export default function Admin() {
       .finally(() => setLoading(false));
   }, [user, navigate]);
 
+  useEffect(() => {
+    if (!highlightUserId || loading) return;
+
+    setTab('users');
+
+    setTimeout(() => {
+      if (highlightRef.current) {
+        highlightRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }
+    }, 300);
+
+    const timer = setTimeout(() => setHighlightUserId(null), 3000);
+    return () => clearTimeout(timer);
+  }, [highlightUserId, loading]);
+
   const toggleActive = async (u) => {
     await adminAPI.updateUser(u.id, { role: u.role, is_active: !u.is_active });
     setUsers(prev => prev.map(x => x.id === u.id ? { ...x, is_active: !u.is_active } : x));
   };
 
-  const LEVEL_BADGE = { info: 'badge-blue', warn: 'badge-amber', error: 'badge-rose', success: 'badge-emerald' };
+  const LEVEL_BADGE = { info: 'badge-blue', warn: 'badge-amber', error: 'badge-rose', success: 'badge-emerald', critical: 'badge-rose' };
 
   const stats = [
     { icon: '👥', label: 'Total Users', value: users.length, color: 'var(--blue-400)' },
@@ -84,30 +108,64 @@ export default function Admin() {
           <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 700 }}>
             👥 User Management
           </div>
-          {users.map(u => (
-            <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 20px', borderBottom: '1px solid var(--border-subtle)' }}>
-              <div className="avatar av-md" style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)', flexShrink: 0 }}>
-                {u.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: '.9375rem' }}>{u.name}</div>
-                <div className="text-xs text-muted">{u.email}</div>
-              </div>
-              <span className={`badge ${u.role === 'admin' ? 'badge-purple' : 'badge-blue'}`}>{u.role}</span>
-              <span className={`badge ${u.plan === 'enterprise' ? 'badge-emerald' : 'badge-cyan'}`}>{u.plan}</span>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: u.is_active ? 'var(--emerald-500)' : 'var(--rose-500)' }} />
-              <div style={{ fontSize: '.75rem', color: 'var(--text-muted)', width: 80, textAlign: 'right' }}>
-                {((u.storage_used || 0) / 1e9).toFixed(1)} GB
-              </div>
-              <button
-                className={`btn btn-sm ${u.is_active ? 'btn-danger' : 'btn-success'}`}
-                onClick={() => toggleActive(u)}
-                disabled={u.id === user?.id}
+          {users.map(u => {
+            const isHighlighted = highlightUserId === u.id;
+            return (
+              <div
+                key={u.id}
+                ref={isHighlighted ? highlightRef : null}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '14px 20px',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  background: isHighlighted
+                    ? 'rgba(59, 130, 246, 0.08)'
+                    : 'transparent',
+                  borderLeft: isHighlighted
+                    ? '3px solid #3b82f6'
+                    : '3px solid transparent',
+                  transition: 'background 0.3s ease, border-color 0.3s ease',
+                }}
               >
-                {u.is_active ? '🚫 Suspend' : '✅ Enable'}
-              </button>
-            </div>
-          ))}
+                <div className="avatar av-md" style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)', flexShrink: 0 }}>
+                  {u.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: '.9375rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>{u.name}</div>
+                  <div className="text-xs text-muted">{u.email}</div>
+
+                  <div className="text-xs text-muted" style={{ marginTop: 2 }}>
+                    Joined {timeAgo(u.created_at)}
+                  </div>
+                </div>
+                <span className={`badge ${u.role === 'admin' ? 'badge-purple' : 'badge-blue'}`}>{u.role}</span>
+                <span className={`badge ${u.plan === 'enterprise' ? 'badge-emerald' : 'badge-cyan'}`}>{u.plan}</span>
+
+                {u.mfa_enabled && (
+                  <span className="badge badge-amber" title="MFA Enabled">🔐 MFA</span>
+                )}
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: u.is_active ? 'var(--emerald-500)' : 'var(--rose-500)' }} />
+                <div style={{ fontSize: '.75rem', color: 'var(--text-muted)', width: 80, textAlign: 'right' }}>
+                  {(() => {
+                    const bytes = u.storage_used || 0;
+                    if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(2)} GB`;
+                    if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(2)} MB`;
+                    if (bytes >= 1e3) return `${(bytes / 1e3).toFixed(1)} KB`;
+                    return `${bytes} B`;
+                  })()}
+                </div>
+                <button
+                  className={`btn btn-sm ${u.is_active ? 'btn-danger' : 'btn-success'}`}
+                  onClick={() => toggleActive(u)}
+                  disabled={u.id === user?.id}
+                >
+                  {u.is_active ? '🚫 Suspend' : '✅ Enable'}
+                </button>
+              </div>
+            );
+          })}
         </div>
       ) : tab === 'audit' ? (
         <div className="card" style={{ overflow: 'hidden' }}>

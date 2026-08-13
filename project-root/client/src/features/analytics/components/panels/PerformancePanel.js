@@ -9,6 +9,8 @@ import {
 import Card from "../shared/Card";
 import Skeleton from "../shared/Skeleton";
 
+const isHidden = (val) => val === null || val === undefined;
+
 export default function PerformancePanel({
   performanceData = null,
   loading = false,
@@ -109,22 +111,26 @@ export default function PerformancePanel({
             Concurrent Handling
           </div>
           <div className="an-perf-grid">
-            <PerfStat
-              icon={<Users size={16} />}
-              value={active_now}
-              label="Active Now"
-              sub="last 5 minutes"
-              color="#10B981"
-              delay={0.1}
-            />
-            <PerfStat
-              icon={<Activity size={16} />}
-              value={peak_concurrent_users}
-              label="Peak Today"
-              sub={peak_hour !== null ? `at ${formatPeakHour(peak_hour)}` : ""}
-              color="#3B82F6"
-              delay={0.15}
-            />
+            {!isHidden(active_now) && (
+              <PerfStat
+                icon={<Users size={16} />}
+                value={active_now}
+                label="Active Now"
+                sub="last 5 minutes"
+                color="#10B981"
+                delay={0.1}
+              />
+            )}
+            {!isHidden(peak_concurrent_users) && (
+              <PerfStat
+                icon={<Activity size={16} />}
+                value={peak_concurrent_users}
+                label="Peak Today"
+                sub={peak_hour !== null ? `at ${formatPeakHour(peak_hour)}` : ""}
+                color="#3B82F6"
+                delay={0.15}
+              />
+            )}
             <PerfStat
               icon={<Upload size={16} />}
               value={concurrent_uploads}
@@ -179,7 +185,7 @@ export default function PerformancePanel({
             />
             <PerfStat
               icon={<Zap size={16} />}
-              value="10"
+              value={performanceData.encryption_speed_mbs ?? 10}
               unit="MB/s"
               label="Encryption Speed"
               sub="AES-256"
@@ -205,14 +211,17 @@ export default function PerformancePanel({
               color={api_color}
               delay={0.5}
             />
-            <PerfStat
-              icon={<Activity size={16} />}
-              value={events_per_minute}
-              label="Events/min"
-              sub="throughput"
-              color="#3B82F6"
-              delay={0.55}
-            />
+
+            {!isHidden(events_per_minute) && (
+              <PerfStat
+                icon={<Activity size={16} />}
+                value={events_per_minute}
+                label="Events/min"
+                sub="throughput"
+                color="#3B82F6"
+                delay={0.55}
+              />
+            )}
             <PerfStat
               icon={<Share2 size={16} />}
               value={concurrent_shares}
@@ -221,14 +230,16 @@ export default function PerformancePanel({
               color="#8B5CF6"
               delay={0.6}
             />
-            <PerfStat
-              icon={<Activity size={16} />}
-              value={peak_hour_events}
-              label="Peak Events"
-              sub="busiest hour"
-              color="#F59E0B"
-              delay={0.65}
-            />
+            {!isHidden(peak_hour_events) && (
+              <PerfStat
+                icon={<Activity size={16} />}
+                value={peak_hour_events}
+                label="Peak Events"
+                sub="busiest hour"
+                color="#F59E0B"
+                delay={0.65}
+              />
+            )}
           </div>
         </div>
       </div>
