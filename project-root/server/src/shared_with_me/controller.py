@@ -111,7 +111,6 @@ def view_shared_file(
             file.owner_id,
             notification_user_id=current_user.id,
         )
-        print(f"DEBUG view: path={path} original_name={original_name}")
         with open(path, "rb") as source:
             data = source.read()
         return StreamingResponse(
@@ -122,7 +121,6 @@ def view_shared_file(
             }
         )
     except Exception as e:
-        print(f"DEBUG view ERROR: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to load file: {str(e)}"
