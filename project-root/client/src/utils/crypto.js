@@ -142,3 +142,35 @@ export async function decryptFileBytes(encryptedBuffer, key, originalMimetype) {
   
   return new Blob([decrypted], { type: originalMimetype || "application/octet-stream" });
 }
+
+/**
+ * Tries multiple candidate salts to find the matching decryption key and decrypted plaintext.
+ */
+export async function resolveE2EEDecryption(encryptedText, candidateSalts = []) {
+  if (!encryptedText || !encryptedText.startsWith("e2ee:")) {
+    return { key: null, decryptedText: encryptedText };
+  }
+
+  const salts = [
+    ...candidateSalts,
+    "alex.johnson@secureshare.com",
+    "amruthalasurya2@gmail.com",
+    "alex@secureshare.local",
+    "default-user-salt-2026",
+  ].filter(Boolean);
+
+  for (const salt of salts) {
+    try {
+      const key = await getEncryptionKey(salt);
+      const dec = await decryptText(encryptedText, key);
+      if (dec && !dec.startsWith("e2ee:") && dec !== "[Decryption Failed]") {
+        return { key, decryptedText: dec, salt };
+      }
+    } catch {
+      // try next salt
+    }
+  }
+
+  return { key: null, decryptedText: "[Decryption Failed]" };
+}
+

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AnalyticsProvider } from './context/AnalyticsContext';
 import { AuthProvider } from './context/AuthContext';
+import { RealtimeProvider, useRealtime } from './context/RealtimeContext';
 import ProtectedRoute from './layout/ProtectedRoute';
 import Navbar from './layout/Navbar';
 import Sidebar from './layout/Sidebar';
@@ -18,6 +19,7 @@ import Notifications from './pages/Notifications';
 import Admin from './pages/Admin';
 import ActivityLogs from './pages/ActivityLogs';
 import Settings from './pages/Settings';
+import PublicShare from './pages/PublicShare';
 import { notificationsAPI } from './utils/api';
 import './assets/global.css';
 
@@ -25,12 +27,47 @@ import './assets/global.css';
 function AppShell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [collapsed, setCollapsed]     = useState(false);
+  const realtime = useRealtime();
 
   useEffect(() => {
-    notificationsAPI.summary()
-      .then(res => setUnreadCount(res.data?.unread ?? 0))
+    notificationsAPI.list()
+      .then(res => {
+        if (res.data?.unread !== undefined) {
+          setUnreadCount(res.data.unread);
+        } else {
+          const items = Array.isArray(res.data) ? res.data : (res.data?.notifications || []);
+          setUnreadCount(items.filter(n => !n.read).length);
+        }
+      })
       .catch(() => {});
   }, []);
+
+  // Real-time unread counter updates
+  useEffect(() => {
+    if (!realtime?.subscribe) return;
+
+    const unsubNew = realtime.subscribe('notification_new', (notif) => {
+      if (!notif.read) {
+        setUnreadCount((c) => c + 1);
+      }
+    });
+
+    const unsubUpd = realtime.subscribe('notification_updated', (data) => {
+      if (data.read) {
+        setUnreadCount((c) => Math.max(0, c - 1));
+      }
+    });
+
+    const unsubAll = realtime.subscribe('notification_all_read', () => {
+      setUnreadCount(0);
+    });
+
+    return () => {
+      unsubNew();
+      unsubUpd();
+      unsubAll();
+    };
+  }, [realtime]);
 
   const sidebarW = collapsed ? 68 : 240;
 
@@ -67,28 +104,31 @@ export default function App() {
   return (
     <AnalyticsProvider>
       <AuthProvider>
-        <Router>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/login"           element={<Login />} />
-            <Route path="/signup"          element={<Signup />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/oauth/callback"  element={<OAuthCallback />} />
+        <RealtimeProvider>
+          <Router>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/login"           element={<Login />} />
+              <Route path="/signup"          element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/oauth/callback"  element={<OAuthCallback />} />
+              <Route path="/share/:token"    element={<PublicShare />} />
 
-            {/* Protected shell routes */}
-            <Route
-              path="/*"
-              element={
-                <ProtectedRoute>
-                  <AppShell />
-                </ProtectedRoute>
-              }
-            />
+              {/* Protected shell routes */}
+              <Route
+                path="/*"
+                element={
+                  <ProtectedRoute>
+                    <AppShell />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Default redirect to Dashboard */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </Router>
+              {/* Default redirect to Dashboard */}
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </Router>
+        </RealtimeProvider>
       </AuthProvider>
     </AnalyticsProvider>
   );

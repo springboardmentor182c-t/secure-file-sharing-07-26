@@ -83,21 +83,28 @@
 .nt-card {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  padding: 18px 20px;
+  gap: 14px;
+  padding: 16px 18px;
   border-radius: var(--radius-lg);
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  cursor: pointer;
   transition: all var(--transition);
+  cursor: pointer;
 }
-.nt-card:hover { border-color: var(--border-medium); background: var(--bg-hover); }
-.nt-card.unread { border-left: 3px solid var(--blue-500); }
+.nt-card:hover {
+  border-color: var(--border-medium);
+  background: var(--bg-card-hover, var(--bg-card));
+  transform: translateY(-1px);
+}
+.nt-card.unread {
+  border-left: 3px solid var(--blue-500);
+  background: var(--bg-card-active, var(--bg-card));
+}
 
 .nt-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;

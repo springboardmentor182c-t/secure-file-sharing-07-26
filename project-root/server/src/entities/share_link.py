@@ -13,6 +13,8 @@ class ShareLink(Base):
     token = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=True)   # None = public link
     expires_at = Column(DateTime(timezone=True), nullable=True)
+    permission = Column(String, default="view", nullable=False)
+    recipient_email = Column(String, nullable=True)
     access_count = Column(Integer, default=0)
     max_access = Column(Integer, nullable=True)     # None = unlimited
     is_active = Column(Boolean, default=True)
