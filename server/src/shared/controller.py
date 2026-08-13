@@ -21,11 +21,19 @@ def get_shared_files_dashboard(db: Session = Depends(get_db)):
     shares_data = []
 
     try:
-        rows = db.execute(text("SELECT id, file_id, recipient_email, permission, status, views, downloads, created_at FROM shared_links ORDER BY id DESC")).fetchall()
+        rows = db.execute(text("""
+            SELECT sl.id, sl.file_id, sl.recipient_email, sl.permission, sl.status,
+                   sl.views, sl.downloads, sl.created_at, f.name, f.size, f.file_type
+            FROM shared_links sl
+            LEFT JOIN files f ON f.id = sl.file_id
+            ORDER BY sl.id DESC
+        """)).fetchall()
         for r in rows:
             created_str = r[7].strftime("%Y-%m-%d %H:%M") if hasattr(r[7], 'strftime') else str(r[7] or datetime.now().strftime("%Y-%m-%d %H:%M"))
             recip = str(r[2]) if r[2] else "Unassigned"
-            f_name = str(r[1]) if r[1] else f"file_{r[0]}"
+            f_name = r[8] or f"file_{r[0]}"
+            f_size = r[9] or "0 B"
+            f_type = r[10] or (f_name.split(".")[-1] if "." in f_name else "file")
             shares_data.append({
                 "id": r[0],
                 "permission": r[3] or "download",
@@ -33,8 +41,8 @@ def get_shared_files_dashboard(db: Session = Depends(get_db)):
                 "file": {
                     "id": r[0],
                     "name": f_name,
-                    "size": "2.4 MB",
-                    "file_type": f_name.split(".")[-1] if "." in f_name else "file",
+                    "size": f_size,
+                    "file_type": f_type,
                     "security_status": "clean",
                     "owner": {
                         "name": recip.split("@")[0].capitalize(),
@@ -45,8 +53,10 @@ def get_shared_files_dashboard(db: Session = Depends(get_db)):
     except Exception:
         db.rollback()
 
-    total_size_mb = len(shares_data) * 2.4
-    storage_value = f"{total_size_mb:.1f} MB"
+    from src.dashboard.service import _parse_size_to_bytes
+    total_size_bytes = sum(_parse_size_to_bytes(s["file"]["size"]) for s in shares_data)
+    total_size_mb = total_size_bytes / (1024 ** 2)
+    storage_value = f"{total_size_mb:.1f} MB" if total_size_mb < 1024 else f"{total_size_mb / 1024:.1f} GB"
     collaborators_count = len(set(s["file"]["owner"]["email"] for s in shares_data if "owner" in s["file"]))
     safe_shares = sum(1 for s in shares_data if s["file"]["security_status"] == "clean")
 

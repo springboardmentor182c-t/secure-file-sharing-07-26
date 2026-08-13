@@ -129,6 +129,7 @@ def upload_file(
             updated_at=now_str,
             download_count=0,
             stored_path=stored_path,
+            owner_id=owner_id,
             owner_uuid=str(owner_id),
         )
         db.add(file_obj)

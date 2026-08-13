@@ -10,12 +10,14 @@ and would otherwise pull in extra dependencies at import time.
 """
 from src.entities.access_log import AccessLog  # noqa: F401
 from src.entities.base import Base  # noqa: F401
+from src.entities.encryption_key import EncryptionKey  # noqa: F401
 from src.entities.file import File  # noqa: F401
 from src.entities.file_category import FileCategory  # noqa: F401
 
 from src.entities.folder import Folder  # noqa: F401
 from src.entities.notification import Notification  # noqa: F401
 from src.entities.role import Role  # noqa: F401
+from src.entities.security_event import SecurityEvent  # noqa: F401
 from src.entities.shared_link import SharedLink  # noqa: F401
 from src.entities.system_service import SystemService  # noqa: F401
 from src.entities.user import User  # noqa: F401
@@ -35,5 +37,7 @@ __all__ = [
 
     "Role",
     "SystemService",
+    "SecurityEvent",
+    "EncryptionKey",
 ]
 
