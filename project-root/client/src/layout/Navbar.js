@@ -20,7 +20,9 @@ import { events, EVENTS } from "../utils/events";
 import ContentSearchModal from "../features/search/ContentSearchModal";
 import "./Navbar.css";
 
+
 // File type icon resolver
+
 const FILE_ICON_MAP = {
   image: ["png", "jpg", "jpeg", "gif", "svg", "webp"],
   video: ["mp4", "avi", "mov", "mkv"],

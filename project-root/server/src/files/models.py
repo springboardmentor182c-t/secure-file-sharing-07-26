@@ -10,6 +10,12 @@ class FileOut(BaseModel):
     size: int
     encrypted: bool
     hash_sha256: Optional[str]
+    file_hash: Optional[str] = None
+    is_duplicate: Optional[bool] = None
+    duplicate_of: Optional[int] = None
+    similarity_score: Optional[float] = None
+    duplicate: Optional[bool] = None
+    type: Optional[str] = None
     version: int
     owner_id: int
     folder_id: Optional[int]
@@ -18,8 +24,7 @@ class FileOut(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class FileListResponse(BaseModel):

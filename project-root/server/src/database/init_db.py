@@ -1,3 +1,4 @@
+from sqlalchemy import inspect
 from src.database.core import Base, engine, SessionLocal
 from src.security.seed.seed_config import seed_configs
 from src.security.models.allowed_file_type import AllowedFileType
@@ -44,10 +45,41 @@ from src.analytics.seed import (
 from src.assistant.seed import seed_all_assistant_data
 
 
+def ensure_file_duplicate_columns(engine_instance=None):
+    """Add duplicate-detection columns to existing SQLite/Postgres files tables."""
+    if engine_instance is None:
+        engine_instance = engine
+
+    inspector = inspect(engine_instance)
+    if "files" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("files")}
+    column_definitions = {
+        "file_hash": "VARCHAR",
+        "embedding": "VARCHAR",
+        "is_duplicate": "BOOLEAN",
+        "duplicate_of": "INTEGER",
+        "similarity_score": "FLOAT",
+    }
+
+    if not existing_columns.intersection(column_definitions):
+        with engine_instance.begin() as connection:
+            for column_name, column_type in column_definitions.items():
+                connection.exec_driver_sql(f"ALTER TABLE files ADD COLUMN {column_name} {column_type}")
+        return
+
+    with engine_instance.begin() as connection:
+        for column_name, column_type in column_definitions.items():
+            if column_name not in existing_columns:
+                connection.exec_driver_sql(f"ALTER TABLE files ADD COLUMN {column_name} {column_type}")
+
+
 def init_db():
     """Create all tables and seed default configuration."""
 
     Base.metadata.create_all(bind=engine)
+    ensure_file_duplicate_columns(engine)
 
     db = SessionLocal()
 

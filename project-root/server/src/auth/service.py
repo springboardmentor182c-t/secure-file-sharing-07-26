@@ -106,7 +106,8 @@ def register_user(
     request=None,
     ip_address: str | None = None,
 ) -> TokenResponse:
-    existing = db.query(User).filter(User.email == data.email).first()
+    email = data.email.strip().lower()
+    existing = db.query(User).filter(User.email == email).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -116,11 +117,17 @@ def register_user(
     is_first = db.query(User).count() == 0
 
     user = User(
-        name=data.name,
-        email=data.email,
+        name=data.name.strip(),
+        email=email,
         hashed_password=hash_password(data.password),
         role="admin" if is_first else "member",
         plan="enterprise" if is_first else "free",
+        mfa_enabled=False,
+        storage_used=0,
+        storage_quota=5368709120,
+        avatar_color="linear-gradient(135deg,#3b82f6,#8b5cf6)",
+        organization=data.organization,
+        is_active=True,
     )
 
     db.add(user)
@@ -432,6 +439,11 @@ def get_or_create_oauth_user(
             hashed_password=hash_password(random_password),
             role="admin" if is_first else "member",
             plan="enterprise" if is_first else "free",
+            mfa_enabled=False,
+            storage_used=0,
+            storage_quota=5368709120,
+            avatar_color="linear-gradient(135deg,#3b82f6,#8b5cf6)",
+            is_active=True,
         )
         db.add(user)
         db.commit()

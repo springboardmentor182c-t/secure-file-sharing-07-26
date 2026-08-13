@@ -14,7 +14,15 @@ export const signup = async ({ name, email, password }) => {
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err.detail || 'Signup failed');
+    let msg = 'Signup failed';
+    if (Array.isArray(err.detail)) {
+      msg = err.detail.map(d => d.msg || JSON.stringify(d)).join('. ');
+    } else if (typeof err.detail === 'object' && err.detail !== null) {
+      msg = err.detail.msg || JSON.stringify(err.detail);
+    } else if (typeof err.detail === 'string') {
+      msg = err.detail;
+    }
+    throw new Error(msg);
   }
 
   return response.json();

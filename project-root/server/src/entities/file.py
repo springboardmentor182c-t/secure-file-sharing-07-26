@@ -1,7 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean, BigInteger, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, BigInteger, ForeignKey, DateTime, Float
 from sqlalchemy.sql import func
 from src.database.core import Base
-from sqlalchemy import Integer
 
 
 class File(Base):
@@ -14,6 +13,11 @@ class File(Base):
     size = Column(BigInteger, nullable=False, default=0)        # bytes
     encrypted = Column(Boolean, default=True)
     hash_sha256 = Column(String, nullable=True)                 # integrity hash
+    file_hash = Column(String, nullable=True, index=True)       # duplicate detection hash
+    embedding = Column(String, nullable=True)                    # serialized embedding
+    is_duplicate = Column(Boolean, default=False)                # duplicate marker
+    duplicate_of = Column(Integer, ForeignKey("files.id"), nullable=True)
+    similarity_score = Column(Float, nullable=True)             # similarity percentage
     version = Column(Integer, default=1)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     folder_id = Column(Integer, ForeignKey("folders.id"), nullable=True)
