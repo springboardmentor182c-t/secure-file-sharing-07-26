@@ -34,9 +34,14 @@ fastapi-mail==1.4.2
 # --- Added for the Files module ---
 cryptography==43.0.3
 
+<<<<<<< HEAD
 # --- Added for the AI Smart Folder Recommendation module ---
 requests==2.32.3
 pypdf==5.1.0
 python-docx==1.1.2
 sentence-transformers==3.3.1
 numpy==1.26.4
+=======
+
+pyotp==2.9.0
+>>>>>>> origin/main-group-B

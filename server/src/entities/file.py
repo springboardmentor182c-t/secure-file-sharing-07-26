@@ -79,6 +79,9 @@ class File(Base):
     def storage_provider(self) -> str:
         return "local"
 
+    stored_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    owner_uuid: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+
     @property
     def file_path(self) -> str:
-        return f"uploads/{self.name or 'file'}"
+        return self.stored_path or f"uploads/{self.name or 'file'}"

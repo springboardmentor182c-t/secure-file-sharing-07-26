@@ -1,29 +1,30 @@
 """
-Temporary auth dependency, shared by every module - the seam where real JWT
-verification plugs in later (see `src/auth/`, currently an empty
-placeholder owned by the Auth teammate). Every route only depends on
-getting back a `uuid.UUID`, so swapping this function's body is the only
-change needed project-wide.
-
-There is no dummy/fallback user id. Every request MUST send a real
-`X-User-Id` header identifying an actual row in the `users` table (created
-via `POST /users` for local dev, or by a real signup once Auth lands).
+Auth dependency shared by every module. Prefers a real JWT in the
+`Authorization: Bearer <token>` header (issued by src/auth); falls back to
+the legacy `X-User-Id` header for any route/tool that hasn't switched over
+yet, and finally to DEFAULT_USER_ID for local dev with no auth at all.
 """
-import uuid
-
 from fastapi import Header
 from typing_extensions import Annotated
 
+from src.auth.service import decode_token
 from src.exceptions import UnauthorizedError
 
+DEFAULT_USER_ID = 1
 
-DEFAULT_USER_ID = uuid.UUID("6dade1e1-f803-4af6-a5df-ecdbaa5b596a")
 
-def get_current_user_id(x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None) -> uuid.UUID:
-    if not x_user_id:
-        return DEFAULT_USER_ID
+def get_current_user_id(
+    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
+    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
+) -> int:
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization.split(" ", 1)[1].strip()
+        return decode_token(token, expected_type="access")
 
-    try:
-        return uuid.UUID(x_user_id)
-    except ValueError:
-        return DEFAULT_USER_ID
+    if x_user_id:
+        try:
+            return int(x_user_id)
+        except ValueError:
+            return DEFAULT_USER_ID
+
+    return DEFAULT_USER_ID

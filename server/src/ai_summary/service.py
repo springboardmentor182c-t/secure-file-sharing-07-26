@@ -9,6 +9,7 @@ Business logic for AI file summary generation:
 
 import os
 import uuid
+import logging
 
 import httpx
 from sqlalchemy.orm import Session
@@ -23,7 +24,7 @@ from src.files.storage import get_storage_backend
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 AI_MODEL = "gemini-flash-latest"
 MAX_CHARS = 15000  # keep requests small/cheap; adjust as needed
-
+logger = logging.getLogger(__name__)
 
 class FileSummaryService:
     def __init__(self, db: Session):
@@ -31,7 +32,7 @@ class FileSummaryService:
 
     # ---------- reads ----------
 
-    def get_summary(self, file_id: uuid.UUID) -> FileSummary | None:
+    def get_summary(self, file_id:int) -> FileSummary | None:
         return (
             self.db.query(FileSummary)
             .filter(FileSummary.file_id == file_id)
@@ -40,7 +41,7 @@ class FileSummaryService:
 
     # ---------- writes ----------
 
-    def start_generation(self, file_id: uuid.UUID) -> FileSummary:
+    def start_generation(self, file_id: int) -> FileSummary:
         """
         Creates a new pending FileSummary row, or resets an existing
         failed/completed one back to pending for regeneration.
@@ -59,7 +60,7 @@ class FileSummaryService:
         self.db.refresh(summary_row)
         return summary_row
 
-    async def process_summary(self, file_id: uuid.UUID):
+    async def process_summary(self, file_id: int):
         """
         Runs in the background (via FastAPI BackgroundTasks): fetch the
         file row fresh (the request's DB session is closed by the time
@@ -107,7 +108,7 @@ class FileSummaryService:
                 db.commit()
 
             except Exception as e:
-                
+                logger.exception(f"Summary generation failed for file_id={file_id}")
                 row.status = "failed"
                 db.commit()
         finally:
