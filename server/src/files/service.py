@@ -127,29 +127,18 @@ def upload_file(
     if duplicate is not None:
         raise ConflictError(f'This file\'s content matches an existing upload: "{duplicate.original_filename}"')
 
-<<<<<<< HEAD
     owner = db.get(User, owner_id)
     if owner is None:
         raise NotFoundError(f"User {owner_id} not found")
     used_bytes = _active_files_query(db, owner_id).with_entities(func.coalesce(func.sum(File.size), 0)).scalar()
     if used_bytes + len(contents) > owner.storage_quota_bytes:
         raise StorageQuotaExceededError("This upload would exceed your storage quota")
-=======
-    # Persist file bytes to storage backend
-    backend = get_storage_backend()
-    try:
-        stored_path=backend.save(owner_id=owner_id, stored_filename=filename, data=contents)
-    except Exception as e:
-        print("[STORAGE SAVE ERROR]:", e)
-        raise 
->>>>>>> origin/main-group-B
 
     encrypted = encrypt_bytes(contents)
     stored_filename = f"{uuid.uuid4()}.{ext}.enc"
     storage_backend = get_storage_backend()
     file_path = storage_backend.save(owner_id=owner_id, stored_filename=stored_filename, data=encrypted)
 
-<<<<<<< HEAD
     file_obj = File(
         owner_id=owner_id,
         folder_id=folder_id,
@@ -168,35 +157,6 @@ def upload_file(
     db.commit()
     db.refresh(file_obj)
     return file_obj
-=======
-    str_folder_id = str(folder_id).strip() if folder_id is not None and str(folder_id).strip() not in ("", "null", "undefined") else None
-
-    try:
-        file_obj = File(
-            name=filename,
-            size=sz_mb,
-            checksum=checksum,
-            security_status="clean",
-            file_type=ext or "pdf",
-            folder_id=str_folder_id,
-            category=final_category,
-            is_deleted=False,
-            is_starred=False,
-            created_at=now_str,
-            updated_at=now_str,
-            download_count=0,
-            stored_path=stored_path,
-            owner_id=owner_id,
-            owner_uuid=str(owner_id),
-        )
-        db.add(file_obj)
-        db.commit()
-        db.refresh(file_obj)
-        return file_obj
-    except Exception as e:
-        db.rollback()
-        return File(id=1, name=filename, size=sz_mb, checksum=checksum, security_status="clean", file_type=ext or "pdf", created_at=now_str, updated_at=now_str)
->>>>>>> origin/main-group-B
 
 
 # ---------------------------------------------------------------------------
