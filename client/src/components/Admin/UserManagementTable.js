@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Trash2, Shield, ShieldCheck, UserCheck, UserX } from "lucide-react";
 import { updateUser, deleteUser } from "../../features/dashboard/services/dashboardService";
+import { formatStorage } from "../../utils/formatStorage";
 
 export default function UserManagementTable({ users, onUserUpdated }) {
   const [updatingId, setUpdatingId] = useState(null);
@@ -94,7 +95,7 @@ export default function UserManagementTable({ users, onUserUpdated }) {
                   <option value="Viewer">Viewer</option>
                 </select>
               </td>
-              <td className="px-4 py-3 text-gray-300 font-mono">{(user.storage_used_gb || 0).toFixed(1)} GB</td>
+             <td className="px-4 py-3 text-gray-300 font-mono">{formatStorage(user.storage_used_gb || 0)}</td>
               <td className="px-4 py-3 text-gray-300 font-mono">{user.files_count || 0}</td>
               <td className="px-4 py-3">
                 <button

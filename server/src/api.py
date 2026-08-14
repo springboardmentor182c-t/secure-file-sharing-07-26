@@ -29,7 +29,7 @@ from src.ai_search.api import router as ai_search_router
 
 
 from src.ai_summary.controller import router as ai_summary_router
-
+from src.auth.controller import router as auth_router
 # When the todos/users/auth modules are implemented, import + include their
 # routers here too, e.g.:
 #   from src.todos.controller import router as todos_router
@@ -62,7 +62,7 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(ai_search_router)
     
     app.include_router(ai_summary_router)
-
+    app.include_router(auth_router)
     # app.include_router(todos_router)
     # app.include_router(users_router)
     # app.include_router(auth_router)
