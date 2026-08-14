@@ -21,9 +21,6 @@ describe("LoginForm", () => {
         jest.clearAllMocks();
 
         useNavigate.mockReturnValue(mockNavigate);
-
-        process.env.REACT_APP_API_URL = "http://localhost:8000";
-
         localStorage.clear();
     });
 
@@ -51,7 +48,7 @@ describe("LoginForm", () => {
 
         await waitFor(() => {
             expect(axios.post).toHaveBeenCalledWith(
-                "http://localhost:8000/auth/login",
+                `${process.env.REACT_APP_API_URL}/auth/login`,
                 {
                     email: "test@example.com",
                     password: "Password123",
