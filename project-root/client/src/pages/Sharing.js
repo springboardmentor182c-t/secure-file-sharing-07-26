@@ -9,6 +9,30 @@ export const getShareStatus = (share, now = new Date()) => {
   return 'active';
 };
 
+const getCategoryStyle = (file) => {
+  if (!file) return { bg: 'rgba(99, 102, 241, 0.1)', text: '#4F46E5', border: 'rgba(99, 102, 241, 0.25)' };
+  const mime = file?.mimetype || '';
+  const name = file?.original_name || '';
+  const ext = name.split('.').pop()?.toLowerCase() || '';
+
+  if (mime.includes('pdf') || ext === 'pdf') {
+    return { bg: 'rgba(239, 68, 68, 0.12)', text: '#ef4444', border: 'rgba(239, 68, 68, 0.3)' };
+  }
+  if (
+    mime.startsWith('image/') || mime.startsWith('video/') || mime.startsWith('audio/') ||
+    ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'mp4', 'mov', 'psd', 'ai', 'fig'].includes(ext)
+  ) {
+    return { bg: 'rgba(139, 92, 246, 0.12)', text: '#8b5cf6', border: 'rgba(139, 92, 246, 0.3)' };
+  }
+  if (mime.includes('spreadsheet') || mime.includes('excel') || ['xlsx', 'xls', 'csv'].includes(ext)) {
+    return { bg: 'rgba(16, 185, 129, 0.12)', text: '#10b981', border: 'rgba(16, 185, 129, 0.3)' };
+  }
+  if (['js', 'jsx', 'ts', 'tsx', 'py', 'java', 'cpp', 'c', 'json', 'html', 'css', 'zip', 'tar', 'gz'].includes(ext)) {
+    return { bg: 'rgba(245, 158, 11, 0.12)', text: '#f59e0b', border: 'rgba(245, 158, 11, 0.3)' };
+  }
+  return { bg: 'rgba(99, 102, 241, 0.1)', text: '#4F46E5', border: 'rgba(99, 102, 241, 0.25)' };
+};
+
 export default function Sharing() {
   const [shares, setShares] = useState([]);
   const [files, setFiles] = useState([]);
@@ -223,11 +247,24 @@ export default function Sharing() {
       {loading ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}><div className="spinner" /></div>
       ) : shares.length === 0 ? (
-        <div className="card text-center" style={{ padding: '48px 24px' }}>
-          <div style={{ fontSize: '3.5rem', marginBottom: 16 }}>🔗</div>
-          <div style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 8 }}>No share links yet</div>
-          <p className="text-secondary text-sm mb-4">Create a share link to send files securely</p>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}>+ Create First Link</button>
+        <div className="card text-center" style={{ padding: '56px 24px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{
+            fontSize: '4rem',
+            marginBottom: 20,
+            filter: 'drop-shadow(0 0 24px rgba(79, 70, 229, 0.35))',
+            animation: 'pulse-glow 2.5s ease-in-out infinite'
+          }}>🔗</div>
+          <div style={{ fontWeight: 800, fontSize: '1.375rem', marginBottom: 10 }}>No share links yet</div>
+          <p className="text-secondary text-sm mb-6" style={{ maxWidth: 380, margin: '0 auto 24px' }}>
+            Create a share link to send files securely to anyone, with optional passwords and expiry dates.
+          </p>
+          <button
+            className="btn btn-primary"
+            style={{ padding: '10px 24px', fontSize: '.9375rem', fontWeight: 700, boxShadow: '0 4px 14px rgba(79, 70, 229, 0.35)' }}
+            onClick={() => setShowCreate(true)}
+          >
+            + Create First Link
+          </button>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -241,9 +278,34 @@ export default function Sharing() {
                     {permIcon[s.permission]}
                   </div>
                   <div>
+                    {(() => {
+                      const sharedFile = files.find(f => f.id === s.file_id);
+                      const style = getCategoryStyle(sharedFile);
+                      return sharedFile ? (
+                        <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
+                          <span
+                            style={{
+                              padding: '2px 10px',
+                              fontSize: '.6875rem',
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              letterSpacing: '.05em',
+                              borderRadius: 999,
+                              backgroundColor: style.bg,
+                              color: style.text,
+                              border: `1px solid ${style.border}`,
+                              backdropFilter: 'blur(4px)'
+                            }}
+                          >
+                            {sharedFile.original_name.split('.').pop()?.toUpperCase() || 'FILE'}
+                          </span>
+                          <span style={{ fontWeight: 600, fontSize: '.875rem' }}>{sharedFile.original_name}</span>
+                        </div>
+                      ) : null;
+                    })()}
                     <div style={{ fontFamily: 'monospace', fontSize: '.875rem', color: 'var(--text-secondary)', marginBottom: 4 }}>
                       {s.link}
-                    </div>
+                    </div>       
                     <div className="flex gap-2 items-center">
                       <span className={`badge ${permBadge[s.permission]}`}>{s.permission}</span>
                       {shareStatus === 'revoked' && <span className="badge badge-rose">Revoked</span>}

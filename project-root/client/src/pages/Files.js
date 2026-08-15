@@ -3,6 +3,7 @@ import { filesAPI, foldersAPI } from '../utils/api';
 import { events, EVENTS } from '../utils/events';
 import FileSummaryPanel from '../features/fileSummary/components/FileSummaryPanel';
 
+
 const FILE_ICON = (mime = '') => {
   if (mime.startsWith('image/')) return { icon: '🖼️', color: '#8b5cf6' };
   if (mime.startsWith('video/')) return { icon: '🎬', color: '#ec4899' };
@@ -19,6 +20,10 @@ const fmt = (bytes) => {
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1048576).toFixed(1)} MB`;
 };
+
+
+
+
 
 export default function Files() {
   const [files, setFiles] = useState([]);
@@ -223,7 +228,7 @@ export default function Files() {
               <div style={{ fontSize: '.8125rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 10 }}>FOLDERS</div>
               <div className="grid-4" style={{ gap: 10 }}>
                 {folders.map(fo => (
-                  <div key={fo.id} className="card flex items-center gap-3" style={{ padding: '12px 14px', cursor: 'pointer' }} onClick={() => openFolder(fo)} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && openFolder(fo)}>
+                    <div key={fo.id} className="card flex items-center gap-3" style={{ padding: '12px 14px', cursor: 'pointer' }} onClick={() => openFolder(fo)} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && openFolder(fo)}>
                     <span style={{ fontSize: '1.5rem' }}>📁</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="truncate" style={{ fontWeight: 600, fontSize: '.9375rem' }}>{fo.name}</div>
@@ -260,6 +265,7 @@ export default function Files() {
                   const { icon, color } = FILE_ICON(f.mimetype);
                   return (
                     <div key={f.id} className="file-item"
+                    
                       style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px 120px', padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)', borderRadius: 0 }}
                       onClick={() => setSelected(selected?.id === f.id ? null : f)}
                     >

@@ -12,6 +12,39 @@ const getFileIcon = (file) => {
   return '📄';
 };
 
+const getCategoryStyle = (file) => {
+  const mime = file?.mimetype || file?.file_type || '';
+  const name = file?.name || file?.original_name || '';
+  const ext = name.split('.').pop()?.toLowerCase() || '';
+
+  // PDF / Legal — Crimson Red
+  if (mime.includes('pdf') || ext === 'pdf') {
+    return { bg: 'rgba(239, 68, 68, 0.12)', text: '#ef4444', border: 'rgba(239, 68, 68, 0.3)' };
+  }
+  // Media / Design — Violet Purple
+  if (
+    mime.startsWith('image/') || mime.startsWith('video/') || mime.startsWith('audio/') ||
+    ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'mp4', 'mov', 'psd', 'ai', 'fig'].includes(ext)
+  ) {
+    return { bg: 'rgba(139, 92, 246, 0.12)', text: '#8b5cf6', border: 'rgba(139, 92, 246, 0.3)' };
+  }
+  // Finance / Spreadsheets — Emerald Green
+  if (
+    mime.includes('spreadsheet') || mime.includes('excel') ||
+    ['xlsx', 'xls', 'csv'].includes(ext)
+  ) {
+    return { bg: 'rgba(16, 185, 129, 0.12)', text: '#10b981', border: 'rgba(16, 185, 129, 0.3)' };
+  }
+  // Engineering / Code — Amber Gold
+  if (
+    ['js', 'jsx', 'ts', 'tsx', 'py', 'java', 'cpp', 'c', 'json', 'html', 'css', 'zip', 'tar', 'gz'].includes(ext)
+  ) {
+    return { bg: 'rgba(245, 158, 11, 0.12)', text: '#f59e0b', border: 'rgba(245, 158, 11, 0.3)' };
+  }
+  // Default — neutral
+  return { bg: 'rgba(99, 102, 241, 0.1)', text: '#4F46E5', border: 'rgba(99, 102, 241, 0.25)' };
+};
+
 const formatSize = (size) => {
   if (typeof size === 'string') return size;
   if (!size || isNaN(size)) return '0 B';
@@ -66,7 +99,15 @@ export default function FileCard({ file, onDelete, onDownload, onPointerDragStar
           {getFileIcon(file)}
         </div>
         <div className="flex items-center gap-2">
-          <span className="my-files-type-chip px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]">
+          <span
+            className="px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] rounded-full"
+            style={{
+              backgroundColor: getCategoryStyle(file).bg,
+              color: getCategoryStyle(file).text,
+              border: `1px solid ${getCategoryStyle(file).border}`,
+              backdropFilter: 'blur(4px)'
+            }}
+          >
             {category}
           </span>
           {onDelete && (

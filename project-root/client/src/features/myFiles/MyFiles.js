@@ -4,6 +4,16 @@ import FileCard from './components/FileCard';
 import FilterChips from './components/FilterChips';
 import SearchBar from './components/SearchBar';
 import { useMyFilesData } from './hooks/useMyFilesData';
+import { motion } from 'framer-motion';
+
+const itemVariants = (index) => ({
+  hidden: { opacity: 0, y: 40 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 1.2, delay: index * 0.15 }
+  }
+});
 
 export default function MyFiles() {
   const {
@@ -230,16 +240,20 @@ export default function MyFiles() {
         <section className="mb-8 space-y-4">
           <h2 className="my-files-muted text-xs font-bold uppercase tracking-[0.2em] text-[#64748B]">Folders ({folderCards.length})</h2>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {folderCards.map((folder) => (
-              <FolderCard
-                key={folder.id}
-                {...folder}
-                onDelete={handleDeleteFolder}
-                onOpen={openFolder}
-                onFileDrop={handleFileDrop}
-                pointerDraggedFile={pointerDraggedFile}
-              />
-            ))}
+            {folderCards.map((folder, index) => (
+              <motion.div key={folder.id} initial="hidden" animate="show" variants={itemVariants(index)}>
+                <FolderCard
+                  
+                  {...folder}
+                  onDelete={handleDeleteFolder}
+                  onOpen={openFolder}
+                  onFileDrop={handleFileDrop}
+                  pointerDraggedFile={pointerDraggedFile}
+                />
+              </motion.div>  
+
+              ))}
+           
           </div>
         </section>
       )}
@@ -267,34 +281,43 @@ export default function MyFiles() {
         </div>
       ) : filteredFiles.length > 0 ? (
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {filteredFiles.map((file) => (
-            <FileCard
-              key={file.id}
-              file={file}
-              onDelete={handleDeleteFile}
-              onDownload={handleDownload}
-              onPointerDragStart={setPointerDraggedFile}
-            />
+          {filteredFiles.map((file, index) => (
+            <motion.div key={file.id} initial="hidden" animate="show" variants={itemVariants(index)}>
+              <FileCard
+                
+                file={file}
+                onDelete={handleDeleteFile}
+                onDownload={handleDownload}
+                onPointerDragStart={setPointerDraggedFile}
+              />
+            </motion.div>
           ))}
         </section>
       ) : (
-        <div className="my-files-surface rounded-lg border border-dashed border-slate-300 bg-white p-12 text-center">
-          <div className="mx-auto mb-4 text-4xl">📂</div>
-          <h3 className="my-files-title text-lg font-semibold text-[#0F172A]">
+        <div className="my-files-surface rounded-lg border border-dashed border-slate-300 bg-white p-14 text-center">
+          <div
+            className="mx-auto mb-5 text-6xl"
+            style={{
+              filter: 'drop-shadow(0 0 24px rgba(79, 70, 229, 0.35))',
+              animation: 'pulse-glow 2.5s ease-in-out infinite'
+            }}
+          >📂</div>
+          <h3 className="my-files-title text-xl font-bold text-[#0F172A]">
             {searchQuery ? `No files matching "${searchQuery}"` : 'No files uploaded yet'}
           </h3>
-          <p className="my-files-muted mt-2 text-sm text-[#64748B]">
+          <p className="my-files-muted mt-3 text-sm text-[#64748B]" style={{ maxWidth: 380, margin: '12px auto 0' }}>
             {searchQuery
               ? 'Try searching with a different term or clear filters.'
-              : 'Upload your first file to securely store and share documents.'}
+              : 'Upload your first file to securely store, encrypt, and share your documents.'}
           </p>
-          <div className="mt-6">
+          <div className="mt-7">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-2xl bg-[#4F46E5] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#3730A3]"
+              className="inline-flex items-center gap-2 rounded-2xl bg-[#4F46E5] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#3730A3]"
+              style={{ boxShadow: '0 4px 14px rgba(79, 70, 229, 0.35)' }}
             >
-              ⬆️ Upload File
+              ⬆️ Upload First File
             </button>
           </div>
         </div>
