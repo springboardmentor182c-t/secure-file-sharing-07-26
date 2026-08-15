@@ -30,9 +30,12 @@ configure_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if DATABASE_URL.startswith("sqlite"):
-        create_all_tables()
-        logger.info("SQLite dev database ready")
+    try:
+        if DATABASE_URL.startswith("sqlite"):
+            create_all_tables()
+            logger.info("Database tables initialized successfully.")
+    except Exception as e:
+        logger.warning(f"Could not automatically create tables: {e}")
 
     start_scheduler()
     start_files_scheduler()

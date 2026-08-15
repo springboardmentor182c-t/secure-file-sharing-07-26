@@ -1,26 +1,27 @@
-# 🔒 TrustShare — Secure File Sharing System
+# Secure File Sharing System — AI Duplicate File Detection Engine
 
-TrustShare is a modern, enterprise-grade, end-to-end encrypted file-sharing platform built with **React**, **FastAPI**, and **PostgreSQL**. It offers zero-knowledge file encryption, versioned key rotation, granular access controls, real-time analytics, dynamic user management, and automated SMTP email notification dispatches.
+This project combines a secure file-sharing platform with an AI-powered duplicate and similarity detection engine. It is built with FastAPI, SQLAlchemy, React/Vite, and a mix of SHA-256, TF-IDF similarity, and perceptual image hashing to prevent duplicate uploads before they are stored.
 
 ---
 
 ## 🌟 Key Features
 
-* **🛡️ Zero-Knowledge Security & Key Management**:
-  * Dynamic **AES-256-GCM** key generation for every uploaded file.
-  * Versioned encryption key rotation (`v1` ➔ `v2` ➔ `v3`) with audit tracking and persistent deletion handling.
-* **📊 Real-Time Analytics & Usage Monitoring**:
-  * Live tracking of active links, total file views, downloads, and storage usage.
-  * Monthly activity trends, top performing files, and recent file access audit logs with dynamic file name resolution.
-* **👥 Interactive Admin Dashboard**:
-  * Real-time User Management table with instant role switching (`Admin`, `Editor`, `Viewer`), Multi-Factor Authentication (MFA) toggles, account activation/suspension, and soft/hard user deletion.
-  * Live server system health status cards (Database connections, SMTP service status, Active sessions, System storage stats).
-* **🔗 Granular Public Link Controls**:
-  * Share links with view/download permissions, optional password protection, custom expiration dates, and immediate link revocation/toggling.
-* **⏳ 30-Day Auto-Purge Trash Vault**:
-  * Deleted files are moved to Trash with a 30-day retention countdown policy, urgency badges (`Expiring Today` / `X days left`), and auto-purge target dates.
-* **📧 Automated SMTP Email Engine**:
-  * Branded HTML email notifications dispatched automatically for file sharing, link access alerts, and expiration warnings.
+- **Cryptographic Exact Matching (SHA-256)**: Detects byte-for-byte duplicate files before storage.
+- **NLP Text Similarity (TF-IDF + Cosine Similarity)**: Identifies near-duplicate text documents using configurable thresholds.
+- **Perceptual Image Hashing (aHash)**: Detects visually similar variants after resize, recompression, or format changes.
+- **Secure File Sharing**: Supports user management, file access, public links, notifications, and admin controls.
+- **Zero-Knowledge Security Patterns**: Uses encrypted key handling and audit-friendly security flows.
+- **Real-Time Analytics & Dashboard**: Tracks usage, storage, system health, activity, and duplicate prevention outcomes.
+
+---
+
+## 📸 Project Screenshots
+
+### AI Duplicate File Detection Hub Dashboard
+![Dashboard Screenshot](dashboard_screenshot.png)
+
+### AI Duplicate Prevention Ledger
+![Duplicate Prevention Ledger](duplicate_prevention_ledger.png)
 
 ---
 
@@ -28,185 +29,120 @@ TrustShare is a modern, enterprise-grade, end-to-end encrypted file-sharing plat
 
 | Layer | Technology |
 | :--- | :--- |
-| **Frontend UI** | React 18, Vite 6, Tailwind CSS v4, Lucide React Icons, Recharts, React Hot Toast |
-| **Backend API** | Python 3.12+, FastAPI, SQLAlchemy, Pydantic v2, Uvicorn, FastAPI-Mail |
-| **Database** | PostgreSQL (`pg8000` driver) |
-| **Styling & Aesthetics** | Dark Glassmorphism, Responsive Modern Aesthetics |
+| **Frontend UI** | React 18, Vite, Tailwind CSS |
+| **Backend API** | Python 3.10+, FastAPI, SQLAlchemy, Pydantic |
+| **Database** | SQLite for local/dev, PostgreSQL-ready for production |
+| **AI Detection** | SHA-256, TF-IDF, Cosine Similarity, aHash |
 
 ---
 
-## 📋 System Prerequisites
+## 📋 Prerequisites
 
-Before starting, ensure you have the following installed on your environment:
+Before starting, ensure you have the following installed:
 
-1. **Node.js**: `v18.0.0` or higher ([Download Node.js](https://nodejs.org/))
-2. **Python**: `v3.10.0` or higher ([Download Python](https://www.python.org/))
-3. **PostgreSQL**: `v14.0` or higher ([Download PostgreSQL](https://www.postgresql.org/))
+1. **Node.js**: v18 or higher
+2. **Python**: v3.10 or higher
+3. **PostgreSQL**: recommended for production, optional for local development
 
 ---
 
-## 🚀 Installation & Setup Guide
+## 🚀 Quick Start
 
-### 1. Database Setup (PostgreSQL)
+### 1. Backend Setup
 
-Create a new PostgreSQL database named `security_dashboard`:
+Open a terminal in the `server/` directory and create a virtual environment:
 
-```sql
-CREATE DATABASE security_dashboard;
+```bash
+cd server
+python -m venv venv
+# Windows
+venv\Scripts\activate
+# macOS/Linux
+source venv/bin/activate
 ```
 
----
+Install dependencies:
 
-### 2. Backend Setup (`server/`)
+```bash
+pip install -r requirements.txt
+```
 
-1. Open terminal and navigate to the `server/` directory:
-   ```bash
-   cd server
-   ```
+Configure environment variables in `server/.env` if needed:
 
-2. Create and activate a Python virtual environment:
-   * **Windows**:
-     ```powershell
-     python -m venv venv
-     .\venv\Scripts\activate
-     ```
-   * **Linux/macOS**:
-     ```bash
-     python3 -m venv venv
-     source venv/bin/activate
-     ```
+```env
+DATABASE_URL=sqlite:///./app.db
+```
 
-3. Install required Python packages:
-   ```bash
-   pip install -r requirements.txt
-   ```
+For PostgreSQL:
 
-4. Create or configure the environment file at `server/.env`:
-   ```env
-   # PostgreSQL Database Connection
-   DATABASE_URL=postgresql+pg8000://postgres:YOUR_POSTGRES_PASSWORD@localhost:5432/security_dashboard
+```env
+DATABASE_URL=postgresql+pg8000://postgres:YOUR_PASSWORD@localhost:5432/security_dashboard
+```
 
-   # SMTP Email Configuration
-   MAIL_ENABLED=true
-   MAIL_SERVER=smtp.gmail.com
-   MAIL_PORT=587
-   MAIL_USERNAME=your-email@gmail.com
-   MAIL_PASSWORD=your-16-character-app-password
-   MAIL_FROM=no-reply@trustshare.com
-   MAIL_FROM_NAME=TrustShare
-   MAIL_STARTTLS=true
-   MAIL_SSL_TLS=false
-   ```
+### 2. Run the Backend
 
----
-
-### 3. Frontend Setup (`client/`)
-
-1. Open terminal and navigate to the `client/` directory:
-   ```bash
-   cd client
-   ```
-
-2. Install Node modules:
-   ```bash
-   npm install
-   ```
-
-3. (Optional) Configure environment variables at `client/.env`:
-   ```env
-   VITE_API_URL=http://127.0.0.1:8000
-   ```
-
----
-
-## 📧 SMTP Email Setup Guide (Gmail Example)
-
-To enable real-time email delivery when sharing files or sending link expiration warnings:
-
-1. Log in to your Google Account and navigate to **[Security Settings](https://myaccount.google.com/security)**.
-2. Enable **2-Step Verification**.
-3. Under *2-Step Verification*, navigate to **[App Passwords](https://myaccount.google.com/apppasswords)**.
-4. Enter an App Name (e.g., `TrustShare`) and click **Create**.
-5. Copy the generated **16-character password** (e.g., `abcd efgh ijkl mnop`).
-6. Paste the credentials into `server/.env`:
-   ```env
-   MAIL_ENABLED=true
-   MAIL_SERVER=smtp.gmail.com
-   MAIL_PORT=587
-   MAIL_USERNAME=your_actual_email@gmail.com
-   MAIL_PASSWORD=abcdefghijklmnop
-   ```
-
-> 💡 **Note**: If `MAIL_USERNAME` or `MAIL_PASSWORD` are left blank, TrustShare automatically switches to **Email Simulation Mode**, logging dispatched emails to the backend terminal without failing requests.
-
----
-
-## 🏃 Running the Application
-
-### Launch Backend Server
-In the `server/` directory:
 ```bash
 python -m uvicorn src.main:app --reload --host 127.0.0.1 --port 8000
 ```
-* **API Documentation (Swagger UI)**: `http://127.0.0.1:8000/docs`
-* **API Health Check**: `http://127.0.0.1:8000/health`
 
-### Launch Frontend Client
-In the `client/` directory:
+API docs:
+
+- `http://127.0.0.1:8000/docs`
+- `http://127.0.0.1:8000/health`
+
+### 3. Frontend Setup
+
+Open a terminal in the `client/` directory:
+
 ```bash
+cd client
+npm install
 npm run dev
 ```
-* **Web Dashboard**: `http://localhost:5173`
+
+The dashboard should be available at:
+
+- `http://localhost:5173`
+
+### 4. Run Tests
+
+```bash
+python -m unittest server/backend/test_duplicate_detector.py
+```
 
 ---
 
-## 🔍 Troubleshooting Guide
+## 🔍 Troubleshooting
 
-### 1. Navigating to `/share/:id` returns Raw Backend JSON
-* **Symptom**: Browser at `http://localhost:5173/share/27` outputs raw JSON string `{"success":true, "data":{...}}`.
-* **Cause**: `vite.config.ts` dev server proxy caught `/share` requests and routed them directly to FastAPI port 8000.
-* **Fix**: Ensure `client/vite.config.ts` proxies **only** `/api` routes:
-  ```typescript
-  server: {
-    port: 5173,
-    proxy: {
-      '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true },
-    },
-  }
-  ```
+### 1. Database initialization fails
 
-### 2. Database Connection Error (`pg8000.exceptions.DatabaseError`)
-* **Symptom**: Backend logs `FATAL: password authentication failed for user "postgres"`.
-* **Fix**: Verify your PostgreSQL username and password in `server/.env`:
-  `DATABASE_URL=postgresql+pg8000://<username>:<password>@localhost:5432/security_dashboard`
+If the app cannot create tables automatically, confirm your `DATABASE_URL` and ensure the database exists.
 
-### 3. SMTP Authentication Error (`SMTPAuthenticationError: 334`)
-* **Symptom**: Backend prints `fastapi_mail.errors.ConnectionErrors: Exception raised (334, 'UGFzc3dvcmQ6')`.
-* **Cause**: Incorrect email or normal account password used instead of a 16-character App Password.
-* **Fix**: Ensure 2-Step Verification is active on Google and use a generated **App Password** in `MAIL_PASSWORD`.
+### 2. Frontend proxy issues
 
-### 4. PostCSS `@import` Statement Warnings in Terminal
-* **Symptom**: `[vite:css][postcss] @import must precede all other statements`.
-* **Fix**: Place Google Font `@import` statements at the very top of `common.css` or include font tags directly in `index.html`.
+Ensure the dev server only proxies `/api` routes when routing backend requests.
+
+### 3. Email setup
+
+If SMTP is not configured, the app can fall back to simulation mode, logging email actions instead of sending real mail.
 
 ---
 
-## 🛠️ Key API Endpoints
+## 🧩 Repository Structure
 
-| Category | Endpoint | Method | Description |
-| :--- | :--- | :--- | :--- |
-| **Files** | `/files` | `POST / GET` | Upload, list, search, filter non-trashed files |
-| **Shared Links** | `/shared-links` | `POST / GET` | Create, list, search, and update share links |
-| **Public Viewer**| `/share/{id}` | `GET` | View public shared file details |
-| **Security** | `/api/security/dashboard` | `GET` | Security status, AES-256 keys, rotation |
-| **Dashboard** | `/api/dashboard/users` | `GET / PATCH / DELETE` | Interactive admin user management |
-| **Analytics** | `/analytics/overview` | `GET` | Real-time usage statistics and trends |
-| **Trash** | `/files/trash` | `GET / DELETE` | View and manage trashed files retention |
-| **Recent** | `/api/files/recent` | `GET` | Retrieve live file activity history |
-| **Notifications**| `/notifications` | `GET` | User activity notifications list |
+```text
+.
+├── client/                  # React/Vite frontend
+├── server/                  # FastAPI backend and service modules
+├── storage/                 # Uploaded files storage area
+├── README.md                # Project overview
+├── run.py                   # App launcher
+├── report.md                # Project report
+└── requirements.txt         # Root environment dependencies
+```
 
 ---
 
-## 📝 License & Summary
+## 📝 Summary
 
-Developed for secure, transparent, and scalable enterprise file sharing. All encryption routines strictly enforce standard AES-256-GCM authenticated encryption.
+This codebase unifies secure file sharing with AI-based duplicate detection so users can safely store and manage files while preventing redundant uploads and storage waste.

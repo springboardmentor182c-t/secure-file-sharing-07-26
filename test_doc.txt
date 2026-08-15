@@ -1,0 +1,1 @@
+Infosys Virtual Internship report on AI Duplicate File Detection. This project aims to implement automated duplicate checking and similarity analysis in a Secure File Sharing System. We use cryptographic SHA-256 hashes for exact duplicate matching, and custom TF-IDF with Cosine Similarity for NLP near-duplicate content checking.
