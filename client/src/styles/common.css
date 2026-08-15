@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
 /*
 Shared UI primitives used across feature screens (Shared Links, My Files,
 and any future one). Originally lived only in features/sharedLinks/
@@ -237,15 +235,23 @@ Depends on the CSS variables defined in assets/global.css.
   position: absolute;
   right: 0;
   top: calc(100% + 4px);
-  background: var(--bg-elevated);
+  background: #1e293b;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-pop);
-  min-width: 150px;
-  z-index: 30;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.6);
+  min-width: 160px;
+  z-index: 9999;
   padding: 6px;
   display: flex;
   flex-direction: column;
+}
+.action-menu__dropdown--top {
+  top: auto !important;
+  bottom: calc(100% + 6px) !important;
+}
+.action-menu__dropdown--bottom {
+  top: calc(100% + 6px) !important;
+  bottom: auto !important;
 }
 .action-menu__dropdown button {
   display: flex;
@@ -343,7 +349,7 @@ Depends on the CSS variables defined in assets/global.css.
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
-  overflow: hidden;
+  overflow: visible;
 }
 .links-panel__toolbar {
   display: flex;
@@ -359,7 +365,7 @@ Depends on the CSS variables defined in assets/global.css.
 
 /* ---------- Table shell ---------- */
 .links-table__scroll { overflow-x: auto; }
-.links-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px; }
+.links-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .links-table thead th {
   text-align: left;
   font-size: 11px;
@@ -379,4 +385,5 @@ Depends on the CSS variables defined in assets/global.css.
 }
 .links-table__row:last-child td { border-bottom: none; }
 .links-table__row:hover { background: var(--bg-card-hover); }
+
 

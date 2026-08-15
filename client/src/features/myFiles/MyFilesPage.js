@@ -19,7 +19,15 @@ import { createSharedLink } from "../sharedLinks/services/sharedLinksApi";
 import useMyFiles from "./hooks/useMyFiles";
 import useToast from "../../hooks/useToast";
 
+import SummaryModal from "../aiFileSummary/components/SummaryModal";
+
+import { useOutletContext } from "react-router-dom";
+
+
 export default function MyFilesPage({ initialView = "files" }) {
+  const outletContext = useOutletContext() || {};
+  const headerSearch = outletContext.searchTerm || "";
+
   const {
     view, changeView,
     isLoading, error, files, totalCount, page, totalPages, setPage,
@@ -33,6 +41,12 @@ export default function MyFilesPage({ initialView = "files" }) {
     createFolder, renameFolder, deleteFolder, refreshAll,
   } = useMyFiles(initialView);
 
+  useEffect(() => {
+    if (headerSearch !== undefined && headerSearch !== searchQuery) {
+      updateSearch(headerSearch);
+    }
+  }, [headerSearch, updateSearch, searchQuery]);
+
   const { toasts, showToast, dismiss } = useToast();
   const fileInputRef = useRef(null);
 
@@ -45,6 +59,8 @@ export default function MyFilesPage({ initialView = "files" }) {
   const [uploadModal, setUploadModal] = useState(false); // Show/hide upload modal
   const [pendingFiles, setPendingFiles] = useState(null); // Files waiting for folder selection
   const [isSaving, setIsSaving] = useState(false);
+
+  const [summarizingFile, setSummarizingFile] = useState(null);
 
   useEffect(() => {
     if (error) showToast(error, "error");
@@ -220,6 +236,7 @@ export default function MyFilesPage({ initialView = "files" }) {
             })}
             onBulkTrash={handleBulkTrash}
             onBulkPermanentDelete={handleBulkPermanentDelete}
+            onSummarize={(file) => setSummarizingFile(file)}
           />
         </div>
       </div>
@@ -285,6 +302,12 @@ export default function MyFilesPage({ initialView = "files" }) {
           isSaving={isSaving}
           onClose={() => setSharingFile(null)}
           onCreate={handleShareCreate}
+        />
+      )}
+      {summarizingFile && (
+        <SummaryModal
+          file={summarizingFile}
+          onClose={() => setSummarizingFile(null)}
         />
       )}
 

@@ -1,6 +1,6 @@
 import { getOrCreateCurrentUserId } from "./currentUser";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 async function authHeaders() {
   const userId = await getOrCreateCurrentUserId(API);

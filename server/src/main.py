@@ -4,6 +4,9 @@ Application entrypoint.
 Run with:
     uvicorn src.main:app --reload
 """
+from dotenv import load_dotenv
+load_dotenv()
+
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -19,7 +22,6 @@ from src.files.scheduler import start_scheduler as start_files_scheduler, stop_s
 from src.app_logging import configure_logging
 from src.shared_links.scheduler import start_scheduler, stop_scheduler
 
-# Ensures every entity is registered on Base.metadata before create_all/Alembic runs.
 import src.entities  # noqa: F401
 
 logger = logging.getLogger(__name__)
@@ -29,8 +31,9 @@ configure_logging()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
-        create_all_tables()
-        logger.info("Database tables initialized successfully.")
+        if DATABASE_URL.startswith("sqlite"):
+            create_all_tables()
+            logger.info("Database tables initialized successfully.")
     except Exception as e:
         logger.warning(f"Could not automatically create tables: {e}")
 
@@ -45,15 +48,22 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Secure File Sharing System API",
-    description="Backend API. Files and Shared Links modules implemented; other modules "
-    "(auth, todos placeholder, users) are owned by teammates.",
+    description="Backend API.",
     version="1.0.0",
     lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_origin_regex=r"https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

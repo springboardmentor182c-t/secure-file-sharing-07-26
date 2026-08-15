@@ -17,8 +17,8 @@ class SharedLink(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
 
-    owner_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("users.id"), nullable=False)
-    file_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("files.id"), nullable=False)
+    owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    file_id: Mapped[int] = mapped_column(Integer, ForeignKey("files.id"), nullable=False)
 
     permission: Mapped[LinkPermission] = mapped_column(
         Enum(LinkPermission, native_enum=False, length=20, values_callable=lambda enum_cls: [e.value for e in enum_cls]), default=LinkPermission.VIEW, nullable=False

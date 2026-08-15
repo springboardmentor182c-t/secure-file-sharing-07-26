@@ -33,3 +33,6 @@ fastapi-mail==1.4.2
 
 # --- Added for the Files module ---
 cryptography==43.0.3
+
+
+pyotp==2.9.0
