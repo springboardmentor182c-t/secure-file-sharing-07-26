@@ -1,18 +1,30 @@
 import React from "react";
-import { PlusIcon, UploadIcon } from "../../../layout/icons";
+import { PlusIcon, SearchIcon, UploadIcon } from "../../../layout/icons";
 
-export default function Header({ onNewFolder, onUploadClick, fileInputRef }) {
+export default function Header({ searchQuery, onSearchChange, onNewFolder, onUploadClick, fileInputRef }) {
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
 
   return (
-    <header className="page-header flex items-center justify-end mb-4">
-      <div className="page-header__actions flex items-center gap-3">
-        <button type="button" className="btn btn--ghost flex items-center gap-2 px-3 py-2 rounded-xl bg-[#272938] border border-[#34364A] text-gray-300 hover:text-white text-xs font-semibold" onClick={onNewFolder}>
+    <header className="page-header">
+      <h1 className="page-header__title">My Files</h1>
+      <div className="page-header__actions">
+        <div className="search-bar">
+          <SearchIcon className="search-bar__icon" width={16} height={16} />
+          <input
+            type="search"
+            className="search-bar__input"
+            placeholder="Search…"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            aria-label="Search files by name"
+          />
+        </div>
+        <button type="button" className="btn btn--ghost" onClick={onNewFolder}>
           <PlusIcon width={15} height={15} /> New folder
         </button>
-        <button type="button" className="btn btn--primary flex items-center gap-2 px-4 py-2 rounded-xl bg-[#7C5CFC] hover:bg-[#6847EC] text-white text-xs font-semibold" onClick={handleUploadClick}>
+        <button type="button" className="btn btn--primary" onClick={handleUploadClick}>
           <UploadIcon width={15} height={15} /> Upload
         </button>
         <input

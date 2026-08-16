@@ -6,8 +6,8 @@ Pydantic request/response schemas for the Shared Links module.
 SQLAlchemy ORM models, which live under `src/entities/`.)
 """
 import uuid
-from datetime import datetime, timedelta
-from typing import Any, Generic, List, Optional, TypeVar, Union
+from datetime import datetime
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
@@ -22,25 +22,18 @@ from src.shared_links.constants import LinkPermission, LinkStatus
 class SharedLinkCreate(BaseModel):
     """Payload for `POST /shared-links` — matches the frontend's "New Link" modal."""
 
-    file_id: Union[uuid.UUID, int, str]
-    recipient_email: Optional[Union[EmailStr, str]] = None
-    permission: Optional[Union[LinkPermission, str]] = LinkPermission.VIEW
-    expires_at: Optional[Union[datetime, str]] = None
-    password: Optional[str] = Field(default=None, max_length=128)
+    file_id: uuid.UUID
+    recipient_email: EmailStr
+    permission: LinkPermission = LinkPermission.VIEW
+    expires_at: Optional[datetime] = None
+    password: Optional[str] = Field(default=None, min_length=4, max_length=128)
     allow_download: bool = False
 
-    @field_validator("expires_at", mode="before")
+    @field_validator("expires_at")
     @classmethod
-    def _expiry_must_be_future(cls, v: Any) -> Optional[datetime]:
-        if v is None or v == "":
-            return None
-        if isinstance(v, str):
-            try:
-                v = datetime.fromisoformat(v.replace("Z", "+00:00"))
-            except Exception:
-                return datetime.utcnow() + timedelta(days=7)
-        if isinstance(v, datetime) and v.replace(tzinfo=None) <= datetime.utcnow():
-            return datetime.utcnow() + timedelta(days=7)
+    def _expiry_must_be_future(cls, v: Optional[datetime]) -> Optional[datetime]:
+        if v is not None and v.replace(tzinfo=None) <= datetime.utcnow():
+            raise ValueError("expires_at must be in the future")
         return v
 
 
@@ -65,28 +58,23 @@ class AccessLinkRequest(BaseModel):
 
 class FileSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
-    id: Union[uuid.UUID, int, str]
-    file_name: str = "file.pdf"
-    file_type: str = "pdf"
-    size_bytes: int = 0
-
-
-FileRead = FileSummary
+    id: uuid.UUID
+    file_name: str
+    file_type: str
 
 
 class SharedLinkRead(BaseModel):
     """Shape returned to the frontend — maps 1:1 onto the fields the
     `SharedLinksTable` / `TableRow` React components already render."""
 
-    id: Union[uuid.UUID, int, str]
+    id: uuid.UUID
     file: FileSummary
     share_url: str
     created_at: datetime
     expires_at: Optional[datetime]
     views: int
     downloads: int
-    access: Union[LinkPermission, str]
+    access: LinkPermission
     status: LinkStatus
     password_protected: bool
     allow_download: bool
@@ -158,14 +146,15 @@ class NotificationRead(BaseModel):
 
 class UserCreate(BaseModel):
     email: EmailStr
-    full_name: str
+    full_name: Optional[str] = None
 
 
 class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
+    id: uuid.UUID
     email: EmailStr
-    full_name: Optional[str]=None
+    full_name: Optional[str] = None
+
 
 
 

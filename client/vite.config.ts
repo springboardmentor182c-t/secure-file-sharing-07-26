@@ -15,6 +15,12 @@ function figmaAssetResolver() {
   }
 }
 
+// This project's components use JSX inside plain .js files (App.js,
+// Sidebar.js, every features/pages file, etc.) rather than .jsx. Vite's
+// default esbuild loader for .js is plain JS, not JSX, so without this
+// the dev server/build fails to parse any of them ("Expression expected").
+// Scoped to src/**/*.js only, so .ts/.tsx (e.g. main.tsx) keep using
+// Vite's normal TypeScript transform untouched.
 function jsxInJsFiles() {
   return {
     name: 'jsx-in-js-files',
@@ -29,19 +35,24 @@ export default defineConfig({
   plugins: [
     figmaAssetResolver(),
     jsxInJsFiles(),
-    react(),
+    react({
+      include: '**/*.{jsx,js,ts,tsx}',
+    }),
     tailwindcss(),
   ],
+  optimizeDeps: {
+    esbuildOptions: {
+      loader: {
+        '.js': 'jsx',
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
-  server: {
-    port: 5173,
-    proxy: {
-      '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true },
-    },
-  },
   assetsInclude: ['**/*.svg', '**/*.csv'],
 })
+
+

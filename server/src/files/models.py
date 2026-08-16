@@ -1,7 +1,7 @@
 """Pydantic request/response schemas for the Files module (My Files screen)."""
 import uuid
 from datetime import datetime
-from typing import Optional, Union
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -11,24 +11,26 @@ from src.files.constants import FileCategory
 class FileRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: Union[uuid.UUID, int, str]
-    owner_id: Optional[Union[uuid.UUID, int, str]] = None
-    folder_id: Optional[Union[uuid.UUID, int, str]] = None
-    original_filename: str = "file.pdf"
-    extension: str = "pdf"
-    mime_type: str = "application/pdf"
-    size: Optional[Union[int, str]] = "0 B"
-    checksum: Optional[str] = ""
-    storage_provider: Optional[str] = "local"
-    encryption_status: Optional[str] = "unencrypted"
-    category: Optional[str] = "Other"
-    is_starred: Optional[bool] = False
-    is_deleted: Optional[bool] = False
-    deleted_at: Optional[Union[datetime, str]] = None
-    download_count: Optional[int] = 0
-    created_at: Optional[Union[datetime, str]] = None
-    updated_at: Optional[Union[datetime, str]] = None
-    is_shared: Optional[bool] = False
+    id: uuid.UUID
+    owner_id: uuid.UUID
+    folder_id: Optional[uuid.UUID]
+    original_filename: str
+    extension: str
+    mime_type: str
+    size: int
+    checksum: str
+    storage_provider: str
+    encryption_status: str
+    category: str
+    is_starred: bool
+    is_deleted: bool
+    deleted_at: Optional[datetime]
+    download_count: int
+    created_at: datetime
+    updated_at: datetime
+    # Not a plain column - computed by the service layer per request
+    # (True if the file has at least one non-revoked shared link).
+    is_shared: bool = False
 
 
 class FileRenameRequest(BaseModel):
@@ -36,7 +38,7 @@ class FileRenameRequest(BaseModel):
 
 
 class FileMoveRequest(BaseModel):
-    folder_id: Optional[Union[uuid.UUID, int, str]] = None
+    folder_id: Optional[uuid.UUID] = None
 
 
 class FileCategoryUpdateRequest(BaseModel):
@@ -45,7 +47,7 @@ class FileCategoryUpdateRequest(BaseModel):
 
 class FolderCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
-    parent_id: Optional[Union[uuid.UUID, int, str]] = None
+    parent_id: Optional[uuid.UUID] = None
 
     @field_validator("name")
     @classmethod
@@ -71,19 +73,19 @@ class FolderRename(BaseModel):
 class FolderRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: Union[uuid.UUID, int, str]
-    owner_id: Optional[Union[uuid.UUID, int, str]] = None
-    parent_id: Optional[Union[uuid.UUID, int, str]] = None
-    name: str = "Folder"
-    created_at: Optional[Union[datetime, str]] = None
-    updated_at: Optional[Union[datetime, str]] = None
+    id: uuid.UUID
+    owner_id: uuid.UUID
+    parent_id: Optional[uuid.UUID]
+    name: str
+    created_at: datetime
+    updated_at: datetime
     file_count: int = 0
 
 
 class StorageStatsRead(BaseModel):
-    used_bytes: int = 0
-    total_bytes: int = 10737418240
-    remaining_bytes: int = 10737418240
-    used_percent: float = 0.0
-    file_count: int = 0
-    folder_count: int = 0
+    used_bytes: int
+    total_bytes: int
+    remaining_bytes: int
+    used_percent: float
+    file_count: int
+    folder_count: int

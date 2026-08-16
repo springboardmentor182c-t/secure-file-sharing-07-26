@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { Menu, Search, X } from "lucide-react";
+import { Menu, Search, ChevronDown } from "lucide-react";
+
 import { useLocation } from "react-router-dom";
 import pageTitles from "../data/pageTitles";
 import NotificationBell from "../components/NotificationBell";
@@ -7,22 +7,23 @@ import NotificationBell from "../components/NotificationBell";
 function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
   const location = useLocation();
   const title = pageTitles[location.pathname] || "TrustShare";
-  const inputRef = useRef(null);
-
-  // Global Ctrl + K / Cmd + K keyboard shortcut
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        inputRef.current?.focus();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
 
   return (
-    <header className="h-20 shrink-0 flex items-center justify-between px-6 lg:px-8 bg-[#1E1F2B] border-b border-[#34364A]">
+    <header
+      className="
+        h-20
+        shrink-0
+        flex
+        items-center
+        justify-between
+        px-6
+        lg:px-8
+        bg-[#1E1F2B]
+        border-b
+        border-[#34364A]
+      "
+    >
+      {/* Left Section */}
       <div className="flex items-center gap-4">
         <button
           onClick={() => setSidebarOpen(true)}
@@ -42,33 +43,129 @@ function Header({ setSidebarOpen, searchTerm, onSearchChange, currentUser }) {
         </div>
       </div>
 
-      <div className="hidden md:flex items-center w-72 lg:w-96 px-4 py-2.5 rounded-xl bg-[#272938] border border-[#34364A] focus-within:border-[#7C5CFC] transition-colors">
-        <Search size={18} className="text-gray-400 shrink-0" />
+      {/* Search */}
+      <div
+        className="
+          hidden
+          md:flex
+          items-center
+          w-72
+          lg:w-96
+          px-4
+          py-2.5
+          rounded-xl
+          bg-[#272938]
+          border
+          border-[#34364A]
+        "
+      >
+        <Search size={18} className="text-gray-400" />
+
         <input
-          ref={inputRef}
           type="text"
-          value={searchTerm || ""}
-          onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
+          value={searchTerm}
+          onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search files..."
-          className="ml-3 w-full bg-transparent text-sm text-white placeholder-gray-400 focus:outline-none"
+          className="
+            ml-3
+            flex-1
+            bg-transparent
+            outline-none
+            text-sm
+            text-white
+            placeholder-gray-500
+          "
         />
-        {searchTerm ? (
-          <button
-            onClick={() => onSearchChange && onSearchChange("")}
-            className="text-gray-400 hover:text-white p-0.5 shrink-0 cursor-pointer"
-            title="Clear search"
-          >
-            <X size={15} />
-          </button>
-        ) : (
-          <span className="text-[11px] text-gray-400 border border-[#34364A] rounded-md px-2 py-0.5 whitespace-nowrap shrink-0 bg-[#1E1F2B] font-mono">
-            Ctrl + K
-          </span>
-        )}
+
+        <span
+          className="
+            hidden
+            lg:block
+            text-xs
+            text-gray-500
+            border
+            border-[#34364A]
+            rounded-md
+            px-2
+            py-1
+          "
+        >
+          Ctrl K
+        </span>
       </div>
 
+      {/* Right Section */}
+
       <div className="flex items-center gap-3 lg:gap-5">
+
+        {/* Notification */}
+
         <NotificationBell />
+
+         <button
+          className="
+            flex
+            items-center
+            gap-3
+            rounded-xl
+            bg-[#272938]
+            border
+            border-[#34364A]
+            px-3
+            py-2
+            hover:bg-[#34364A]
+            transition
+          "
+        >
+       
+
+
+          <div 
+            className="
+              h-10
+              w-10
+              rounded-full
+              bg-[#7C5CFC]
+              flex
+              items-center
+              justify-center
+              text-white
+              font-semibold
+            "
+          >
+            V
+          </div>
+
+      
+          <div
+            className="
+              hidden
+              lg:block
+              text-left
+            "
+          >
+            <p
+              className="
+                text-sm
+                font-medium
+                text-white
+              "
+            >
+              Vamshi
+            </p>
+
+            <p
+              className="
+                text-xs
+                text-gray-400
+              "
+            >
+              Student
+            </p>
+          </div>
+
+          <ChevronDown size={18} className="text-gray-400" />
+        </button>
       </div>
     </header>
   );

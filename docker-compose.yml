@@ -1,0 +1,72 @@
+version: "3.9"
+
+# Run this file from the PROJECT ROOT (the folder containing server/, client/,
+# nginx/, and this file):
+#   docker compose up -d --build
+#
+# First-time setup after containers are up, run once:
+#   docker compose run --rm backend alembic upgrade head
+#
+# This compose file replaces server/docker-compose.yml (which only started a
+# bare Postgres container). Keep server/docker-compose.yml if you still want
+# a Postgres-only option for running the backend outside Docker.
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: trustshare_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sharedlinks_user
+      POSTGRES_PASSWORD: sharedlinks_pass
+      POSTGRES_DB: sharedlinks_db
+    ports:
+      - "5432:5432"          # remove this line entirely once you deploy to AWS -
+                              # Postgres should not be reachable from outside Docker there
+    volumes:
+      - trustshare_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sharedlinks_user -d sharedlinks_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: trustshare_backend
+    restart: unless-stopped
+    env_file:
+      - server/.env
+    environment:
+      # Overrides server/.env so the backend talks to the "postgres" service
+      # by its Docker Compose service name, never "localhost" - see the
+      # note on Docker networking in the deployment report.
+      DATABASE_URL: postgresql+psycopg2://sharedlinks_user:sharedlinks_pass@postgres:5432/sharedlinks_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"           # keep for local testing / Swagger; on AWS put Nginx in front instead
+    volumes:
+      - trustshare_files:/app/storage/files   # uploaded files survive container restarts/recreation
+
+  frontend:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+      args:
+        # Local default. Override at build time for AWS, e.g.:
+        #   docker compose build --build-arg VITE_API_URL=https://api.your-domain.com frontend
+        VITE_API_URL: http://localhost:8000
+    container_name: trustshare_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  trustshare_pgdata:
+  trustshare_files:

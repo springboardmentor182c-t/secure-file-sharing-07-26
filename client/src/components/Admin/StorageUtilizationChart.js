@@ -1,5 +1,4 @@
 import React from "react";
-import { formatStorage } from "../../utils/formatStorage";
 
 export default function StorageUtilizationChart({ data, maxScale = 1000 }) {
   const ticks = [0, 200, 400, 600, 800, 1000];
@@ -17,7 +16,7 @@ export default function StorageUtilizationChart({ data, maxScale = 1000 }) {
               />
             </div>
             <span className="w-20 text-right text-gray-400 text-sm">
-              {formatStorage(user.storage_used_gb)}
+              {user.storage_used_gb.toFixed(1)} GB
             </span>
           </div>
         ))}

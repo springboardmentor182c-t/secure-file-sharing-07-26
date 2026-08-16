@@ -30,14 +30,15 @@ function Recent() {
   );
 
   return (
-    <div className="page p-6 lg:p-8 space-y-6 animate-fade-in">
-      <div className="flex justify-end mb-4">
-        <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+    <div className="page">
+      <div className="page-header">
+        <h2>Recent</h2>
+        <div className="search-wrapper">
+          <Search size={16} className="search-icon" />
           <input
             type="text"
-            className="pl-9 pr-4 py-2 bg-[#1E1F2B] border border-[#34364A] rounded-xl text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-[#7C5CFC] transition-colors w-64"
-            placeholder="Search recent files..."
+            className="search-input"
+            placeholder="Search..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

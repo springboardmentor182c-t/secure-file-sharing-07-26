@@ -4,7 +4,4 @@ __pycache__/
 .pytest_cache/
 *.pyc
 .vscode/
-server/uploads/*
-!server/uploads/.gitkeep
-*.db
 

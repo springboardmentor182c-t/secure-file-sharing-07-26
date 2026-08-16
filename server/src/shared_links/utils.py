@@ -14,7 +14,7 @@ from src.pagination import build_pagination_meta  # noqa: F401 (re-exported)
 
 _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:5173/share")
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://localhost/share")
 
 
 # ---------------------------------------------------------------------------

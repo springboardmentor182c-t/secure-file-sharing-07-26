@@ -12,9 +12,10 @@ function toDateInputValue(date) {
 
 export default function EditLinkModal({ link, onClose, onSave, isSaving }) {
   const [form, setForm] = useState({
-    access: link.access || "view",
+    access: link.access,
     expiresAt: toDateInputValue(link.expiresAt),
     password: link.passwordProtected ? PASSWORD_PLACEHOLDER : "",
+    allowDownload: link.allowDownload,
   });
   const [errors, setErrors] = useState({});
 
@@ -38,14 +39,16 @@ export default function EditLinkModal({ link, onClose, onSave, isSaving }) {
 
     const passwordUnchanged = form.password === PASSWORD_PLACEHOLDER;
     const passwordCleared = link.passwordProtected && form.password.trim() === "";
-    const allowDownload = form.access !== "view";
 
     onSave(link.id, {
       access: form.access,
       expiresAt: form.expiresAt || null,
+      // Only send a new password when the user actually typed one; only
+      // ask the backend to remove it when it existed and was cleared out;
+      // otherwise send neither field so the existing password is untouched.
       password: passwordUnchanged || passwordCleared ? undefined : form.password,
       removePassword: passwordCleared,
-      allowDownload: allowDownload,
+      allowDownload: form.allowDownload,
     });
   }
 
@@ -100,6 +103,15 @@ export default function EditLinkModal({ link, onClose, onSave, isSaving }) {
           />
           {errors.password && <span className="form-field__error">{errors.password}</span>}
         </div>
+
+        <label className="checkbox-field">
+          <input
+            type="checkbox"
+            checked={form.allowDownload}
+            onChange={(e) => setField("allowDownload", e.target.checked)}
+          />
+          Allow download
+        </label>
       </form>
     </ModalShell>
   );

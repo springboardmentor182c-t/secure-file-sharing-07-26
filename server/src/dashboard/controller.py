@@ -32,35 +32,3 @@ def invite_user(payload: models.InviteUserRequest, db: Session = Depends(get_db)
         return service.invite_user(db, payload)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.patch("/users/{user_id}")
-def update_user(user_id: int, payload: dict, db: Session = Depends(get_db)):
-    return service.update_user_management(db, user_id, payload)
-
-
-@router.delete("/users/{user_id}")
-def delete_user(user_id: int, db: Session = Depends(get_db)):
-    return service.delete_user_management(db, user_id)
-
-
-users_router = APIRouter(prefix="/users", tags=["Users"])
-
-@users_router.get("/me")
-def get_my_profile(db: Session = Depends(get_db)):
-    return service.get_profile(db)
-
-@users_router.put("/me")
-def update_my_profile(payload: dict, db: Session = Depends(get_db)):
-    return service.update_profile(db, payload)
-
-
-settings_router = APIRouter(prefix="/settings", tags=["Settings"])
-
-@settings_router.get("")
-def get_system_settings(db: Session = Depends(get_db)):
-    return service.get_settings(db)
-
-@settings_router.post("")
-def update_system_settings(payload: dict, db: Session = Depends(get_db)):
-    return service.update_settings(db, payload)

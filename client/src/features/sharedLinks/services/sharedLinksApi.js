@@ -5,7 +5,7 @@
 import { ApiError, createApiRequest } from "../../../services/apiClient";
 import { uploadFile as uploadFileToFilesModule } from "../../myFiles/services/filesApi";
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const { request } = createApiRequest(API_BASE_URL);
 
@@ -73,31 +73,15 @@ export async function listSharedLinks({ search, status, sortBy, page, pageSize }
 }
 
 export async function createSharedLink({ file, fileId, recipientEmail, access, expiresAt, password, allowDownload }) {
-  let resolvedFileId = fileId;
-  try {
-    if (!resolvedFileId && file) {
-      const res = await uploadFile(file);
-      resolvedFileId = res?.id;
-    }
-  } catch {
-    resolvedFileId = crypto.randomUUID();
-  }
-  if (!resolvedFileId) resolvedFileId = crypto.randomUUID();
-
-  let parsedExpiresAt = null;
-  if (expiresAt) {
-    const d = new Date(expiresAt);
-    d.setHours(23, 59, 59, 999);
-    parsedExpiresAt = d.toISOString();
-  }
+  const resolvedFileId = fileId || (await uploadFile(file)).id;
 
   const res = await request("/shared-links", {
     method: "POST",
     json: {
       file_id: resolvedFileId,
       recipient_email: recipientEmail,
-      permission: (access || "view").toLowerCase(),
-      expires_at: parsedExpiresAt,
+      permission: access,
+      expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
       password: password ? password : null,
       allow_download: !!allowDownload,
     },

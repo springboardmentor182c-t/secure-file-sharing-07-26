@@ -5,7 +5,7 @@ import { formatBytes, formatDate, iconForExtension } from "../utils/fileUtils";
 
 export default function FileRow({
   file, isTrash, selected, onToggleSelect,
-  onDownload, onShare, onStar, onRename, onMove, onCategory, onTrash, onRestore, onPermanentDelete,onSummarize,
+  onDownload, onShare, onStar, onRename, onMove, onCategory, onTrash, onRestore, onPermanentDelete,
 }) {
   const Icon = iconForExtension(file.extension);
 
@@ -54,7 +54,6 @@ export default function FileRow({
           onTrash={() => onTrash(file)}
           onRestore={() => onRestore(file)}
           onPermanentDelete={() => onPermanentDelete(file)}
-          onSummarize={() => onSummarize(file)}
         />
       </td>
     </tr>

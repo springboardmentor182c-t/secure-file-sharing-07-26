@@ -3,7 +3,7 @@ import { formatBytes } from "../utils/fileUtils";
 
 export default function StorageUsage({ stats }) {
   if (!stats) return null;
-  const percent = Math.min(100, stats.used_percent ?? stats.used_percentage ?? 0);
+  const percent = Math.min(100, stats.used_percent);
 
   return (
     <div className="storage-usage">

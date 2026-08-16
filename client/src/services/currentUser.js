@@ -23,7 +23,26 @@ let inFlight = null;
 
 export async function getOrCreateCurrentUserId(apiBaseUrl) {
   const cached = localStorage.getItem(STORAGE_KEY);
-  if (cached) return cached;
+  if (cached) {
+    try {
+      const res = await fetch(`${apiBaseUrl}/users`);
+      if (res.ok) {
+        const json = await res.json();
+        const users = json?.data || [];
+        if (users.some((u) => u.id === cached)) {
+          return cached;
+        }
+        if (users.length > 0) {
+          const firstId = users[0].id;
+          localStorage.setItem(STORAGE_KEY, firstId);
+          return firstId;
+        }
+      }
+    } catch {
+      return cached;
+    }
+    localStorage.removeItem(STORAGE_KEY);
+  }
 
   // Guard against firing two bootstrap requests if multiple components
   // mount at once before the id is cached.
@@ -34,8 +53,7 @@ export async function getOrCreateCurrentUserId(apiBaseUrl) {
     // rejects reserved/special-use TLDs like ".local" or ".test" - so this
     // needs to look like a real (if fake) domain, not trustshare.local.
     const email = `dev-${Date.now()}@trustshare-dev-users.com`;
-    const baseUrl = (apiBaseUrl || "").replace("localhost", "127.0.0.1");
-    const res = await fetch(`${baseUrl}/users`, {
+    const res = await fetch(`${apiBaseUrl}/users`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, full_name: "Dev User" }),

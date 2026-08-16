@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Outlet, useLocation, Navigate } from "react-router-dom";
 
 import Sidebar from "./Sidebar";
 import Header from "./Header";
@@ -9,14 +9,16 @@ import { getUsers, getDashboardStats } from "../features/dashboard/services/dash
 
 function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState("");
   const { data: users } = useFetch(getUsers, []);
   const { data: stats } = useFetch(getDashboardStats, []);
 
+  const currentUser = users?.find((u) => u.role === "Admin") || null;
+
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const currentUser = users?.find((u) => (u.role || "").toLowerCase().includes("admin")) || user || { name: "Admin User", role: "Admin", initials: "AU" };
+  const location = useLocation();
 
   useEffect(() => {
     const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -28,21 +30,22 @@ function MainLayout() {
       })
       .then(data => {
         const usersList = Array.isArray(data) ? data : data?.data || [];
-        const current = usersList.find((u) => u.role?.toLowerCase().includes("admin")) || usersList[0] || data;
+        const current = usersList.find((u) => u.role?.toLowerCase().includes("admin")) || usersList[0];
         if (current) {
-          const initials = (current.full_name || current.name || "Admin User")
+          const initials = (current.full_name || current.name || "Guest User")
             .split(" ")
             .map((part) => part[0])
             .join("")
             .slice(0, 2)
             .toUpperCase();
-          setUser({ name: current.full_name || current.name || "Admin User", role: current.role || "Admin", initials: initials || "AU" });
+          setUser({ name: current.full_name || current.name || "Guest User", role: current.role || "Viewer", initials: initials || "GU" });
         } else {
-          setUser({ name: "Admin User", role: "Admin", initials: "AU" });
+          setUser({ name: "Guest User", role: "Viewer", initials: "GU" });
         }
       })
-      .catch(() => {
-        setUser({ name: "Admin User", role: "Admin", initials: "AU" });
+      .catch(err => {
+        console.error("Error loading user session:", err);
+        setUser({ name: "Guest User", role: "Viewer", initials: "GU" });
       })
       .finally(() => {
         setLoading(false);
@@ -57,15 +60,31 @@ function MainLayout() {
     );
   }
 
+  // Define routes requiring admin privileges
+  const isSecurityRoute = ["/security", "/monitoring", "/audit"].includes(location.pathname);
+  const isAdmin = user?.role?.toLowerCase().includes("admin");
+
+  if (isSecurityRoute && !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#1E1F2B]">
-      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} users={users} stats={stats} currentUser={user || currentUser} />
+
+      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} users={users} stats={stats}  user={user} />
+
+
+
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header
           setSidebarOpen={setSidebarOpen}
+
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
-          currentUser={user || currentUser}
+          currentUser={currentUser}
+          user={user}
+ 
         />
         <PageContainer>
           <Outlet context={{ searchTerm }} />

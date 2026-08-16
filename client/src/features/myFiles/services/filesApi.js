@@ -6,7 +6,7 @@
 
 import { ApiError, createApiRequest } from "../../../services/apiClient";
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const { request, authHeaders } = createApiRequest(API_BASE_URL);
 
@@ -21,7 +21,6 @@ export async function uploadFile({ file, folderId, category }) {
     if (folderId) formData.append("folder_id", folderId);
     if (category) formData.append("category", category || "other");
     const res = await request("/files", { method: "POST", formData });
-    window.dispatchEvent(new Event("storage-updated"));
     return res.data;
   } catch (err) {
     console.error("File upload error for", file.name, err);
@@ -71,19 +70,16 @@ export async function toggleStar(fileId) {
 
 export async function trashFile(fileId) {
   const res = await request(`/files/${fileId}`, { method: "DELETE" });
-  window.dispatchEvent(new Event("storage-updated"));
   return res.data;
 }
 
 export async function restoreFile(fileId) {
   const res = await request(`/files/${fileId}/restore`, { method: "POST" });
-  window.dispatchEvent(new Event("storage-updated"));
   return res.data;
 }
 
 export async function permanentlyDeleteFile(fileId) {
   await request(`/files/${fileId}/permanent`, { method: "DELETE" });
-  window.dispatchEvent(new Event("storage-updated"));
 }
 
 export async function downloadFile(fileId, filename) {
