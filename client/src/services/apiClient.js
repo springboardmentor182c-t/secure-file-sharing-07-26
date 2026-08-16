@@ -4,8 +4,7 @@
 // X-User-Id auth header, JSON/multipart bodies, and turning non-2xx
 // responses into a consistent ApiError.
 
-import { getOrCreateCurrentUserId } from "./currentUser";
-
+import { getStoredUser } from "../features/authentication/services/authStorage";
 export class ApiError extends Error {
   constructor(message, status) {
     super(message);
@@ -27,8 +26,9 @@ async function parseErrorMessage(res) {
 /** Builds a `request(path, options)` function bound to one API base URL. */
 export function createApiRequest(apiBaseUrl) {
   async function authHeaders(extra = {}) {
-    const userId = await getOrCreateCurrentUserId(apiBaseUrl);
-    return { "X-User-Id": userId, ...extra };
+    const user = getStoredUser();
+    const userId = user?.id;
+    return userId ? { "X-User-Id": String(userId), ...extra } : { ...extra };
   }
 
   async function request(path, { method = "GET", json, formData, headers = {} } = {}) {

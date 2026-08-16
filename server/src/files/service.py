@@ -148,12 +148,11 @@ def upload_file(
 
 def get_owned_file(db: Session, *, file_id: Union[str, int], owner_id: uuid.UUID, include_deleted: bool = False) -> File:
     try:
-        file_obj = db.get(File, int(file_id) if str(file_id).isdigit() else file_id)
-        if file_obj is not None:
-            return file_obj
+        f_id = int(file_id) if str(file_id).isdigit() else file_id
+        return db.query(File).filter(File.id == f_id, File.owner_id == owner_id).first()
     except Exception:
         db.rollback()
-    return File(id=file_id, name="file.pdf", size="1 MB")
+    return None
 
 
 def search_files(
@@ -170,7 +169,7 @@ def search_files(
     page_size: int = 10,
 ) -> Tuple[Sequence[File], int]:
     try:
-        query = db.query(File)
+        query = db.query(File).filter(File.owner_id == owner_id)
 
         if trashed_only:
             query = query.filter(File.is_deleted == True)
@@ -227,7 +226,7 @@ def list_files_for_response(files: Sequence[File]) -> list[FileRead]:
 def rename_file(db: Session, *, file_id: Union[str, int], owner_id: uuid.UUID, new_name: str) -> File:
     try:
         f_id = int(file_id) if str(file_id).isdigit() else file_id
-        file_obj = db.get(File, f_id)
+        file_obj = db.query(File).filter(File.id == f_id, File.owner_id == owner_id).first()
         if file_obj:
             file_obj.name = new_name
             file_obj.updated_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
@@ -236,13 +235,13 @@ def rename_file(db: Session, *, file_id: Union[str, int], owner_id: uuid.UUID, n
             return file_obj
     except Exception:
         db.rollback()
-    return File(id=file_id, name=new_name)
+    return None
 
 
 def move_file(db: Session, *, file_id: Union[str, int], owner_id: uuid.UUID, folder_id: Optional[Union[str, int]]) -> File:
     try:
         f_id = int(file_id) if str(file_id).isdigit() else file_id
-        file_obj = db.get(File, f_id)
+        file_obj = db.query(File).filter(File.id == f_id, File.owner_id == owner_id).first()
         if file_obj:
             file_obj.folder_id = str(folder_id) if folder_id is not None else None
             file_obj.updated_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
@@ -251,13 +250,13 @@ def move_file(db: Session, *, file_id: Union[str, int], owner_id: uuid.UUID, fol
             return file_obj
     except Exception:
         db.rollback()
-    return File(id=file_id, name="file.pdf")
+    return None
 
 
 def set_category(db: Session, *, file_id: Union[str, int], owner_id: uuid.UUID, category: str) -> File:
     try:
         f_id = int(file_id) if str(file_id).isdigit() else file_id
-        file_obj = db.get(File, f_id)
+        file_obj = db.query(File).filter(File.id == f_id, File.owner_id == owner_id).first()
         if file_obj:
             file_obj.category = str(category).replace("FileCategory.", "").strip().capitalize()
             file_obj.updated_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
@@ -266,13 +265,13 @@ def set_category(db: Session, *, file_id: Union[str, int], owner_id: uuid.UUID, 
             return file_obj
     except Exception:
         db.rollback()
-    return File(id=file_id, name="file.pdf")
+    return None
 
 
 def toggle_star(db: Session, *, file_id: Union[str, int], owner_id: uuid.UUID) -> File:
     try:
         f_id = int(file_id) if str(file_id).isdigit() else file_id
-        file_obj = db.get(File, f_id)
+        file_obj = db.query(File).filter(File.id == f_id, File.owner_id == owner_id).first()
         if file_obj:
             file_obj.is_starred = not bool(file_obj.is_starred)
             file_obj.updated_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
@@ -281,13 +280,13 @@ def toggle_star(db: Session, *, file_id: Union[str, int], owner_id: uuid.UUID) -
             return file_obj
     except Exception:
         db.rollback()
-    return File(id=file_id, name="file.pdf")
+    return None
 
 
 def delete_file(db: Session, *, file_id: Union[str, int], owner_id: uuid.UUID) -> File:
     try:
         f_id = int(file_id) if str(file_id).isdigit() else file_id
-        file_obj = db.get(File, f_id)
+        file_obj = db.query(File).filter(File.id == f_id, File.owner_id == owner_id).first()
         if file_obj:
             file_obj.is_deleted = True
             file_obj.updated_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
@@ -296,13 +295,13 @@ def delete_file(db: Session, *, file_id: Union[str, int], owner_id: uuid.UUID) -
             return file_obj
     except Exception:
         db.rollback()
-    return File(id=file_id, name="file.pdf", is_deleted=True)
+    return None
 
 
 def restore_file(db: Session, *, file_id: Union[str, int], owner_id: uuid.UUID) -> File:
     try:
         f_id = int(file_id) if str(file_id).isdigit() else file_id
-        file_obj = db.get(File, f_id)
+        file_obj = db.query(File).filter(File.id == f_id, File.owner_id == owner_id).first()
         if file_obj:
             file_obj.is_deleted = False
             file_obj.updated_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
@@ -311,14 +310,17 @@ def restore_file(db: Session, *, file_id: Union[str, int], owner_id: uuid.UUID) 
             return file_obj
     except Exception:
         db.rollback()
-    return File(id=file_id, name="file.pdf", is_deleted=False)
+    return None
 
 
 def permanently_delete_file(db: Session, *, file_id: Union[str, int], owner_id: uuid.UUID) -> None:
     try:
-        fid_str = str(file_id)
-        db.execute(text("DELETE FROM shared_links WHERE file_id = :fid"), {"fid": fid_str})
-        db.execute(text("DELETE FROM files WHERE id = :fid OR CAST(id AS VARCHAR) = :fid OR name = :fid"), {"fid": fid_str})
+        f_id = int(file_id) if str(file_id).isdigit() else file_id
+        owned = db.query(File).filter(File.id == f_id, File.owner_id == owner_id).first()
+        if not owned:
+            return
+        db.execute(text("DELETE FROM shared_links WHERE file_id = :fid"), {"fid": str(f_id)})
+        db.execute(text("DELETE FROM files WHERE id = :fid AND owner_id = :owner_id"), {"fid": f_id, "owner_id": owner_id})
         db.commit()
     except Exception as e:
         print("[PERMANENT DELETE EXCEPTION]:", e)
@@ -338,8 +340,12 @@ def purge_expired_trash(db: Session) -> int:
 
 def empty_trash(db: Session, *, owner_id: uuid.UUID) -> None:
     try:
-        db.execute(text("DELETE FROM shared_links WHERE file_id IN (SELECT CAST(id AS VARCHAR) FROM files WHERE is_deleted = True)"))
-        db.execute(text("DELETE FROM files WHERE is_deleted = True"))
+        db.execute(text("""
+            DELETE FROM shared_links WHERE file_id IN (
+                SELECT CAST(id AS VARCHAR) FROM files WHERE is_deleted = True AND owner_id = :owner_id
+            )
+        """), {"owner_id": owner_id})
+        db.execute(text("DELETE FROM files WHERE is_deleted = True AND owner_id = :owner_id"), {"owner_id": owner_id})
         db.commit()
     except Exception as e:
         print("[EMPTY TRASH EXCEPTION]:", e)

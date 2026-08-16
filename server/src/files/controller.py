@@ -31,7 +31,7 @@ no duplicate API, no duplicate service.
 import uuid
 from typing import Annotated, Any, Optional, Union
 
-from fastapi import APIRouter, Depends, File as FastAPIFile, Form, Query, UploadFile
+from fastapi import APIRouter, Depends, File as FastAPIFile, Form, HTTPException, Query, UploadFile
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -180,6 +180,8 @@ def storage_stats(owner_id: Annotated[uuid.UUID, Depends(get_current_user_id)], 
 @router.get("/{file_id}", response_model=ApiResponse[FileRead], summary="Get one file's metadata")
 def get_file(file_id: Union[str, int], owner_id: Annotated[uuid.UUID, Depends(get_current_user_id)], db: Annotated[Session, Depends(get_db)]):
     file_obj = service.get_owned_file(db, file_id=file_id, owner_id=owner_id)
+    if not file_obj:
+        raise HTTPException(status_code=404, detail="File not found")
     return ApiResponse(data=service.serialize_file(file_obj))
 
 
@@ -204,6 +206,8 @@ def rename_file(
     owner_id: Annotated[uuid.UUID, Depends(get_current_user_id)], db: Annotated[Session, Depends(get_db)],
 ):
     file_obj = service.rename_file(db, file_id=file_id, owner_id=owner_id, new_name=payload.name)
+    if not file_obj:
+        raise HTTPException(status_code=404, detail="File not found")
     return ApiResponse(message="File renamed", data=service.serialize_file(file_obj))
 
 
@@ -213,6 +217,8 @@ def move_file(
     owner_id: Annotated[uuid.UUID, Depends(get_current_user_id)], db: Annotated[Session, Depends(get_db)],
 ):
     file_obj = service.move_file(db, file_id=file_id, owner_id=owner_id, folder_id=payload.folder_id)
+    if not file_obj:
+        raise HTTPException(status_code=404, detail="File not found")
     return ApiResponse(message="File moved", data=service.serialize_file(file_obj))
 
 
@@ -222,24 +228,32 @@ def set_category(
     owner_id: Annotated[uuid.UUID, Depends(get_current_user_id)], db: Annotated[Session, Depends(get_db)],
 ):
     file_obj = service.set_category(db, file_id=file_id, owner_id=owner_id, category=payload.category)
+    if not file_obj:
+        raise HTTPException(status_code=404, detail="File not found")
     return ApiResponse(message="Category updated", data=service.serialize_file(file_obj))
 
 
 @router.post("/{file_id}/star", response_model=ApiResponse[FileRead], summary="Toggle starred")
 def toggle_star(file_id: Union[str, int], owner_id: Annotated[uuid.UUID, Depends(get_current_user_id)], db: Annotated[Session, Depends(get_db)]):
     file_obj = service.toggle_star(db, file_id=file_id, owner_id=owner_id)
+    if not file_obj:
+        raise HTTPException(status_code=404, detail="File not found")
     return ApiResponse(message="Starred" if file_obj.is_starred else "Unstarred", data=service.serialize_file(file_obj))
 
 
 @router.delete("/{file_id}", response_model=ApiResponse[FileRead], summary="Move a file to Trash")
 def delete_file(file_id: Union[str, int], owner_id: Annotated[uuid.UUID, Depends(get_current_user_id)], db: Annotated[Session, Depends(get_db)]):
     file_obj = service.delete_file(db, file_id=file_id, owner_id=owner_id)
+    if not file_obj:
+        raise HTTPException(status_code=404, detail="File not found")
     return ApiResponse(message="Moved to Trash", data=service.serialize_file(file_obj))
 
 
 @router.post("/{file_id}/restore", response_model=ApiResponse[FileRead], summary="Restore a file out of Trash")
 def restore_file(file_id: Union[str, int], owner_id: Annotated[uuid.UUID, Depends(get_current_user_id)], db: Annotated[Session, Depends(get_db)]):
     file_obj = service.restore_file(db, file_id=file_id, owner_id=owner_id)
+    if not file_obj:
+        raise HTTPException(status_code=404, detail="File not found")
     return ApiResponse(message="File restored", data=service.serialize_file(file_obj))
 
 

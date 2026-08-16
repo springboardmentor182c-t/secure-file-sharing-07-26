@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { clearSession } from "../features/authentication/services/authStorage";
 import {
   LayoutDashboard,
   Folder,
@@ -16,10 +17,16 @@ import {
   Sparkles
 } from "lucide-react";
 
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation,useNavigate } from "react-router-dom";
 
 export default function Sidebar({ users, stats, currentUser }) {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    clearSession();
+    navigate("/login", { replace: true });
+  };
   const [storageData, setStorageData] = useState({ used_bytes: 0, total_bytes: 10 * 1024 * 1024 * 1024, used_percent: 0 });
 
   const fetchStorageStats = () => {
@@ -165,7 +172,7 @@ export default function Sidebar({ users, stats, currentUser }) {
                 </p>
               </div>
             </div>
-            <LogOut size={16} className="text-gray-500 cursor-pointer hover:text-white" />
+            <LogOut size={16} className="text-gray-500 cursor-pointer hover:text-white" onClick={handleLogout} />
           </div>
         </div>
       </div>

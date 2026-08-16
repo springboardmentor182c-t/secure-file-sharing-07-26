@@ -32,6 +32,14 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+
+  optimizeDeps: {
+    esbuildOptions: {
+      loader: {
+        '.js': 'jsx',
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

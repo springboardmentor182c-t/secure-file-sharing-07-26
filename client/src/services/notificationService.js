@@ -1,11 +1,12 @@
-import { getOrCreateCurrentUserId } from "./currentUser";
+import { getStoredUser } from "../features/authentication/services/authStorage";
 
 const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 async function authHeaders() {
-  const userId = await getOrCreateCurrentUserId(API);
+  const user = getStoredUser();
+  const userId = user?.id;
   return {
-    "X-User-Id": userId,
+    ...(userId ? { "X-User-Id": String(userId) } : {}),
     "Content-Type": "application/json",
   };
 }
