@@ -9,37 +9,50 @@ import LoadingBar from "./LoadingBar";
 import KeyboardShortcuts from "./KeyboardShortcuts";
 import FaviconBadge from "./FaviconBadge";
 import NotificationSound from "./NotificationSound";
-import AssistantBubble from '../features/assistant/AssistantBubble';
-import { motion } from "framer-motion";
+import AssistantBubble from "../features/assistant/AssistantBubble";
+import { motion, useReducedMotion } from "framer-motion";
 import "./Layout.css";
 
 const pageVariants = {
-  hidden: { opacity: 0 },
+  hidden: {
+    opacity: 0,
+    y: 10,
+  },
+
   show: {
     opacity: 1,
-    transition: { staggerChildren: 0.08 }
-  }
+    y: 0,
+    transition: {
+      duration: 0.3,
+      ease: "easeOut",
+      when: "beforeChildren",
+      staggerChildren: 0.06,
+    },
+  },
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.3 } }
-};
+export default function Layout({
+  children,
+  unreadCount = 0,
+}) {
+  const shouldReduceMotion = useReducedMotion();
 
-export default function Layout({ children, unreadCount = 0 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     localStorage.getItem("sidebar-collapsed") === "true"
   );
 
   const handleToggleCollapse = (value) => {
     setSidebarCollapsed(value);
-    localStorage.setItem("sidebar-collapsed", value);
+    localStorage.setItem(
+      "sidebar-collapsed",
+      value
+    );
   };
 
   return (
     <div className="app-shell">
-      {/* Global utilities */}
       <LoadingBar />
       <SessionTimeout />
       <KeyboardShortcuts />
@@ -55,26 +68,38 @@ export default function Layout({ children, unreadCount = 0 }) {
       />
 
       <div
-        className={`main-area ${sidebarCollapsed ? "main-area-collapsed" : ""}`}
+        className={`main-area ${
+          sidebarCollapsed
+            ? "main-area-collapsed"
+            : ""
+        }`}
       >
         <Navbar
           unreadCount={unreadCount}
           setSidebarOpen={setSidebarOpen}
           connectionStatus={<ConnectionStatus />}
         />
+
         <PageContainer>
-          <motion.div
-            variants={pageVariants}
-            initial="hidden"
-            animate="show"
-          >
-            {children}
-          </motion.div>
+          {shouldReduceMotion ? (
+            <div className="page-transition">
+              {children}
+            </div>
+          ) : (
+            <motion.div
+              variants={pageVariants}
+              initial="hidden"
+              animate="show"
+              className="page-transition"
+            >
+              {children}
+            </motion.div>
+          )}
         </PageContainer>
       </div>
 
       <ScrollToTopButton />
-      <AssistantBubble /> 
+      <AssistantBubble />
     </div>
   );
 }

@@ -531,3 +531,15 @@ body.dark .my-files-page .my-files-folder > div:first-child > div:nth-child(2) >
   background:#172338!important;
   color:#aab8ca!important;
 }
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton > span {
+    animation: none !important;
+  }
+}

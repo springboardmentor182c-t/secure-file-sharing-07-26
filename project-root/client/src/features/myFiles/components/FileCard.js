@@ -94,18 +94,39 @@ export default function FileCard({ file, onDelete, onDownload, onPointerDragStar
       onDragEnd={() => setIsDragging(false)}
       onPointerDown={handlePointerDown}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div
+        className="flex items-start justify-between gap-3"
+        style={{
+          minWidth: 0,
+        }}
+      >
         <div className="my-files-file-icon inline-flex h-11 w-11 items-center justify-center text-xl">
           {getFileIcon(file)}
         </div>
-        <div className="flex items-center gap-2">
+        <div
+          className="flex items-center gap-2"
+          style={{
+            minWidth: 0,
+            maxWidth: '100%',
+          }}
+        >
           <span
             className="px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] rounded-full"
+            title={category}
             style={{
               backgroundColor: getCategoryStyle(file).bg,
               color: getCategoryStyle(file).text,
               border: `1px solid ${getCategoryStyle(file).border}`,
-              backdropFilter: 'blur(4px)'
+              backdropFilter: 'blur(4px)',
+
+              // Prevent long MIME/category text from escaping the card
+              display: 'block',
+              maxWidth: 'min(260px, 100%)',
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              boxSizing: 'border-box',
             }}
           >
             {category}
@@ -143,9 +164,8 @@ export default function FileCard({ file, onDelete, onDownload, onPointerDragStar
 
       <div className="mt-4 flex items-center justify-between gap-3 text-sm">
         <span
-          className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-medium ${
-            isEncrypted ? 'bg-[#ECFDF5] text-[#166534]' : 'bg-[#F8FAFC] text-[#64748B]'
-          }`}
+          className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-medium ${isEncrypted ? 'bg-[#ECFDF5] text-[#166534]' : 'bg-[#F8FAFC] text-[#64748B]'
+            }`}
         >
           {isEncrypted ? '🔒 Encrypted' : '🔓 Unencrypted'}
         </span>

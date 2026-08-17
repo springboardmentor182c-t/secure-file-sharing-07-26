@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { sharesAPI, filesAPI, sharedWithMeAPI } from '../utils/api';
+import { Link2, Plus } from 'lucide-react';
 import { events, EVENTS } from '../utils/events';
+import { SkeletonTable } from '../components/Skeleton';
 
 export const getShareStatus = (share, now = new Date()) => {
   if (!share.is_active) return 'revoked';
@@ -245,97 +247,182 @@ export default function Sharing() {
       )}
 
       {loading ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}><div className="spinner" /></div>
+        <SkeletonTable rows={5} />
       ) : shares.length === 0 ? (
-        <div className="card text-center" style={{ padding: '56px 24px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{
-            fontSize: '4rem',
-            marginBottom: 20,
-            filter: 'drop-shadow(0 0 24px rgba(79, 70, 229, 0.35))',
-            animation: 'pulse-glow 2.5s ease-in-out infinite'
-          }}>🔗</div>
-          <div style={{ fontWeight: 800, fontSize: '1.375rem', marginBottom: 10 }}>No share links yet</div>
-          <p className="text-secondary text-sm mb-6" style={{ maxWidth: 380, margin: '0 auto 24px' }}>
-            Create a share link to send files securely to anyone, with optional passwords and expiry dates.
-          </p>
-          <button
-            className="btn btn-primary"
-            style={{ padding: '10px 24px', fontSize: '.9375rem', fontWeight: 700, boxShadow: '0 4px 14px rgba(79, 70, 229, 0.35)' }}
-            onClick={() => setShowCreate(true)}
+        <div
+          className="card"
+          style={{
+            padding: '64px 24px',
+            textAlign: 'center',
+            position: 'relative',
+            overflow: 'hidden',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
+          {/* Background glow */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              width: 240,
+              height: 240,
+              borderRadius: '50%',
+              background: 'rgba(99, 102, 241, 0.09)',
+              filter: 'blur(50px)',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -60%)',
+              pointerEvents: 'none',
+            }}
+          />
+
+          {/* Illustration */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'relative',
+              width: 88,
+              height: 88,
+              margin: '0 auto 24px',
+              borderRadius: 24,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(99, 102, 241, 0.10)',
+              border: '1px solid rgba(99, 102, 241, 0.22)',
+              boxShadow: '0 0 42px rgba(99, 102, 241, 0.16)',
+            }}
           >
-            + Create First Link
-          </button>
+            <Link2
+              size={42}
+              strokeWidth={1.7}
+              style={{ color: '#818cf8' }}
+            />
+          </div>
+
+          {/* Heading */}
+          <h2
+            style={{
+              position: 'relative',
+              fontSize: '1.25rem',
+              fontWeight: 750,
+              marginBottom: 10,
+            }}
+          >
+            No sharing links yet
+          </h2>
+
+          {/* Description */}
+          <p
+            className="text-secondary"
+            style={{
+              position: 'relative',
+              maxWidth: 460,
+              margin: '0 auto',
+              lineHeight: 1.6,
+              fontSize: '.9375rem',
+            }}
+          >
+            Create a secure link to share your files with others.
+            You can optionally add password protection, expiration
+            dates, and view limits.
+          </p>
+
+          {/* CTA */}
+          <div
+            style={{
+              position: 'relative',
+              marginTop: 24,
+            }}
+          >
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowCreate(true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: '10px 20px',
+                fontWeight: 700,
+                boxShadow: '0 4px 18px rgba(79, 70, 229, 0.30)',
+              }}
+            >
+              <Plus size={18} />
+              Create First Link
+            </button>
+          </div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {shares.map(s => {
             const shareStatus = getShareStatus(s);
             return (
-            <div key={s.id} className="card" style={{ padding: '18px 20px', opacity: shareStatus === 'active' ? 1 : .6, borderColor: 'var(--border-subtle)' }}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(59,130,246,.1)', color: 'var(--blue-400)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>
-                    {permIcon[s.permission]}
-                  </div>
-                  <div>
-                    {(() => {
-                      const sharedFile = files.find(f => f.id === s.file_id);
-                      const style = getCategoryStyle(sharedFile);
-                      return sharedFile ? (
-                        <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
-                          <span
-                            style={{
-                              padding: '2px 10px',
-                              fontSize: '.6875rem',
-                              fontWeight: 700,
-                              textTransform: 'uppercase',
-                              letterSpacing: '.05em',
-                              borderRadius: 999,
-                              backgroundColor: style.bg,
-                              color: style.text,
-                              border: `1px solid ${style.border}`,
-                              backdropFilter: 'blur(4px)'
-                            }}
-                          >
-                            {sharedFile.original_name.split('.').pop()?.toUpperCase() || 'FILE'}
-                          </span>
-                          <span style={{ fontWeight: 600, fontSize: '.875rem' }}>{sharedFile.original_name}</span>
-                        </div>
-                      ) : null;
-                    })()}
-                    <div style={{ fontFamily: 'monospace', fontSize: '.875rem', color: 'var(--text-secondary)', marginBottom: 4 }}>
-                      {s.link}
-                    </div>       
-                    <div className="flex gap-2 items-center">
-                      <span className={`badge ${permBadge[s.permission]}`}>{s.permission}</span>
-                      {shareStatus === 'revoked' && <span className="badge badge-rose">Revoked</span>}
-                      {shareStatus === 'expired' && <span className="badge badge-amber">Expired</span>}
-                      {shareStatus === 'limit-reached' && <span className="badge badge-amber">View limit reached</span>}
-                      <span className="text-xs text-muted">
-                        👁 {s.access_count}{s.max_views ? `/${s.max_views}` : ''} views
-                      </span>
-                      {s.expires_at && (
-                        <span className="text-xs text-muted">⏱ Expires {new Date(s.expires_at).toLocaleDateString()}</span>
-                      )}
-                      {s.password_hash !== undefined && s.password_hash === null ? null : (
-                        <span className="badge badge-amber" style={{ fontSize: '.625rem' }}>🔒 Password</span>
-                      )}
+              <div key={s.id} className="card" style={{ padding: '18px 20px', opacity: shareStatus === 'active' ? 1 : .6, borderColor: 'var(--border-subtle)' }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(59,130,246,.1)', color: 'var(--blue-400)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>
+                      {permIcon[s.permission]}
+                    </div>
+                    <div>
+                      {(() => {
+                        const sharedFile = files.find(f => f.id === s.file_id);
+                        const style = getCategoryStyle(sharedFile);
+                        return sharedFile ? (
+                          <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
+                            <span
+                              style={{
+                                padding: '2px 10px',
+                                fontSize: '.6875rem',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '.05em',
+                                borderRadius: 999,
+                                backgroundColor: style.bg,
+                                color: style.text,
+                                border: `1px solid ${style.border}`,
+                                backdropFilter: 'blur(4px)'
+                              }}
+                            >
+                              {sharedFile.original_name.split('.').pop()?.toUpperCase() || 'FILE'}
+                            </span>
+                            <span style={{ fontWeight: 600, fontSize: '.875rem' }}>{sharedFile.original_name}</span>
+                          </div>
+                        ) : null;
+                      })()}
+                      <div style={{ fontFamily: 'monospace', fontSize: '.875rem', color: 'var(--text-secondary)', marginBottom: 4 }}>
+                        {s.link}
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        <span className={`badge ${permBadge[s.permission]}`}>{s.permission}</span>
+                        {shareStatus === 'revoked' && <span className="badge badge-rose">Revoked</span>}
+                        {shareStatus === 'expired' && <span className="badge badge-amber">Expired</span>}
+                        {shareStatus === 'limit-reached' && <span className="badge badge-amber">View limit reached</span>}
+                        <span className="text-xs text-muted">
+                          👁 {s.access_count}{s.max_views ? `/${s.max_views}` : ''} views
+                        </span>
+                        {s.expires_at && (
+                          <span className="text-xs text-muted">⏱ Expires {new Date(s.expires_at).toLocaleDateString()}</span>
+                        )}
+                        {s.password_hash !== undefined && s.password_hash === null ? null : (
+                          <span className="badge badge-amber" style={{ fontSize: '.625rem' }}>🔒 Password</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    className={`btn btn-sm ${copied === s.id ? 'btn-success' : 'btn-secondary'}`}
-                    onClick={() => copyLink(s.link, s.id)}
-                  >
-                    {copied === s.id ? '✅ Copied!' : '📋 Copy Link'}
-                  </button>
-                  {shareStatus === 'active' && (
-                    <button className="btn btn-danger btn-sm" onClick={() => handleRevoke(s.id)}>🚫 Revoke</button>
-                  )}
+                  <div className="flex gap-2">
+                    <button
+                      className={`btn btn-sm ${copied === s.id ? 'btn-success' : 'btn-secondary'}`}
+                      onClick={() => copyLink(s.link, s.id)}
+                    >
+                      {copied === s.id ? '✅ Copied!' : '📋 Copy Link'}
+                    </button>
+                    {shareStatus === 'active' && (
+                      <button className="btn btn-danger btn-sm" onClick={() => handleRevoke(s.id)}>🚫 Revoke</button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
             );
           })}
         </div>
