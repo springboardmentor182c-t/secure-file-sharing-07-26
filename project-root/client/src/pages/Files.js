@@ -2,14 +2,16 @@ import React, { useEffect, useState, useRef } from 'react';
 import { filesAPI, foldersAPI } from '../utils/api';
 import { events, EVENTS } from '../utils/events';
 import FileSummaryPanel from '../features/fileSummary/components/FileSummaryPanel';
-
+import { SkeletonTable } from '../components/Skeleton';
+import MotionItem from '../components/MotionItem';
+import { UploadCloud, SearchX, FileText } from 'lucide-react';
 
 const FILE_ICON = (mime = '') => {
   if (mime.startsWith('image/')) return { icon: '🖼️', color: '#8b5cf6' };
   if (mime.startsWith('video/')) return { icon: '🎬', color: '#ec4899' };
   if (mime.startsWith('audio/')) return { icon: '🎵', color: '#06b6d4' };
-  if (mime.includes('pdf'))      return { icon: '📕', color: '#ef4444' };
-  if (mime.includes('zip'))      return { icon: '📦', color: '#f59e0b' };
+  if (mime.includes('pdf')) return { icon: '📕', color: '#ef4444' };
+  if (mime.includes('zip')) return { icon: '📦', color: '#f59e0b' };
   if (mime.includes('spreadsheet') || mime.includes('excel')) return { icon: '📊', color: '#10b981' };
   return { icon: '📄', color: '#3b82f6' };
 };
@@ -88,7 +90,7 @@ export default function Files() {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Move this file to trash?')) return;
-    try { await filesAPI.delete(id); showToast('File deleted');  events.emit(EVENTS.STORAGE_CHANGED); load(); }
+    try { await filesAPI.delete(id); showToast('File deleted'); events.emit(EVENTS.STORAGE_CHANGED); load(); }
     catch { showToast('Delete failed', 'error'); }
   };
 
@@ -219,7 +221,7 @@ export default function Files() {
       )}
 
       {loading ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}><div className="spinner" /></div>
+        <SkeletonTable rows={6} />
       ) : (
         <>
           {/* Folders */}
@@ -228,15 +230,17 @@ export default function Files() {
               <div style={{ fontSize: '.8125rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 10 }}>FOLDERS</div>
               <div className="grid-4" style={{ gap: 10 }}>
                 {folders.map(fo => (
-                    <div key={fo.id} className="card flex items-center gap-3" style={{ padding: '12px 14px', cursor: 'pointer' }} onClick={() => openFolder(fo)} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && openFolder(fo)}>
-                    <span style={{ fontSize: '1.5rem' }}>📁</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="truncate" style={{ fontWeight: 600, fontSize: '.9375rem' }}>{fo.name}</div>
-                      <div className="text-xs text-muted">Folder</div>
+                  <MotionItem key={fo.id}>
+                    <div className="card flex items-center gap-3" style={{ padding: '12px 14px', cursor: 'pointer' }} onClick={() => openFolder(fo)} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && openFolder(fo)}>
+                      <span style={{ fontSize: '1.5rem' }}>📁</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="truncate" style={{ fontWeight: 600, fontSize: '.9375rem' }}>{fo.name}</div>
+                        <div className="text-xs text-muted">Folder</div>
+                      </div>
+                      <button className="btn btn-ghost btn-icon" style={{ opacity: .5, fontSize: '.8125rem' }}
+                        onClick={e => { e.stopPropagation(); handleDeleteFolder(fo); }}>🗑️</button>
                     </div>
-                    <button className="btn btn-ghost btn-icon" style={{ opacity: .5, fontSize: '.8125rem' }}
-                      onClick={e => { e.stopPropagation(); handleDeleteFolder(fo); }}>🗑️</button>
-                  </div>
+                  </MotionItem>
                 ))}
               </div>
             </div>
@@ -249,11 +253,120 @@ export default function Files() {
             </div>
 
             {filtered.length === 0 ? (
-              <div className="card text-center" style={{ padding: '48px 24px' }}>
-                <div style={{ fontSize: '3.5rem', marginBottom: 16 }}>📂</div>
-                <div style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 8 }}>{search ? 'No files match' : 'No files yet'}</div>
-                <p className="text-secondary text-sm mb-4">Upload your first file to get started</p>
-                <button className="btn btn-primary btn-sm" onClick={() => setShowUpload(true)}>⬆️ Upload File</button>
+              <div
+                className="card"
+                style={{
+                  padding: '64px 24px',
+                  textAlign: 'center',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
+                {/* Background glow */}
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    width: 220,
+                    height: 220,
+                    borderRadius: '50%',
+                    background: 'rgba(59, 130, 246, 0.08)',
+                    filter: 'blur(45px)',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -60%)',
+                    pointerEvents: 'none',
+                  }}
+                />
+
+                {/* Icon */}
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: 'relative',
+                    width: 88,
+                    height: 88,
+                    margin: '0 auto 24px',
+                    borderRadius: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(59, 130, 246, 0.10)',
+                    border: '1px solid rgba(59, 130, 246, 0.20)',
+                    boxShadow: '0 0 40px rgba(59, 130, 246, 0.14)',
+                  }}
+                >
+                  {search ? (
+                    <SearchX
+                      size={42}
+                      strokeWidth={1.7}
+                      style={{ color: '#60a5fa' }}
+                    />
+                  ) : (
+                    <FileText
+                      size={42}
+                      strokeWidth={1.7}
+                      style={{ color: '#60a5fa' }}
+                    />
+                  )}
+                </div>
+
+                {/* Title */}
+                <h3
+                  style={{
+                    position: 'relative',
+                    fontSize: '1.25rem',
+                    fontWeight: 750,
+                    marginBottom: 10,
+                  }}
+                >
+                  {search ? 'No files found' : 'No files yet'}
+                </h3>
+
+                {/* Description */}
+                <p
+                  className="text-secondary"
+                  style={{
+                    position: 'relative',
+                    maxWidth: 440,
+                    margin: '0 auto',
+                    lineHeight: 1.6,
+                    fontSize: '.9375rem',
+                  }}
+                >
+                  {search
+                    ? `We couldn't find any files matching "${search}". Try a different search term.`
+                    : 'Upload your first file to securely store, manage, and share your documents.'}
+                </p>
+
+                {/* Primary CTA */}
+                <div
+                  style={{
+                    position: 'relative',
+                    marginTop: 24,
+                  }}
+                >
+                  {search ? (
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => setSearch('')}
+                    >
+                      Clear Search
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setShowUpload(true)}
+                    >
+                      <UploadCloud
+                        size={18}
+                        style={{ marginRight: 8 }}
+                      />
+                      Upload First File
+                    </button>
+                  )}
+                </div>
               </div>
             ) : viewMode === 'list' ? (
               <div className="card" style={{ overflow: 'hidden' }}>
@@ -263,50 +376,70 @@ export default function Files() {
                 </div>
                 {filtered.map(f => {
                   const { icon, color } = FILE_ICON(f.mimetype);
+
                   return (
-                    <div key={f.id} className="file-item"
-                    
-                      style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px 120px', padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)', borderRadius: 0 }}
-                      onClick={() => setSelected(selected?.id === f.id ? null : f)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="file-icon" style={{ background: `${color}15`, color, width: 36, height: 36, fontSize: '1.125rem' }}>{icon}</div>
-                        <div>
-                          <div className="file-name" style={{ maxWidth: 260 }}>{f.original_name}</div>
-                          {f.encrypted && <span className="badge badge-emerald" style={{ fontSize: '.625rem', padding: '1px 6px' }}>🔐 Encrypted</span>}
+                    <MotionItem key={f.id}>
+                      <div className="file-item"
+
+                        style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px 120px', padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)', borderRadius: 0 }}
+                        onClick={() => setSelected(selected?.id === f.id ? null : f)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="file-icon" style={{ background: `${color}15`, color, width: 36, height: 36, fontSize: '1.125rem' }}>{icon}</div>
+                          <div>
+                            <div className="file-name" style={{ maxWidth: 260 }}>{f.original_name}</div>
+                            {f.encrypted && <span className="badge badge-emerald" style={{ fontSize: '.625rem', padding: '1px 6px' }}>🔐 Encrypted</span>}
+                          </div>
+                        </div>
+                        <span className="text-muted text-sm" style={{ alignSelf: 'center' }}>{fmt(f.size)}</span>
+                        <span className="text-muted text-xs" style={{ alignSelf: 'center' }}>{f.mimetype?.split('/')[1]?.toUpperCase() || 'FILE'}</span>
+                        <div className="file-actions" style={{ opacity: 1, alignSelf: 'center' }}>
+                          <button className="btn btn-ghost btn-icon btn-sm" title="Generate AI Summary" aria-label={`Generate AI summary for ${f.original_name}`} onClick={e => { e.stopPropagation(); setSummaryFile(f); }}>✨</button>
+                          <button className="btn btn-ghost btn-icon btn-sm" title="Download" onClick={e => { e.stopPropagation(); handleDownload(f); }}>⬇️</button>
+                          <button className="btn btn-ghost btn-icon btn-sm" title="Delete" onClick={e => { e.stopPropagation(); handleDelete(f.id); }}>🗑️</button>
                         </div>
                       </div>
-                      <span className="text-muted text-sm" style={{ alignSelf: 'center' }}>{fmt(f.size)}</span>
-                      <span className="text-muted text-xs" style={{ alignSelf: 'center' }}>{f.mimetype?.split('/')[1]?.toUpperCase() || 'FILE'}</span>
-                      <div className="file-actions" style={{ opacity: 1, alignSelf: 'center' }}>
-                        <button className="btn btn-ghost btn-icon btn-sm" title="Generate AI Summary" aria-label={`Generate AI summary for ${f.original_name}`} onClick={e => { e.stopPropagation(); setSummaryFile(f); }}>✨</button>
-                        <button className="btn btn-ghost btn-icon btn-sm" title="Download" onClick={e => { e.stopPropagation(); handleDownload(f); }}>⬇️</button>
-                        <button className="btn btn-ghost btn-icon btn-sm" title="Delete" onClick={e => { e.stopPropagation(); handleDelete(f.id); }}>🗑️</button>
-                      </div>
-                    </div>
+                    </MotionItem>
                   );
                 })}
               </div>
             ) : (
-              <div className="grid-4" style={{ gap: 14 }}>
+              <div
+                className="grid-4"
+                style={{
+                  gap: 14,
+                  minWidth: 0,
+                }}
+              >
                 {filtered.map(f => {
                   const { icon, color } = FILE_ICON(f.mimetype);
                   return (
-                    <div key={f.id} className="card card-pad" style={{ cursor: 'pointer', textAlign: 'center' }}>
-                      <div style={{ width: 52, height: 52, borderRadius: 12, background: `${color}15`, color, fontSize: '1.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>{icon}</div>
-                      <div className="truncate font-semibold text-sm mb-1">{f.original_name}</div>
-                      <div className="text-xs text-muted mb-3">{fmt(f.size)}</div>
-                      {f.encrypted && <span className="badge badge-emerald" style={{ fontSize: '.625rem' }}>🔐</span>}
-                      <div className="flex gap-1 justify-center mt-3">
-                        <button className="btn btn-ghost btn-icon btn-sm" title="Generate AI Summary" aria-label={`Generate AI summary for ${f.original_name}`} onClick={() => setSummaryFile(f)}>✨</button>
-                        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDownload(f)}>⬇️</button>
-                        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(f.id)}>🗑️</button>
+                    <MotionItem key={f.id}>
+                      <div
+                        className="card card-pad"
+                        style={{
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          minWidth: 0,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <div style={{ width: 52, height: 52, borderRadius: 12, background: `${color}15`, color, fontSize: '1.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>{icon}</div>
+                        <div className="truncate font-semibold text-sm mb-1">{f.original_name}</div>
+                        <div className="text-xs text-muted mb-3">{fmt(f.size)}</div>
+                        {f.encrypted && <span className="badge badge-emerald" style={{ fontSize: '.625rem' }}>🔐</span>}
+                        <div className="flex gap-1 justify-center mt-3">
+                          <button className="btn btn-ghost btn-icon btn-sm" title="Generate AI Summary" aria-label={`Generate AI summary for ${f.original_name}`} onClick={() => setSummaryFile(f)}>✨</button>
+                          <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDownload(f)}>⬇️</button>
+                          <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(f.id)}>🗑️</button>
+                        </div>
                       </div>
-                    </div>
+                    </MotionItem>
                   );
                 })}
               </div>
-            )}
+            )
+            }
           </div>
         </>
       )}
