@@ -1,4 +1,5 @@
-FROM node:20-alpine
+# ── Stage 1: Build React application ──────────────────────────────────────
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -7,6 +8,18 @@ RUN npm ci --legacy-peer-deps
 
 COPY . .
 
-EXPOSE 3000
+# Build production bundle
+RUN npm run build
 
-CMD ["npm", "start"]
+# ── Stage 2: Serve with nginx ──────────────────────────────────────────────
+FROM nginx:alpine
+
+# Copy built files to nginx
+COPY --from=builder /app/build /usr/share/nginx/html
+
+# Copy nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
