@@ -43,20 +43,21 @@ from src.entities.issue import Issue  # noqa: F401
 from src.entities.file import File  # noqa: F401
 from src.entities.user import User  # noqa: F401
 from src.entities.system_health import SystemHealth  # noqa: F401
-from src.entities.role import Role  # noqa: F401
-from src.entities.user_profile import UserProfile  # noqa: F401
-from src.entities.email_verification import EmailVerificationToken  # noqa: F401
-from src.entities.mfa import MFACode  # noqa: F401
-from src.entities.session import UserSession  # noqa: F401
-from src.entities.password_reset import PasswordResetToken  # noqa: F401
+from src.entities.system_health import SystemHealth
+from src.entities.role import Role
 
 # Load environment variables
 load_dotenv()
 
-# Frontend URL
+# Frontend URLs
 FRONTEND_URL = os.getenv(
     "FRONTEND_URL",
     "http://localhost:3000"
+)
+
+FRONTEND_URL_ALT = os.getenv(
+    "FRONTEND_URL_ALT",
+    "http://localhost:5173"
 )
 
 # FastAPI application
@@ -65,11 +66,12 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS middleware
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         FRONTEND_URL,
+        FRONTEND_URL_ALT,
         "http://localhost:3000",
         "http://localhost:3001",
         "http://localhost:3002",
@@ -83,7 +85,7 @@ app.add_middleware(
 )
 
 
-# Home endpoint
+# Root endpoint
 @app.get("/")
 def root():
     return {
@@ -211,7 +213,7 @@ app.include_router(analytics_router)
 app.include_router(notification_router)
 
 # Users
-# app.include_router(user_router)
+app.include_router(user_router)
 
 # File Management
 app.include_router(todos_router)

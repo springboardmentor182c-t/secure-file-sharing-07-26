@@ -3,13 +3,13 @@ import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import "../assets/global.css";
 
-const PageContainer = ({ children }) => {
+const PageContainer = ({ children ,title}) => {
   return (
     <div className="layout">
       <Sidebar />
 
       <div className="mainSection">
-        <Navbar />
+        <Navbar title={title} />
 
         <div className="pageContainer">
           {children}

@@ -1,14 +1,9 @@
 import React from "react";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import PageContainer from "./layout/PageContainer";
 
-// Authentication Pages
+// Pages
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -18,9 +13,7 @@ import EmailVerification from "./pages/EmailVerification";
 import TwoFactorAuth from "./pages/TwoFactorAuth";
 import SessionExpired from "./pages/SessionExpired";
 
-// Main Pages
 import Home from "./pages/Home";
-import AdminHome from "./pages/AdminHome";
 import Settings from "./pages/Settings";
 import Securesharing from "./pages/Securesharing";
 import Security from "./pages/Security";
@@ -29,10 +22,8 @@ import Files from "./pages/Files";
 import Users from "./pages/Users";
 import Activity from "./pages/Activity";
 import Storage from "./pages/Storage";
-import ActivityMonitorPage from "./pages/ActivityMonitorPage";
 
 // Features
-import Dashboard from "./features/dashboard/Dashboard";
 import NotificationFeature from "./features/notifications/NotificationFeature";
 import Analytics from "./features/analytics/Analytics";
 
@@ -48,84 +39,40 @@ import AdminDashboard from "./pages/AdminDashboard";
 import FileManagementPage from "./filemanagement/FileManagementPage";
 import FileDetailsPage from "./filemanagement/FileDetailsPage";
 
-// File Management CSS
-import "./assets/css/layout.css";
-import "./assets/css/sidebar.css";
-import "./assets/css/header.css";
-import "./assets/css/folders.css";
-import "./assets/css/table.css";
-import "./assets/css/fileDetails.css";
-import "./assets/css/responsive.css";
-
 function App() {
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* Default */}
-        <Route
-          path="/"
-          element={<Navigate to="/login" replace />}
-        />
+        {/* Authentication Routes */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* Authentication */}
-        <Route
-          path="/login"
-          element={<Login />}
-        />
-
-        <Route
-          path="/signup"
-          element={<Signup />}
-        />
-
-        <Route
-          path="/forgot-password"
-          element={<ForgotPassword />}
-        />
-
-        <Route
-          path="/reset-password"
-          element={<ResetPassword />}
-        />
-
-        <Route
-          path="/otp-verification"
-          element={<OTPVerification />}
-        />
-
-        <Route
-          path="/email-verification"
-          element={<EmailVerification />}
-        />
-
-        <Route
-          path="/two-factor"
-          element={<TwoFactorAuth />}
-        />
-
-        <Route
-          path="/session-expired"
-          element={<SessionExpired />}
-        />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/otp-verification" element={<OTPVerification />} />
+        <Route path="/email-verification" element={<EmailVerification />} />
+        <Route path="/two-factor-auth" element={<TwoFactorAuth />} />
+        <Route path="/session-expired" element={<SessionExpired />} />
 
         {/* Home */}
         <Route
           path="/home"
           element={
-            <ProtectedRoute>
+            <PageContainer title="Home">
               <Home />
-            </ProtectedRoute>
+            </PageContainer>
           }
         />
 
-        {/* Dashboard */}
+        {/* Admin Dashboard */}
         <Route
-          path="/dashboard"
+          path="/admin"
           element={
             <ProtectedRoute>
-              <PageContainer>
-                <Dashboard />
+              <PageContainer title="Dashboard">
+                <AdminDashboard />
               </PageContainer>
             </ProtectedRoute>
           }
@@ -160,7 +107,7 @@ function App() {
           path="/settings"
           element={
             <ProtectedRoute>
-              <PageContainer>
+              <PageContainer title="Settings">
                 <Settings />
               </PageContainer>
             </ProtectedRoute>
@@ -172,20 +119,8 @@ function App() {
           path="/notifications"
           element={
             <ProtectedRoute>
-              <PageContainer>
+              <PageContainer title="Notifications">
                 <NotificationFeature />
-              </PageContainer>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Activity */}
-        <Route
-          path="/activity"
-          element={
-            <ProtectedRoute>
-              <PageContainer>
-                <ActivityMonitorPage />
               </PageContainer>
             </ProtectedRoute>
           }
@@ -207,17 +142,69 @@ function App() {
         <Route
           path="/upload"
           element={
-            <ProtectedRoute>
-              <PageContainer>
-                <Upload />
-              </PageContainer>
-            </ProtectedRoute>
+            <PageContainer title="Upload Files">
+              <Upload />
+            </PageContainer>
           }
         />
 
         {/* Files */}
         <Route
           path="/files"
+          element={
+            <ProtectedRoute>
+              <PageContainer>
+                <Files />
+              </PageContainer>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Users */}
+        <Route
+          path="/users"
+          element={
+            <PageContainer title="Users">
+              <Users />
+            </PageContainer>
+          }
+        />
+
+        {/* Activity */}
+        <Route
+          path="/activity"
+          element={
+            <PageContainer title="Activity">
+              <Activity />
+            </PageContainer>
+          }
+        />
+
+        {/* Storage */}
+        <Route
+          path="/storage"
+          element={
+            <PageContainer title="Storage">
+              <Storage />
+            </PageContainer>
+          }
+        />
+
+        {/* Profile */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <PageContainer title="Profile">
+                <Profile />
+              </PageContainer>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* File Management */}
+        <Route
+          path="/file-management"
           element={
             <ProtectedRoute>
               <PageContainer>
@@ -229,7 +216,7 @@ function App() {
 
         {/* File Details */}
         <Route
-          path="/file-details"
+          path="/file-management/:id"
           element={
             <ProtectedRoute>
               <PageContainer>
@@ -239,69 +226,8 @@ function App() {
           }
         />
 
-        {/* USERS */}
-        <Route
-          path="/users"
-          element={
-            <ProtectedRoute>
-              <PageContainer>
-                <Users />
-              </PageContainer>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Storage */}
-        <Route
-          path="/storage"
-          element={
-            <ProtectedRoute>
-              <PageContainer>
-                <Storage />
-              </PageContainer>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Admin Home */}
-        <Route
-          path="/admin"
-          element={
-            <PageContainer>
-              <Dashboard />
-            </PageContainer>
-          }
-        />
-
-        {/* Admin Dashboard */}
-        <Route
-          path="/admin-dashboard"
-          element={
-            <AdminRoute>
-              <PageContainer>
-                <AdminDashboard />
-              </PageContainer>
-            </AdminRoute>
-          }
-        />
-
-        {/* Profile */}
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <PageContainer>
-                <Profile />
-              </PageContainer>
-            </ProtectedRoute>
-          }
-        />
-
         {/* Invalid Route */}
-        <Route
-          path="*"
-          element={<Navigate to="/login" replace />}
-        />
+        <Route path="*" element={<Navigate to="/login" replace />} />
 
       </Routes>
     </BrowserRouter>

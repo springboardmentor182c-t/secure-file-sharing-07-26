@@ -1,106 +1,48 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-
+import React from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
-const Navbar = () => {
+const Navbar = ({ title = "Dashboard" }) => {
+  return (
+    <div className="navbar">
 
-    const [user, setUser] = useState({
-        username: "",
-        role: ""
-    });
+      <div className="navbar-title">
+        <h2>{title}</h2>
+      </div>
 
-    useEffect(() => {
+      <div className="navbar-right">
 
-        const fetchUser = async () => {
-
-            try {
-
-                const token = localStorage.getItem("access_token");
-
-                const response = await axios.get(
-                    `${process.env.REACT_APP_API_URL}/auth/me`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
-                    }
-                );
-
-                setUser(response.data);
-
-            }
-            catch (error) {
-
-                console.error("Failed to fetch user:", error);
-
-            }
-
-        };
-
-        fetchUser();
-
-    }, []);
-
-    return (
-
-        <div className="navbar">
-
-            <div className="navbar-right">
-
-                <div className="search-box">
-
-                    <SearchIcon />
-
-                    <input
-                        type="text"
-                        placeholder="Search files, users..."
-                    />
-
-                </div>
-
-                <div className="notification">
-
-                    <NotificationsNoneIcon />
-
-                    <span>3</span>
-
-                </div>
-
-                <div className="profile">
-
-                    <div className="avatar">
-
-                        {user.username
-                            ? user.username.substring(0, 2).toUpperCase()
-                            : ""}
-
-                    </div>
-
-                    <div className="profile-info">
-
-                        <h4>
-                            {user.username}
-                        </h4>
-
-                        <p>
-                            {user.role}
-                        </p>
-
-                    </div>
-
-                    <KeyboardArrowDownIcon />
-
-                </div>
-
-            </div>
-
+        <div className="search-box">
+          <SearchIcon />
+          <input
+            type="text"
+            placeholder="Search files, users..."
+          />
         </div>
 
-    );
+        <div className="notification">
+          <NotificationsNoneIcon />
+          <span>3</span>
+        </div>
 
+        <div className="profile">
+          <div className="avatar">
+            SM
+          </div>
+
+          <div className="profile-info">
+            <h4>Sarah Mitchell</h4>
+            <p>Administrator</p>
+          </div>
+
+          <KeyboardArrowDownIcon />
+        </div>
+
+      </div>
+
+    </div>
+  );
 };
 
 export default Navbar;
