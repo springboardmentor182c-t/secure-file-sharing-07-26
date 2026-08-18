@@ -15,6 +15,7 @@ import {
     Cloud,
     HardDrive,
     Sparkles,
+    RefreshCw,
 } from 'lucide-react';
 import { assistantAPI } from './services/assistantAPI';
 
@@ -47,6 +48,9 @@ const AssistantAdminSetup = ({ onDone }) => {
     const [availableModels, setAvailableModels] = useState([]);
 
     const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
+    const [refreshingModels, setRefreshingModels] = useState(false);
+    const [modelsSource, setModelsSource] = useState(null);
+    const [modelsError, setModelsError] = useState(null);
     const dropdownRef = useRef(null);
 
     useEffect(() => {
@@ -118,20 +122,37 @@ const AssistantAdminSetup = ({ onDone }) => {
         }
     };
 
-    const loadModelsForProvider = async (provider) => {
+    const loadModelsForProvider = async (provider, forceRefresh = false) => {
+        if (forceRefresh) setRefreshingModels(true);
         try {
-            const { data } = await assistantAPI.admin.getModelsForProvider(provider);
-            setAvailableModels(data || []);
+            const { data } = await assistantAPI.admin.getModelsForProvider(
+                provider,
+                { live: true, refresh: forceRefresh }
+            );
 
-            if (data && data.length > 0) {
-                const modelExists = data.some((m) => m.value === model);
+            // Backend now returns {models, source, fetched_at, error?}
+            // Also handle old array-only response format for safety
+            const modelsList = Array.isArray(data) ? data : (data?.models || []);
+            const source = Array.isArray(data) ? 'db_fallback' : (data?.source || 'db_fallback');
+            const errorMsg = Array.isArray(data) ? null : (data?.error || null);
+
+            setAvailableModels(modelsList);
+            setModelsSource(source);
+            setModelsError(errorMsg);
+
+            if (modelsList.length > 0) {
+                const modelExists = modelsList.some((m) => m.value === model);
                 if (!modelExists) {
-                    setModel(data[0].value);
+                    setModel(modelsList[0].value);
                 }
             }
         } catch (err) {
             console.warn('Failed to load models:', err);
             setAvailableModels([]);
+            setModelsSource('error');
+            setModelsError(err?.message || 'Failed to load models');
+        } finally {
+            if (forceRefresh) setRefreshingModels(false);
         }
     };
 
@@ -403,17 +424,68 @@ const AssistantAdminSetup = ({ onDone }) => {
                     {/* RIGHT COLUMN: Model Selection */}
                     <div className="asst-admin-column">
                         <div className="asst-admin-field" style={{ marginBottom: 0 }}>
-                            <label className="asst-admin-label">
+                            <label className="asst-admin-label" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                                 <Cpu size={14} />
                                 Model
                                 <span style={{
                                     fontSize: 11,
                                     fontWeight: 500,
                                     color: 'var(--asst-text-muted)',
-                                    marginLeft: 4,
                                 }}>
                                     ({availableModels.length} available)
                                 </span>
+
+                                {modelsSource === 'live' && (
+                                    <span
+                                        title="Live from provider API"
+                                        style={{
+                                            fontSize: 10, padding: '2px 6px', borderRadius: 4,
+                                            background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontWeight: 600,
+                                        }}
+                                    >LIVE</span>
+                                )}
+                                {modelsSource === 'cache' && (
+                                    <span
+                                        title="Cached (updates hourly)"
+                                        style={{
+                                            fontSize: 10, padding: '2px 6px', borderRadius: 4,
+                                            background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', fontWeight: 600,
+                                        }}
+                                    >CACHED</span>
+                                )}
+                                {modelsSource === 'db_fallback' && (
+                                    <span
+                                        title={modelsError || 'Saved list (live fetch unavailable)'}
+                                        style={{
+                                            fontSize: 10, padding: '2px 6px', borderRadius: 4,
+                                            background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', fontWeight: 600,
+                                        }}
+                                    >SAVED</span>
+                                )}
+
+                                <button
+                                    type="button"
+                                    onClick={() => loadModelsForProvider(selectedProvider, true)}
+                                    disabled={refreshingModels}
+                                    style={{
+                                        marginLeft: 'auto',
+                                        background: 'transparent',
+                                        border: '1px solid var(--asst-border)',
+                                        borderRadius: 6,
+                                        padding: '3px 8px',
+                                        fontSize: 11,
+                                        color: 'var(--asst-text-secondary)',
+                                        cursor: refreshingModels ? 'not-allowed' : 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 4,
+                                        opacity: refreshingModels ? 0.5 : 1,
+                                    }}
+                                    title="Fetch latest models from provider"
+                                >
+                                    <RefreshCw size={11} className={refreshingModels ? 'animate-spin' : ''} />
+                                    Refresh
+                                </button>
                             </label>
 
                             <div className="asst-model-dropdown" ref={dropdownRef}>

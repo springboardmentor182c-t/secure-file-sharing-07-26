@@ -11,6 +11,7 @@ from typing import Optional
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from datetime import datetime, timedelta
 
 from src.auth.dependencies import require_admin
 from src.database.core import get_db
@@ -18,6 +19,7 @@ from src.entities.user import User
 
 from src.assistant import config_service
 from src.assistant.encryption_helper import decrypt_config_value
+from datetime import datetime, timedelta, timezone
 from src.assistant.models import (
     BulkUpdateConfigsRequest,
     ConfigCategoryOut,
@@ -30,6 +32,141 @@ from src.assistant.models import (
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# ── Live Model Fetcher (all providers, cached 1hr, safe fallback) ─────────
+_live_models_cache: dict = {}
+_LIVE_MODELS_CACHE_TTL_SECONDS = 3600  # 1 hour
+
+
+def _fetch_groq_models(base_url: str, api_key: Optional[str], timeout: int) -> list[dict]:
+    """Fetch and filter Groq models. Only text-chat models supporting tools."""
+    if not api_key:
+        raise ValueError("Groq requires an API key")
+
+    url = f"{base_url.rstrip('/')}/models"
+    headers = {"Authorization": f"Bearer {api_key}", "Accept": "application/json"}
+    response = httpx.get(url, headers=headers, timeout=timeout)
+    response.raise_for_status()
+
+    raw_models = response.json().get("data", [])
+    filtered = []
+
+    for m in raw_models:
+        if not m.get("active"):
+            continue
+
+        input_mods = m.get("input_modalities") or ["text"]
+        output_mods = m.get("output_modalities") or ["text"]
+        if "text" not in input_mods or "text" not in output_mods:
+            continue
+
+        features = m.get("supported_features") or []
+        if "tools" not in features:
+            continue
+
+        model_id = m.get("id")
+        if not model_id:
+            continue
+
+        display_name = m.get("name") or model_id
+        filtered.append({"value": model_id, "label": display_name})
+
+    return filtered
+
+
+def _fetch_gemini_models(base_url: str, api_key: Optional[str], timeout: int) -> list[dict]:
+    """
+    Fetch Gemini models via native API (not OpenAI-compat endpoint).
+    Only models that support 'generateContent' method.
+    """
+    if not api_key:
+        raise ValueError("Gemini requires an API key")
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+    response = httpx.get(url, timeout=timeout)
+    response.raise_for_status()
+
+    raw_models = response.json().get("models", [])
+    filtered = []
+
+    skip_patterns = ["embed", "aqa", "tts", "learnlm", "imagen", "veo"]
+
+    for m in raw_models:
+        supported = m.get("supportedGenerationMethods") or []
+        if "generateContent" not in supported:
+            continue
+
+        name = m.get("name", "")
+        model_id = name.replace("models/", "") if name.startswith("models/") else name
+
+        if not model_id:
+            continue
+
+        if any(pat in model_id.lower() for pat in skip_patterns):
+            continue
+
+        display_name = m.get("displayName") or model_id
+        filtered.append({"value": model_id, "label": display_name})
+
+    return filtered
+
+
+def _fetch_ollama_models(base_url: str, api_key: Optional[str], timeout: int) -> list[dict]:
+    """
+    Fetch installed Ollama models via native /api/tags endpoint.
+    No API key needed. Returns models the user has actually pulled locally.
+    """
+    root = base_url.rstrip("/")
+    if root.endswith("/v1"):
+        root = root[:-3]
+
+    url = f"{root}/api/tags"
+    response = httpx.get(url, timeout=timeout)
+    response.raise_for_status()
+
+    raw_models = response.json().get("models", [])
+    filtered = []
+
+    for m in raw_models:
+        model_id = m.get("name")
+        if not model_id:
+            continue
+
+        details = m.get("details") or {}
+        family = details.get("family", "")
+        param_size = details.get("parameter_size", "")
+
+        label_parts = [model_id]
+        if family or param_size:
+            extra = " · ".join([x for x in [family, param_size] if x])
+            label_parts.append(f"({extra})")
+
+        filtered.append({
+            "value": model_id,
+            "label": " ".join(label_parts),
+        })
+
+    return filtered
+
+
+_PROVIDER_FETCHERS = {
+    "groq": _fetch_groq_models,
+    "gemini": _fetch_gemini_models,
+    "ollama": _fetch_ollama_models,
+}
+
+
+def _fetch_live_models(
+    provider: str,
+    base_url: str,
+    api_key: Optional[str],
+    timeout: int = 10,
+) -> list[dict]:
+    """Route to correct provider fetcher. Raises on any failure."""
+    fetcher = _PROVIDER_FETCHERS.get(provider)
+    if not fetcher:
+        raise ValueError(f"No live fetcher available for provider '{provider}'")
+    return fetcher(base_url, api_key, timeout)
 
 CATEGORIES = ["llm", "rate_limit", "ui", "system"]
 
@@ -161,23 +298,52 @@ def test_connection(
 
     start = time.time()
     try:
-        response = httpx.post(
-            f"{base_url}/chat/completions",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": test_system_message},
-                    {"role": "user", "content": test_message},
-                ],
-                "max_tokens": test_max_tokens,
-                "temperature": 0,
-            },
-            timeout=timeout,
-        )
+        provider_normalized = provider.strip().lower()
+
+        if provider_normalized == "gemini":
+            model_path = model if model.startswith("models/") else f"models/{model}"
+            gemini_url = (
+                f"https://generativelanguage.googleapis.com/v1beta/"
+                f"{model_path}:generateContent?key={api_key}"
+            )
+            response = httpx.post(
+                gemini_url,
+                headers={"Content-Type": "application/json"},
+                json={
+                    "contents": [
+                        {
+                            "role": "user",
+                            "parts": [{"text": test_message}],
+                        }
+                    ],
+                    "generationConfig": {
+                        "maxOutputTokens": max(test_max_tokens, 10),
+                        "temperature": 0,
+                    },
+                    "systemInstruction": {
+                        "parts": [{"text": test_system_message}],
+                    },
+                },
+                timeout=timeout,
+            )
+        else:
+            response = httpx.post(
+                f"{base_url}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "messages": [
+                        {"role": "system", "content": test_system_message},
+                        {"role": "user", "content": test_message},
+                    ],
+                    "max_tokens": test_max_tokens,
+                    "temperature": 0,
+                },
+                timeout=timeout,
+            )
 
         elapsed_ms = int((time.time() - start) * 1000)
 
@@ -293,15 +459,118 @@ def get_available_providers(
 @router.get("/models/{provider}")
 def get_models_for_provider(
     provider: str,
+    live: bool = False,
+    refresh: bool = False,
     db: Session = Depends(get_db),
     _admin: User = Depends(require_admin),
 ):
-    all_models = config_service.get(db, "LLM_MODELS_BY_PROVIDER")
-    if not all_models or not isinstance(all_models, dict):
-        return []
-    return all_models.get(provider, [])
+  
+    def _db_list() -> list[dict]:
+        all_models = config_service.get(db, "LLM_MODELS_BY_PROVIDER")
+        if not all_models or not isinstance(all_models, dict):
+            return []
+        return all_models.get(provider, [])
 
+    if not live:
+        return _db_list()
 
+    provider_normalized = (provider or "").strip().lower()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    cache_entry = _live_models_cache.get(provider_normalized)
+    if not refresh and cache_entry and cache_entry["expires_at"] > now:
+        return {
+            "models": cache_entry["models"],
+            "source": "cache",
+            "fetched_at": cache_entry["fetched_at"].isoformat(),
+        }
+
+    providers = config_service.get(db, "LLM_AVAILABLE_PROVIDERS") or []
+    provider_config = next(
+        (p for p in providers if p.get("value") == provider_normalized), None
+    )
+    base_url = provider_config.get("base_url") if provider_config else None
+
+    if not base_url:
+        base_url = {
+            "groq":   "https://api.groq.com/openai/v1",
+            "gemini": "https://generativelanguage.googleapis.com/v1beta/openai",
+            "ollama": "http://localhost:11434/v1",
+        }.get(provider_normalized)
+
+    if not base_url:
+        return {
+            "models": _db_list(),
+            "source": "db_fallback",
+            "error": f"No base URL configured for '{provider_normalized}'",
+        }
+
+    api_key = None
+    current_provider = config_service.get_str(db, "LLM_PROVIDER", "").lower()
+    if current_provider == provider_normalized:
+        api_key = config_service.get(db, "LLM_API_KEY")
+
+    try:
+        models = _fetch_live_models(
+            provider=provider_normalized,
+            base_url=base_url,
+            api_key=api_key,
+            timeout=10,
+        )
+
+        if not models:
+            raise ValueError("Provider returned no usable models")
+
+        _live_models_cache[provider_normalized] = {
+            "models": models,
+            "expires_at": now + timedelta(seconds=_LIVE_MODELS_CACHE_TTL_SECONDS),
+            "fetched_at": now,
+        }
+
+        return {
+            "models": models,
+            "source": "live",
+            "fetched_at": now.isoformat(),
+        }
+
+    except httpx.ConnectError:
+        logger.warning(f"Cannot reach {provider_normalized} at {base_url}")
+        return {
+            "models": _db_list(),
+            "source": "db_fallback",
+            "error": (
+                "Cannot reach Ollama. Make sure 'ollama serve' is running."
+                if provider_normalized == "ollama"
+                else f"Cannot reach {provider_normalized} API. Check internet connection."
+            ),
+        }
+
+    except httpx.TimeoutException:
+        logger.warning(f"Timeout fetching {provider_normalized} models")
+        return {
+            "models": _db_list(),
+            "source": "db_fallback",
+            "error": f"{provider_normalized.capitalize()} API timed out. Using saved list.",
+        }
+
+    except ValueError as e:
+        logger.info(f"Live fetch skipped for {provider_normalized}: {e}")
+        return {
+            "models": _db_list(),
+            "source": "db_fallback",
+            "error": str(e),
+        }
+
+    except Exception as e:
+        logger.warning(
+            f"Live model fetch failed for {provider_normalized}: "
+            f"{type(e).__name__}: {e}"
+        )
+        return {
+            "models": _db_list(),
+            "source": "db_fallback",
+            "error": f"Live fetch failed ({type(e).__name__}). Using saved list.",
+        }
 @router.post("/switch-provider")
 def switch_provider(
     body: dict,

@@ -61,8 +61,13 @@ const admin = {
 
     getProviders: () => api.get(`${ADMIN_BASE}/providers`),
 
-    getModelsForProvider: (provider) =>
-        api.get(`${ADMIN_BASE}/models/${provider}`),
+    getModelsForProvider: (provider, { live = true, refresh = false } = {}) => {
+    const params = new URLSearchParams();
+    if (live) params.set('live', 'true');
+    if (refresh) params.set('refresh', 'true');
+    const query = params.toString();
+    return api.get(`${ADMIN_BASE}/models/${provider}${query ? `?${query}` : ''}`);
+},
 
     switchProvider: (data) =>
         api.post(`${ADMIN_BASE}/switch-provider`, data),
