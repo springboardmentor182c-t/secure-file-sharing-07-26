@@ -1,8 +1,9 @@
 // Application-wide constants
 
-export const API_BASE_URL =
+export const API_BASE_URL = (
   (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_URL) ||
-  'http://localhost:8000';
+  'http://localhost:8000'
+).replace(/\/+$/, '');
 
 
 export const ROUTES = {

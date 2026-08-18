@@ -57,6 +57,19 @@ def create_app() -> FastAPI:
         "http://127.0.0.1:3001",
     ]
 
+    cors_env = os.getenv("BACKEND_CORS_ORIGINS", "")
+    if cors_env:
+        for o in cors_env.split(","):
+            o_clean = o.strip().rstrip("/")
+            if o_clean and o_clean not in origins:
+                origins.append(o_clean)
+
+    frontend_url = os.getenv("FRONTEND_URL", "")
+    if frontend_url:
+        f_clean = frontend_url.strip().rstrip("/")
+        if f_clean and f_clean not in origins:
+            origins.append(f_clean)
+
     # ── CORS ──────────────────────────────────────────────────────────────────
     app.add_middleware(
         CORSMiddleware,
