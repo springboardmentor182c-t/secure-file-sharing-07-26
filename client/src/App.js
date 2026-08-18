@@ -16,6 +16,7 @@ import SessionExpired from "./pages/SessionExpired";
 import Home from "./pages/Home";
 import Settings from "./pages/Settings";
 import Securesharing from "./pages/Securesharing";
+import Security from "./pages/Security";
 import Upload from "./pages/Upload";
 import Files from "./pages/Files";
 import Users from "./pages/Users";
@@ -26,14 +27,17 @@ import Storage from "./pages/Storage";
 import NotificationFeature from "./features/notifications/NotificationFeature";
 import Analytics from "./features/analytics/Analytics";
 
-
 // Route Guards
 import ProtectedRoute from "./features/authentication/components/ProtectedRoute";
 import AdminRoute from "./features/authentication/components/AdminRoute";
 
+// Profile
+import Profile from "./features/profile/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
-import Profile from './features/profile/Profile';
 
+// File Management
+import FileManagementPage from "./filemanagement/FileManagementPage";
+import FileDetailsPage from "./filemanagement/FileDetailsPage";
 
 function App() {
   return (
@@ -66,9 +70,71 @@ function App() {
         <Route
           path="/admin"
           element={
-            <PageContainer title="Dashboard">
-              <AdminDashboard />
-            </PageContainer>
+            <ProtectedRoute>
+              <PageContainer title="Dashboard">
+                <AdminDashboard />
+              </PageContainer>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Secure Sharing */}
+        <Route
+          path="/sharing"
+          element={
+            <ProtectedRoute>
+              <PageContainer>
+                <Securesharing />
+              </PageContainer>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Encryption & Security */}
+        <Route
+          path="/security"
+          element={
+            <ProtectedRoute>
+              <PageContainer>
+                <Security />
+              </PageContainer>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Settings */}
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <PageContainer title="Settings">
+                <Settings />
+              </PageContainer>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Notifications */}
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <PageContainer title="Notifications">
+                <NotificationFeature />
+              </PageContainer>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Analytics */}
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <PageContainer>
+                <Analytics />
+              </PageContainer>
+            </ProtectedRoute>
           }
         />
 
@@ -94,7 +160,7 @@ function App() {
           }
         />
 
-        {/* USERS */}
+        {/* Users */}
         <Route
           path="/users"
           element={
@@ -124,61 +190,48 @@ function App() {
           }
         />
 
-        {/* Secure Sharing */}
-        <Route
-          path="/sharing"
-          element={
-            <AdminRoute>
-              <AdminHome />
-            </AdminRoute>
-          }
-        />
-
-        {/* Settings */}
-        <Route
-          path="/settings"
-          element={
-            <PageContainer title="Settings">
-              <Settings />
-            </PageContainer>
-          }
-        />
-
-
-        <Route
-          path="/notifications"
-          element={
-            <PageContainer title="Notifications">
-              <NotificationFeature />
-            </PageContainer>
-          }
-        />
-        
-        <Route
-  path="/admin"
-  element={
-    <PageContainer>
-      <Dashboard />
-    </PageContainer>
-  }
-/>
-
-
-        {/* Invalid Route */}
+        {/* Profile */}
         <Route
           path="/profile"
           element={
-            <PageContainer title="Profile">
-              <Profile />
-            </PageContainer>
+            <ProtectedRoute>
+              <PageContainer title="Profile">
+                <Profile />
+              </PageContainer>
+            </ProtectedRoute>
           }
         />
 
-        {/* Invalid route */}
+        {/* File Management */}
+        <Route
+          path="/file-management"
+          element={
+            <ProtectedRoute>
+              <PageContainer>
+                <FileManagementPage />
+              </PageContainer>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* File Details */}
+        <Route
+          path="/file-management/:id"
+          element={
+            <ProtectedRoute>
+              <PageContainer>
+                <FileDetailsPage />
+              </PageContainer>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Invalid Route */}
         <Route path="*" element={<Navigate to="/login" replace />} />
 
       </Routes>
     </BrowserRouter>
   );
 }
+
 export default App;
