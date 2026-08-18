@@ -14,8 +14,11 @@ DATABASE_URL = os.getenv(
     "postgresql+psycopg2://trustshare:trustshare@localhost:5432/trustshare",
 )
 
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 def is_postgresql_url(url: str) -> bool:
-    return url.startswith(("postgresql://", "postgresql+psycopg2://", "postgresql+psycopg://"))
+    return url.startswith(("postgres://", "postgresql://", "postgresql+psycopg2://", "postgresql+psycopg://"))
 
 def validate_database_url(url: str, require_postgresql: bool = False) -> None:
     if require_postgresql and not is_postgresql_url(url):
