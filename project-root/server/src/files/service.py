@@ -59,6 +59,33 @@ def sanitize_filename(filename: str) -> str:
         filename = "uploaded_file"
     return filename
 
+DANGEROUS_SIGNATURES = [
+    b"X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR",  
+    b"MZ\x90\x00",  
+    b"\x7fELF",     
+    b"#!/",         
+]
+
+DANGEROUS_EXTENSIONS = {
+    ".exe", ".bat", ".cmd", ".sh", ".ps1", ".vbs",
+    ".jar", ".msi", ".dll", ".com", ".scr",
+}
+
+def _basic_malware_check(filename: str, file_bytes: bytes) -> None:
+    
+    ext = Path(filename).suffix.lower()
+    if ext in DANGEROUS_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type {ext} is not permitted for security reasons.",
+        )
+
+    for signature in DANGEROUS_SIGNATURES:
+        if file_bytes.startswith(signature):
+            raise HTTPException(
+                status_code=400,
+                detail="File content is not permitted for security reasons.",
+            )
 
 def _audit(
     db: Session,
@@ -220,6 +247,12 @@ def upload_file(
     file_size = len(file_bytes)
     upload.file.seek(0)
 
+    try:
+        _basic_malware_check(upload.filename, file_bytes)
+    except HTTPException:
+        raise
+
+
     # ── Validate upload (log FAILED analytics event if invalid) ───────────
     try:
         validate_upload(db, upload, file_size)
@@ -380,7 +413,6 @@ def delete_file(
     owner_id: int,
     ip_address: str | None = None,
 ) -> None:
-    # Fetch file (uses ownership check)
     file = get_file(db, file_id, owner_id, ip_address=ip_address)
 
     if file.owner_id != owner_id:
@@ -389,11 +421,10 @@ def delete_file(
             detail="Not authorized",
         )
 
-    # Delete encrypted file
+    # Delete encrypted file from disk
     try:
         delete_encrypted_file(file.stored_name)
     except Exception:
-        # best-effort
         pass
 
     # Delete AES key
@@ -402,6 +433,45 @@ def delete_file(
             delete_key(file.stored_name)
         except Exception:
             pass
+
+    # ── FIX P1-04: Clean up ALL derived data ──────────────────────────────
+    # Prevents confidential content leaking through cached derived data
+
+    # 1. Delete file content index used for AI search
+    try:
+        from src.entities.file_content import FileContent
+        db.query(FileContent).filter(
+            FileContent.file_id == file.id
+        ).delete(synchronize_session=False)
+    except Exception as _e:
+        print(f"[DELETE CLEANUP] FileContent: {_e}", flush=True)
+
+    # 2. Delete AI generated summaries
+    try:
+        from src.entities.file_summary import FileSummary
+        db.query(FileSummary).filter(
+            FileSummary.file_id == file.id
+        ).delete(synchronize_session=False)
+    except Exception as _e:
+        print(f"[DELETE CLEANUP] FileSummary: {_e}", flush=True)
+
+    # 3. Delete shared access permissions
+    try:
+        from src.entities.file_permission import FilePermission
+        db.query(FilePermission).filter(
+            FilePermission.file_id == file.id
+        ).delete(synchronize_session=False)
+    except Exception as _e:
+        print(f"[DELETE CLEANUP] FilePermission: {_e}", flush=True)
+
+    # 4. Deactivate share links for this file
+    try:
+        from src.entities.share_link import ShareLink
+        db.query(ShareLink).filter(
+            ShareLink.file_id == file.id
+        ).update({"is_active": False}, synchronize_session=False)
+    except Exception as _e:
+        print(f"[DELETE CLEANUP] ShareLink: {_e}", flush=True)
 
     # Soft delete metadata
     file.is_deleted = True
@@ -421,7 +491,6 @@ def delete_file(
         level="warn",
     )
 
-    # ── Log DELETE analytics event ─────────────────────────────────────────
     log_event(
         db,
         event_type=AnalyticsEventType.DELETE,
@@ -436,7 +505,6 @@ def delete_file(
     )
 
     db.commit()
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 # DOWNLOAD (decrypts + integrity check)
@@ -461,6 +529,15 @@ def get_file_path(
 
     if file.owner_id != owner_id:
         raise HTTPException(status_code=403, detail="You are not authorized to download this file.")
+
+    LARGE_FILE_THRESHOLD = 100 * 1024 * 1024  
+    if file.size > LARGE_FILE_THRESHOLD:
+        print(
+            f"[LARGE FILE WARNING] Decrypting {file.original_name} "
+            f"({file.size / (1024*1024):.1f} MB) in memory. "
+            f"Consider streaming for files over 100 MB.",
+            flush=True,
+        )
 
     # Load stored (encrypted) file
     try:

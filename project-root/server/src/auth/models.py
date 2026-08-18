@@ -72,3 +72,6 @@ class VerifyMFASetupRequest(BaseModel):
 
 class DisableMFARequest(BaseModel):
     password: str
+
+class OAuthExchangeRequest(BaseModel):
+    code: str

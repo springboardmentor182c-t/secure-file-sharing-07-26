@@ -94,6 +94,71 @@ def create_app() -> FastAPI:
     def health():
         return {"status": "ok", "service": "TrustShare API", "version": "2.0.0"}
 
+        # ── Health check ──────────────────────────────────────────────────────────
+    @app.get("/health", tags=["System"])
+    def health():
+        return {"status": "ok", "service": "TrustShare API", "version": "2.0.0"}
+
+    @app.get("/health/ready", tags=["System"])
+    def health_ready():
+        """Readiness check — confirms all dependencies are available."""
+        from fastapi.responses import JSONResponse
+        from sqlalchemy import text as sa_text
+        import pathlib
+
+        _environment = os.getenv("ENVIRONMENT", "development").lower().strip()
+        checks = {}
+        all_ready = True
+
+        # ── Check database ──
+        try:
+            from src.database.core import get_db
+            db = next(get_db())
+            db.execute(sa_text("SELECT 1"))
+            db.close()
+            checks["database"] = "ok"
+        except Exception as e:
+            checks["database"] = f"error: {str(e)[:50]}"
+            all_ready = False
+
+        # ── Check SECRET_KEY ──
+        secret_key = os.getenv("SECRET_KEY", "")
+        if not secret_key or secret_key == "dev-only-secret-key-not-for-production-use":
+            if _environment in ("production", "prod"):
+                checks["secret_key"] = "error: not configured"
+                all_ready = False
+            else:
+                checks["secret_key"] = "warning: using dev fallback"
+        else:
+            checks["secret_key"] = "ok"
+
+        # ── Check MASTER_KEY_HEX ──
+        master_key = os.getenv("MASTER_KEY_HEX", "")
+        if not master_key:
+            checks["master_key"] = "warning: not configured"
+        else:
+            checks["master_key"] = "ok"
+
+        # ── Check storage directory ──
+        try:
+            storage_path = pathlib.Path("uploads")
+            checks["storage"] = "ok"
+        except Exception as e:
+            checks["storage"] = f"error: {str(e)[:50]}"
+            all_ready = False
+
+        status_code = 200 if all_ready else 503
+        return JSONResponse(
+            status_code=status_code,
+            content={
+                "status": "ready" if all_ready else "not_ready",
+                "service": "TrustShare API",
+                "version": "2.0.0",
+                "environment": _environment,
+                "checks": checks,
+            }
+        )
+
     # ── Search Bar ────────────────────────────────────────────────────────────
     app.include_router(
         search_router,

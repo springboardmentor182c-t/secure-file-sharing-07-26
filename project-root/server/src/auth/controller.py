@@ -1,5 +1,3 @@
-# server/src/auth/controller.py
-
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from src.database.core import get_db
@@ -15,10 +13,31 @@ from src.notifications.service import create_notification
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
+# ── FIX: OAuth token temporary store ───────────────────────────────────────
+import secrets
+import threading
+from datetime import datetime, timedelta, timezone
+
+_oauth_token_store: dict[str, dict] = {}
+_oauth_store_lock = threading.Lock()
+
+
+def _store_oauth_tokens(access_token: str, refresh_token: str) -> str:
+    """Store tokens server-side and return a short-lived exchange code."""
+    code = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=60)
+    with _oauth_store_lock:
+        _oauth_token_store[code] = {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "expires_at": expires_at,
+        }
+    return code
+
+
 router = APIRouter()
 
 
-# Helper: get client IP safely
 def _get_client_ip(request: Request) -> str | None:
     xff = request.headers.get("x-forwarded-for")
     if xff:
@@ -53,11 +72,9 @@ def login(
             detail="Account suspended",
         )
 
-    # Check if MFA is enabled
     if user.mfa_enabled:
         return service.build_mfa_pending_response(user)
 
-    # Store session when building token response (teammate's session tracking)
     response = service._build_token_response(user, db=db, request=request)
     create_notification(
         db,
@@ -124,7 +141,6 @@ def signup(
     db: Session = Depends(get_db),
 ):
     ip = _get_client_ip(request)
-    # FIX ISS-D6: pass request so session tracking works for new signups
     return service.register_user(db, data, request=request, ip_address=ip)
 
 
@@ -136,7 +152,7 @@ def me(current_user: User = Depends(get_current_user)):
 @router.post("/refresh", response_model=models.TokenResponse)
 def refresh(
     body: models.RefreshRequest,
-    request: Request,                       # FIX ISS-D2: accept request
+    request: Request,
     db: Session = Depends(get_db),
 ):
     payload = decode_token(body.refresh_token)
@@ -152,7 +168,31 @@ def refresh(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
         )
-    # FIX ISS-D2: pass db and request so session row is tracked
+
+    # ── FIX: Check token exists in active session and rotate it ────────────
+    try:
+        from src.entities.login_session import LoginSession
+        active_session = db.query(LoginSession).filter(
+            LoginSession.user_id == user.id,
+            LoginSession.refresh_token == body.refresh_token,
+            LoginSession.is_current == True,
+        ).first()
+
+        if not active_session:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Session expired or logged out. Please login again.",
+            )
+
+        # ── FIX: Invalidate old session before creating new one ────────────
+        active_session.is_current = False
+        db.commit()
+
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+
     return service._build_token_response(user, db=db, request=request)
 
 
@@ -161,7 +201,6 @@ def logout(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    # FIX ISS-D1: Actually invalidate the user's active session rows
     try:
         from src.entities.login_session import LoginSession
         db.query(LoginSession).filter(
@@ -173,8 +212,6 @@ def logout(
         db.rollback()
     return None
 
-
-# MFA Endpoints
 
 @router.post("/verify-otp", response_model=models.TokenResponse)
 def verify_otp(
@@ -204,7 +241,6 @@ def verify_otp(
             detail="Invalid or expired OTP code",
         )
 
-    # FIX ISS-D3: pass db and request for session tracking after MFA success
     response = service._build_token_response(user, db=db, request=request)
     create_notification(
         db,
@@ -243,8 +279,6 @@ def resend_otp(body: models.ResendOTPRequest, db: Session = Depends(get_db)):
     }
 
 
-# Password Recovery Endpoints
-
 @router.post("/forgot-password")
 def forgot_password(
     body: models.ForgotPasswordRequest,
@@ -272,8 +306,6 @@ def reset_password(
     )
     return {"status": "success", "message": "Password reset successfully"}
 
-
-# OAuth2 Endpoints
 
 import os
 from src.auth.oauth_config import (
@@ -336,14 +368,14 @@ async def google_callback(
             detail="Account suspended",
         )
 
-    # FIX ISS-D7: pass db and request for session tracking on OAuth login
     token_resp = service._build_token_response(user, db=db, request=request)
-    redirect_url = (
-        f"{FRONTEND_URL}/oauth-callback"
-        f"?access_token={token_resp.access_token}"
-        f"&refresh_token={token_resp.refresh_token}"
-        f"&provider=google"
+
+    # ── FIX: Store tokens server-side, pass only a short-lived code in URL ──
+    exchange_code = _store_oauth_tokens(
+        token_resp.access_token,
+        token_resp.refresh_token,
     )
+    redirect_url = f"{FRONTEND_URL}/oauth-callback?code={exchange_code}&provider=google"
     return RedirectResponse(url=redirect_url)
 
 
@@ -391,18 +423,46 @@ async def microsoft_callback(
             detail="Account suspended",
         )
 
-    # FIX ISS-D7: pass db and request for session tracking on OAuth login
     token_resp = service._build_token_response(user, db=db, request=request)
-    redirect_url = (
-        f"{FRONTEND_URL}/oauth-callback"
-        f"?access_token={token_resp.access_token}"
-        f"&refresh_token={token_resp.refresh_token}"
-        f"&provider=microsoft"
+
+    # ── FIX: Store tokens server-side, pass only a short-lived code in URL ──
+    exchange_code = _store_oauth_tokens(
+        token_resp.access_token,
+        token_resp.refresh_token,
     )
+    redirect_url = f"{FRONTEND_URL}/oauth-callback?code={exchange_code}&provider=microsoft"
     return RedirectResponse(url=redirect_url)
 
 
-# MFA Toggle
+# ── FIX: New endpoint to exchange OAuth code for actual tokens ──────────────
+@router.post("/oauth/exchange")
+def oauth_exchange(body: models.OAuthExchangeRequest):
+    """
+    Exchange a short-lived OAuth code for actual tokens.
+    Tokens are never put in URLs — only exchanged via POST body.
+    Code expires in 60 seconds and is single-use.
+    """
+    with _oauth_store_lock:
+        entry = _oauth_token_store.pop(body.code, None)
+
+    if not entry:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or expired OAuth exchange code",
+        )
+
+    if datetime.now(timezone.utc) > entry["expires_at"]:
+        raise HTTPException(
+            status_code=400,
+            detail="OAuth exchange code has expired. Please login again.",
+        )
+
+    return {
+        "access_token": entry["access_token"],
+        "refresh_token": entry["refresh_token"],
+        "token_type": "bearer",
+    }
+
 
 @router.post("/mfa/enable", response_model=models.UserOut)
 def enable_mfa(
@@ -420,16 +480,10 @@ def disable_mfa(
     return service.disable_mfa(db, current_user)
 
 
-# MFA Setup Flow (Proper OTP-verified enable/disable)
-
 @router.post("/mfa/setup")
 def mfa_setup(
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Step 1 of enabling MFA: send OTP to user's registered email.
-    User must then call /mfa/verify-setup with the OTP to actually enable.
-    """
     if current_user.mfa_enabled:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -452,9 +506,6 @@ def mfa_verify_setup(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Step 2 of enabling MFA: verify OTP and flip mfa_enabled=true.
-    """
     if current_user.mfa_enabled:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -474,10 +525,6 @@ def mfa_disable_with_password(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Secure MFA disable: requires password confirmation to prevent
-    unauthorized MFA disabling if session token is stolen.
-    """
     from src.auth.dependencies import verify_password
     if not verify_password(body.password, current_user.hashed_password):
         raise HTTPException(
@@ -486,7 +533,6 @@ def mfa_disable_with_password(
         )
     return service.disable_mfa(db, current_user)
 
-# Change Password (teammate's Settings module)
 
 @router.post("/change-password")
 def change_password(
@@ -497,8 +543,6 @@ def change_password(
     service.change_password(db, current_user, body.current_password, body.new_password)
     return {"status": "success", "message": "Password changed successfully"}
 
-
-# User Storage Breakdown (Badal's PageLayout feature)
 
 from sqlalchemy import func
 from src.entities.file import File

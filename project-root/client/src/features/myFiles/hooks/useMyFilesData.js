@@ -88,28 +88,42 @@ export function useMyFilesData() {
   }, [files, selectedCategory, searchQuery]);
 
   // File upload handler
-  const uploadFiles = async (fileList) => {
-    if (!fileList || fileList.length === 0) return;
-    setUploading(true);
-    setUploadProgress(0);
-    try {
-      for (const file of fileList) {
+const uploadFiles = async (fileList) => {
+  if (!fileList || fileList.length === 0) return;
+  setUploading(true);
+  setUploadProgress(0);
+
+  const errors = [];
+
+  try {
+    for (const file of fileList) {
+      try {
         const formData = new FormData();
         formData.append('file', file);
         await filesAPI.upload(formData, (pct) => setUploadProgress(pct), activeFolder?.id);
+      } catch (err) {
+        const detail = err?.response?.data?.detail;
+        const message = typeof detail === 'string'
+          ? detail
+          : `Failed to upload "${file.name}"`;
+        errors.push(message);
       }
-      await loadData();
-      events.emit(EVENTS.FILE_UPLOADED);
-      events.emit(EVENTS.STORAGE_CHANGED);
-      events.emit(EVENTS.NOTIFICATIONS_CHANGED);
-    } catch (err) {
-      console.error('File upload failed:', err);
-      throw err;
-    } finally {
-      setUploading(false);
-      setUploadProgress(0);
     }
-  };
+
+    await loadData();
+    events.emit(EVENTS.FILE_UPLOADED);
+    events.emit(EVENTS.STORAGE_CHANGED);
+    events.emit(EVENTS.NOTIFICATIONS_CHANGED);
+
+    if (errors.length > 0) {
+      throw new Error(errors.join('\n'));
+    }
+
+  } finally {
+    setUploading(false);
+    setUploadProgress(0);
+  }
+};
 
   // Create folder handler
   const createFolder = async (folderName) => {

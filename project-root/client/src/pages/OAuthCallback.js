@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../utils/api';
+import axios from 'axios';
+import { API_BASE_URL } from '../data/constants';
 
 export default function OAuthCallback() {
   const { setUser } = useAuth();
@@ -9,31 +11,62 @@ export default function OAuthCallback() {
   const location = useLocation();
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const query = new URLSearchParams(location.search);
-    const accessToken = query.get('access_token');
-    const refreshToken = query.get('refresh_token');
+  // ── FIX: Prevent double execution in React StrictMode ──────────────────────
+  const hasRun = useRef(false);
 
-    if (!accessToken || !refreshToken) {
-      setError('OAuth login failed: tokens were not returned. Please try again.');
+  useEffect(() => {
+    // ── Prevent second execution in React StrictMode ──
+    if (hasRun.current) return;
+    hasRun.current = true;
+
+    const query = new URLSearchParams(location.search);
+    const exchangeCode = query.get('code');
+
+    if (!exchangeCode) {
+      setError('OAuth login failed: exchange code was not returned. Please try again.');
       return;
     }
 
     const finishLogin = async () => {
       try {
-        // Store the tokens (OAuth always uses localStorage — remember-me is implicit)
+        // ── Exchange code for actual tokens via POST ──────────────────────────
+        const { data: tokenData } = await axios.post(
+          `${API_BASE_URL}/api/auth/oauth/exchange`,
+          { code: exchangeCode }
+        );
+
+        const accessToken = tokenData.access_token;
+        const refreshToken = tokenData.refresh_token;
+
+        if (!accessToken || !refreshToken) {
+          throw new Error('Token exchange failed');
+        }
+
+        // Store the tokens
         localStorage.setItem('access_token', accessToken);
         localStorage.setItem('refresh_token', refreshToken);
 
-        // Fetch the logged-in user's profile to populate AuthContext
+        // Fetch the logged-in user profile
         const { data } = await authAPI.me();
         setUser(data);
 
         navigate('/dashboard', { replace: true });
       } catch (err) {
-        setError('Failed to retrieve user profile. Please try signing in again.');
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+        // ── Only clear tokens if they were not already successfully stored ──
+        const alreadyLoggedIn = !!localStorage.getItem('access_token');
+        if (!alreadyLoggedIn) {
+          setError('Failed to complete authentication. Please try signing in again.');
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+        } else {
+          // Tokens already stored successfully by first call — just navigate
+          authAPI.me().then(({ data }) => {
+            setUser(data);
+            navigate('/dashboard', { replace: true });
+          }).catch(() => {
+            setError('Failed to complete authentication. Please try signing in again.');
+          });
+        }
       }
     };
 

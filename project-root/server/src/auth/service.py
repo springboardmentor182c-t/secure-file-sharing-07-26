@@ -1,5 +1,3 @@
-# server/src/auth/service.py
-
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status, Request
 from src.entities.user import User
@@ -24,8 +22,14 @@ from src.analytics.constants import (
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
-# In-memory store for OTPs: {user_id: {"otp": str, "expires_at": datetime}}
+# ── FIX: Admin bootstrap via environment variable ──────────────────────────
+BOOTSTRAP_ADMIN_EMAIL = os.getenv("BOOTSTRAP_ADMIN_EMAIL", "").strip().lower()
+
+# In-memory store for OTPs
 otp_store = {}
+
+# ── FIX: Track used password reset tokens — single use enforcement ──────────
+_used_reset_tokens: set[str] = set()
 
 DEFAULT_DEV_DUMMY_EMAIL_DOMAINS = "example.com,test.com,invalid,localhost"
 
@@ -49,7 +53,6 @@ def _development_dummy_email_domains() -> set[str]:
 def _is_development_dummy_email(email: str) -> bool:
     if _environment() not in {"development", "dev"}:
         return False
-
     _, separator, domain = email.strip().lower().rpartition("@")
     return bool(separator and domain in _development_dummy_email_domains())
 
@@ -64,14 +67,9 @@ def authenticate_user(
     password: str,
     ip_address: str | None = None,
 ) -> User | None:
-    """
-    Authenticate a user by email/password.
-    Logs SUCCESS or FAILED login analytics event.
-    """
     user = db.query(User).filter(User.email == email).first()
 
     if not user or not verify_password(password, user.hashed_password):
-        # ── Log FAILED login attempt ────────────────────────────────────────
         log_event(
             db,
             event_type=AnalyticsEventType.LOGIN,
@@ -87,7 +85,6 @@ def authenticate_user(
         db.commit()
         return None
 
-    # ── Log SUCCESSFUL login ────────────────────────────────────────────────
     log_event(
         db,
         event_type=AnalyticsEventType.LOGIN,
@@ -113,14 +110,31 @@ def register_user(
             detail="Email already registered",
         )
 
+    # ── FIX: Admin bootstrap via environment variable ──────────────────────
     is_first = db.query(User).count() == 0
+    email_lower = data.email.strip().lower()
+
+    if is_first and BOOTSTRAP_ADMIN_EMAIL and email_lower == BOOTSTRAP_ADMIN_EMAIL:
+        role = "admin"
+        plan = "enterprise"
+    elif is_first and not BOOTSTRAP_ADMIN_EMAIL and _environment() in {"development", "dev"}:
+        role = "admin"
+        plan = "enterprise"
+        print(
+            "[BOOTSTRAP WARNING] BOOTSTRAP_ADMIN_EMAIL not set. "
+            "First user gets admin in development only.",
+            flush=True,
+        )
+    else:
+        role = "member"
+        plan = "free"
 
     user = User(
         name=data.name,
         email=data.email,
         hashed_password=hash_password(data.password),
-        role="admin" if is_first else "member",
-        plan="enterprise" if is_first else "free",
+        role=role,
+        plan=plan,
     )
 
     db.add(user)
@@ -141,19 +155,13 @@ def register_user(
 
 
 def _build_token_response(user: User, db: Session = None, request=None) -> TokenResponse:
-    """
-    Build token response and optionally store a LoginSession row when db and request are provided.
-    """
     token_data = {"sub": str(user.id)}
     access_token = create_access_token(token_data)
     refresh_token = create_refresh_token(token_data)
 
-    # Store login session if possible
     if db is not None and request is not None:
         try:
-            # Lazy import to avoid circular issues
             from src.entities.login_session import LoginSession
-            # Parse user agent
             ua_string = request.headers.get("user-agent", "")
             try:
                 from user_agents import parse as parse_ua
@@ -183,12 +191,13 @@ def _build_token_response(user: User, db: Session = None, request=None) -> Token
             except Exception:
                 ip_address = None
 
-            # Location unknown by default
             location = "Unknown"
 
-            # Mark previous sessions' is_current=False for this user's sessions
             try:
-                db.query(LoginSession).filter(LoginSession.user_id == user.id, LoginSession.is_current == True).update({"is_current": False})
+                db.query(LoginSession).filter(
+                    LoginSession.user_id == user.id,
+                    LoginSession.is_current == True
+                ).update({"is_current": False})
             except Exception:
                 pass
 
@@ -206,8 +215,6 @@ def _build_token_response(user: User, db: Session = None, request=None) -> Token
             db.add(session_row)
             db.commit()
         except Exception as _session_err:
-            # FIX ISS-D11: log the failure so we can debug session issues
-            # (don't fail login itself if session saving breaks)
             try:
                 print(
                     f"[SESSION SAVE ERROR] {type(_session_err).__name__}: {_session_err}",
@@ -230,7 +237,6 @@ def _build_token_response(user: User, db: Session = None, request=None) -> Token
 # ═══════════════════════════════════════════════════════════════════════════
 
 def generate_otp(user_id: int, to_email: str = "", user_name: str = "") -> str:
-    """Generate a 6-digit OTP, store with 5-min expiry, email to user."""
     code = f"{random.randint(100000, 999999)}"
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
     otp_store[user_id] = {"otp": code, "expires_at": expires_at}
@@ -257,7 +263,7 @@ def generate_otp(user_id: int, to_email: str = "", user_name: str = "") -> str:
                     f"[EMAIL ERROR] Failed to send MFA email: {type(exc).__name__}",
                     flush=True,
                 )
-   
+
     return code
 
 
@@ -267,7 +273,6 @@ def verify_otp_code(
     db: Session | None = None,
     ip_address: str | None = None,
 ) -> bool:
-    """Verify OTP. Logs SECURITY event on failure."""
     entry = otp_store.get(user_id)
 
     if not entry:
@@ -328,13 +333,11 @@ def verify_otp_code(
             db.commit()
         return False
 
-    # Valid OTP
     otp_store.pop(user_id, None)
     return True
 
 
 def build_mfa_pending_response(user: User) -> TokenResponse:
-    """Build MFA-pending response and send OTP to user's email."""
     token_data = {"sub": str(user.id), "type": "mfa_pending"}
     mfa_token = create_access_token(
         token_data, expires_delta=timedelta(minutes=10)
@@ -348,7 +351,6 @@ def build_mfa_pending_response(user: User) -> TokenResponse:
 # ═══════════════════════════════════════════════════════════════════════════
 
 def request_password_reset(db: Session, email: str):
-    """Generate password reset token and email link to user."""
     user = db.query(User).filter(User.email == email).first()
     if not user:
         return
@@ -381,15 +383,29 @@ def reset_password_in_db(
     if payload.get("type") != "password_recovery":
         raise HTTPException(status_code=400, detail="Invalid token type")
 
+    # ── FIX: Reject tokens that have already been used ─────────────────────
+    if token in _used_reset_tokens:
+        raise HTTPException(
+            status_code=400,
+            detail="This password reset link has already been used. Please request a new one.",
+        )
+
     user_id = payload.get("sub")
     user = db.query(User).filter(User.id == int(user_id)).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     user.hashed_password = hash_password(new_password)
+
+    # ── FIX: Mark token as used immediately after successful reset ──────────
+    _used_reset_tokens.add(token)
+
+    # Auto-cleanup if set grows too large
+    if len(_used_reset_tokens) > 10000:
+        _used_reset_tokens.clear()
+
     db.commit()
 
-    # ── Log SECURITY event for password reset ──────────────────────────────
     log_event(
         db,
         event_type=AnalyticsEventType.SECURITY,
@@ -423,21 +439,33 @@ def get_or_create_oauth_user(
     user = db.query(User).filter(User.email == email).first()
 
     if not user:
-        # Create new user with random password
         random_password = secrets.token_urlsafe(16)
+
+        # ── FIX: Same bootstrap logic for OAuth ───────────────────────────
         is_first = db.query(User).count() == 0
+        email_lower = email.strip().lower()
+
+        if is_first and BOOTSTRAP_ADMIN_EMAIL and email_lower == BOOTSTRAP_ADMIN_EMAIL:
+            role = "admin"
+            plan = "enterprise"
+        elif is_first and not BOOTSTRAP_ADMIN_EMAIL and _environment() in {"development", "dev"}:
+            role = "admin"
+            plan = "enterprise"
+        else:
+            role = "member"
+            plan = "free"
+
         user = User(
             name=name,
             email=email,
             hashed_password=hash_password(random_password),
-            role="admin" if is_first else "member",
-            plan="enterprise" if is_first else "free",
+            role=role,
+            plan=plan,
         )
         db.add(user)
         db.commit()
         db.refresh(user)
 
-        # ── Log OAuth registration ─────────────────────────────────────────
         log_event(
             db,
             event_type=AnalyticsEventType.LOGIN,
@@ -452,7 +480,6 @@ def get_or_create_oauth_user(
         )
         db.commit()
     else:
-        # ── Log OAuth login ────────────────────────────────────────────────
         log_event(
             db,
             event_type=AnalyticsEventType.LOGIN,
@@ -479,7 +506,6 @@ def enable_mfa(db: Session, user: User) -> User:
     db.commit()
     db.refresh(user)
 
-    # ── Log MFA enable as SECURITY event ───────────────────────────────────
     log_event(
         db,
         event_type=AnalyticsEventType.SECURITY,
@@ -534,17 +560,11 @@ def change_password(
         )
 
     user.hashed_password = hash_password(new_password)
-
-    # FIX: Invalidate all other login sessions on password change.
-    # If password is being changed due to suspected compromise, other devices
-    # must not retain valid tokens. Industry standard (Google, GitHub, MS).
-    # Current session is preserved so user isn't logged out mid-flow.
     try:
         from src.entities.login_session import LoginSession
         db.query(LoginSession).filter(
             LoginSession.user_id == user.id,
-            LoginSession.is_current == False,
-        ).delete(synchronize_session=False)
+        ).update({"is_current": False}, synchronize_session=False)
     except Exception as _sess_err:
         print(f"[SESSION CLEANUP WARN] {type(_sess_err).__name__}: {_sess_err}", flush=True)
 

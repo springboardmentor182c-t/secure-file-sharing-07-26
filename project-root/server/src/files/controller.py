@@ -46,7 +46,6 @@ def upload_file(
     request: Request,
     file: UploadFile = FastAPIFile(...),
     folder_id: Optional[int] = Query(None),
-    encrypted: bool = Query(True),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -83,7 +82,7 @@ def upload_file(
         file,
         current_user.id,
         folder_id,
-        encrypted,
+        True,
         ip_address=ip,
     )
 
