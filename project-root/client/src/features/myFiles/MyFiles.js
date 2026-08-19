@@ -1,40 +1,41 @@
 import { useEffect, useRef, useState } from 'react';
+import { Upload, FolderPlus, FolderOpen, CheckCircle2, XCircle, Trash2, LayoutGrid, List } from 'lucide-react';
 import FolderCard from './components/FolderCard';
 import FileCard from './components/FileCard';
 import FilterChips from './components/FilterChips';
 import SearchBar from './components/SearchBar';
+import ConfirmModal from './components/ConfirmModal';
+import FolderModal from './components/FolderModal';
+import SortDropdown from './components/SortDropdown';
+import SelectionBar from './components/SelectionBar';
+import FilePreviewModal from './components/FilePreviewModal';
+import UploadProgressModal from './components/UploadProgressModal';
+import FileSummaryPanel from '../fileSummary/components/FileSummaryPanel';
 import { useMyFilesData } from './hooks/useMyFilesData';
 
 export default function MyFiles() {
   const {
-    folderCards,
-    filterChips,
-    selectedCategory,
-    searchQuery,
-    filteredFiles,
-    isLoading,
-    uploading,
-    uploadProgress,
-    folderPath,
-    setSelectedCategory,
-    setSearchQuery,
-    uploadFiles,
-    createFolder,
-    deleteFile,
-    deleteFolder,
-    downloadFile,
-    moveFile,
-    openFolder,
-    goToFolder,
-    goToRoot,
+    folderCards, filterChips, selectedCategory, searchQuery, filteredFiles,
+    isLoading, uploading, uploadProgress, folderPath,
+    sortBy, setSortBy, sortOptions, viewMode, setViewMode,
+    selectedIds, toggleSelection, clearSelection, toggleSelectAll, allSelected,
+    setSelectedCategory, setSearchQuery,
+    uploadFiles, createFolder, renameFolder,
+    deleteFile, bulkDeleteFiles, deleteFolder, downloadFile, moveFile,
+    openFolder, goToFolder, goToRoot, uploadQueue, uploadStats, cancelUpload, resetUploadState,
   } = useMyFilesData();
 
   const fileInputRef = useRef(null);
   const moveInProgressRef = useRef(false);
-  const [showNewFolderModal, setShowNewFolderModal] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
+  const dragCounterRef = useRef(0);
+
   const [statusMessage, setStatusMessage] = useState(null);
   const [pointerDraggedFile, setPointerDraggedFile] = useState(null);
+  const [summaryFile, setSummaryFile] = useState(null);
+  const [previewFile, setPreviewFile] = useState(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [folderModal, setFolderModal] = useState({ open: false, mode: 'create', folderId: null, initialName: '' });
+  const [confirmModal, setConfirmModal] = useState({ open: false, type: null, target: null });
 
   const showNotification = (msg, isError = false) => {
     setStatusMessage({ text: msg, isError });
@@ -46,55 +47,81 @@ export default function MyFiles() {
     if (selectedFiles.length === 0) return;
     try {
       await uploadFiles(selectedFiles);
-      showNotification(`${selectedFiles.length} file(s) uploaded successfully!`);
-    } catch (err) {
-      showNotification('File upload failed. Please try again.', true);
+    } catch {
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleCreateFolder = async (e) => {
-    e.preventDefault();
-    if (!newFolderName.trim()) return;
-    try {
-      await createFolder(newFolderName.trim());
-      showNotification(`Folder "${newFolderName.trim()}" created!`);
-      setNewFolderName('');
-      setShowNewFolderModal(false);
-    } catch (err) {
-      showNotification('Failed to create folder.', true);
+  const openNewFolderModal = () => setFolderModal({ open: true, mode: 'create', folderId: null, initialName: '' });
+  const openRenameFolderModal = (folderId, currentName) => setFolderModal({ open: true, mode: 'rename', folderId, initialName: currentName });
+  const closeFolderModal = () => setFolderModal({ open: false, mode: 'create', folderId: null, initialName: '' });
+
+  const handleFolderSubmit = async (name) => {
+    if (folderModal.mode === 'rename' && folderModal.folderId) {
+      await renameFolder(folderModal.folderId, name);
+      showNotification(`Folder renamed to "${name}"`);
+    } else {
+      await createFolder(name);
+      showNotification(`Folder "${name}" created`);
     }
   };
 
-  const handleDeleteFile = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this file?')) return;
-    try {
-      await deleteFile(id);
-      showNotification('File deleted.');
-    } catch (err) {
-      showNotification('Failed to delete file.', true);
+  const openDeleteFileConfirm = (file) => setConfirmModal({ open: true, type: 'file', target: file });
+  const openDeleteFolderConfirm = (folderId) => {
+    const folder = folderCards.find((f) => f.id === folderId);
+    setConfirmModal({ open: true, type: 'folder', target: { id: folderId, name: folder?.title || 'this folder' } });
+  };
+  const openBulkDeleteConfirm = () => {
+    setConfirmModal({ open: true, type: 'bulk', target: { count: selectedIds.size, ids: selectedIds } });
+  };
+  const closeConfirmModal = () => setConfirmModal({ open: false, type: null, target: null });
+
+  const handleConfirmDelete = async () => {
+    const { type, target } = confirmModal;
+    if (!target) return;
+    if (type === 'file') {
+      try {
+        await deleteFile(target.id);
+        showNotification('File deleted');
+      } catch { showNotification('Failed to delete file', true); throw new Error(); }
+    } else if (type === 'folder') {
+      try {
+        await deleteFolder(target.id);
+        showNotification(`Folder "${target.name}" and its contents were deleted`);
+      } catch (err) {
+        showNotification(err?.response?.data?.detail || 'Failed to delete folder', true);
+        throw err;
+      }
+    } else if (type === 'bulk') {
+      try {
+        const result = await bulkDeleteFiles(target.ids);
+        if (result.failed === 0) {
+          showNotification(`${result.success} file${result.success > 1 ? 's' : ''} deleted`);
+        } else {
+          showNotification(`Deleted ${result.success}, failed ${result.failed}`, true);
+        }
+      } catch { showNotification('Bulk delete failed', true); throw new Error(); }
     }
   };
 
-  const handleDeleteFolder = async (id) => {
-    const folder = folderCards.find((item) => item.id === id);
-    const folderName = folder?.title || 'this folder';
-    if (!window.confirm(`Delete "${folderName}" and all files and subfolders inside it? This cannot be undone.`)) return;
-    try {
-      await deleteFolder(id);
-      showNotification(`Folder "${folderName}" and its contents were deleted.`);
-    } catch (err) {
-      showNotification(err.response?.data?.detail || 'Failed to delete folder.', true);
-    }
+  const handleDeleteFile = (id) => {
+    const file = filteredFiles.find((f) => f.id === id);
+    openDeleteFileConfirm({ id, name: file?.name || file?.original_name || 'this file' });
   };
 
   const handleDownload = async (file) => {
+    const fileName = file?.name || file?.original_name || 'file';
+    showNotification(`🔒 Preparing "${fileName}"…`);
     try {
       await downloadFile(file);
+      showNotification(`✅ "${fileName}" downloaded`);
     } catch (err) {
-      showNotification('File download failed. Please try again.', true);
+      showNotification(err?.response?.data?.detail || 'File download failed.', true);
     }
   };
+
+  const handleSummarize = (file) => setSummaryFile(file);
+  const handlePreview = (file) => setPreviewFile(file);
 
   useEffect(() => {
     if (!pointerDraggedFile) return undefined;
@@ -110,131 +137,174 @@ export default function MyFiles() {
     try {
       await moveFile(file.id, folder.id);
       showNotification(`${file.name} moved to ${folder.name}`);
-    } catch (err) {
-      showNotification('File could not be moved. Please try again.', true);
+    } catch {
+      showNotification('File could not be moved.', true);
     } finally {
       moveInProgressRef.current = false;
     }
   };
 
+  useEffect(() => {
+    if (folderPath.length > 0) {
+      window.history.pushState({ myFilesDepth: folderPath.length }, '', window.location.pathname);
+    }
+    const handlePopState = (event) => {
+      const targetDepth = event.state?.myFilesDepth ?? 0;
+      if (targetDepth < folderPath.length) {
+        if (targetDepth === 0) goToRoot();
+        else goToFolder(targetDepth - 1);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [folderPath.length]); 
+
+  useEffect(() => {
+    return () => {
+      try { sessionStorage.removeItem('my_files_folder_path'); } catch { }
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleGoToRoot = () => goToRoot();
+    const handleGoToFolder = (event) => {
+      const index = event.detail;
+      if (typeof index === 'number' && index >= 0) goToFolder(index);
+    };
+    window.addEventListener('my-files-goto-root', handleGoToRoot);
+    window.addEventListener('my-files-goto-folder', handleGoToFolder);
+    return () => {
+      window.removeEventListener('my-files-goto-root', handleGoToRoot);
+      window.removeEventListener('my-files-goto-folder', handleGoToFolder);
+    };
+  }, [goToRoot, goToFolder]);
+
+  const handleDragEnter = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    if (e.dataTransfer.types.includes('Files')) {
+      dragCounterRef.current += 1;
+      setIsDragOver(true);
+    }
+  };
+  const handleDragLeave = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    if (e.dataTransfer.types.includes('Files')) {
+      dragCounterRef.current -= 1;
+      if (dragCounterRef.current === 0) setIsDragOver(false);
+    }
+  };
+  const handleDragOver = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    if (e.dataTransfer.types.includes('Files')) e.dataTransfer.dropEffect = 'copy';
+  };
+  const handleDrop = async (e) => {
+    e.preventDefault(); e.stopPropagation();
+    dragCounterRef.current = 0;
+    setIsDragOver(false);
+    const droppedFiles = Array.from(e.dataTransfer.files || []);
+    if (droppedFiles.length === 0) return;
+    try {
+      await uploadFiles(droppedFiles);
+    } catch {
+    }
+  };
+
+  const hasSelection = selectedIds.size > 0;
+
   return (
-    <div className="my-files-page mx-auto max-w-7xl">
-      {/* Toast Notification */}
+    <div
+      className={`my-files-page ${isDragOver ? 'is-drag-over' : ''}`}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       {statusMessage && (
-        <div
-          className={`fixed top-5 right-5 z-50 rounded-2xl px-5 py-3 text-sm font-medium shadow-lg transition-all ${
-            statusMessage.isError
-              ? 'bg-rose-50 text-rose-700 border border-rose-200'
-              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-          }`}
-        >
-          {statusMessage.isError ? '❌ ' : '✅ '}
-          {statusMessage.text}
+        <div className={`my-files-toast ${statusMessage.isError ? 'is-error' : 'is-success'}`}>
+          {statusMessage.isError ? <XCircle size={16} strokeWidth={2.4} /> : <CheckCircle2 size={16} strokeWidth={2.4} />}
+          <span>{statusMessage.text}</span>
         </div>
       )}
 
-      {/* Hidden File Input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        className="hidden"
-        onChange={handleFileChange}
-      />
-
-      {/* Page Header */}
-      <header className="my-files-surface mb-8 rounded-lg border border-[#E2E8F0] bg-white p-6 shadow-sm shadow-slate-100">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#4F46E5]">My Files</p>
-            <h1 className="my-files-title mt-2 text-3xl font-semibold text-[#0F172A]">Secure files and folder details</h1>
-            <p className="my-files-muted mt-2 max-w-2xl text-sm text-[#64748B]">
-              Upload, organize, and manage your encrypted project files and folder structures seamlessly.
+      {isDragOver && (
+        <div className="my-files-drop-overlay">
+          <div className="my-files-drop-inner">
+            <div className="my-files-drop-icon"><Upload size={48} strokeWidth={1.5} /></div>
+            <h2 className="my-files-drop-title">Drop files to upload</h2>
+            <p className="my-files-drop-subtitle">
+              {folderPath.length > 0
+                ? `Files will be uploaded to "${folderPath[folderPath.length - 1].name}"`
+                : 'Release to upload to My Files'}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setShowNewFolderModal(true)}
-              className="my-files-secondary-button rounded-lg border border-[#E2E8F0] bg-white px-4 py-2.5 text-sm font-semibold text-[#475569] transition hover:bg-slate-50 hover:text-[#0F172A]"
-            >
-              📁 New Folder
+        </div>
+      )}
+
+      <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileChange} />
+
+      {/* Header */}
+      <header className="my-files-header">
+        <div className="my-files-header-inner">
+          <div>
+            <p className="my-files-kicker">MY FILES</p>
+            <h1 className="my-files-page-title">Secure files & folders</h1>
+            <p className="my-files-page-subtitle">
+              Upload, organize, and manage your encrypted files with folder-level control.
+            </p>
+          </div>
+          <div className="my-files-header-actions">
+            <button type="button" onClick={openNewFolderModal} className="my-files-btn my-files-btn--secondary">
+              <FolderPlus size={15} strokeWidth={2.2} />
+              New Folder
             </button>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="rounded-lg bg-[#4338CA] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#3730A3] disabled:opacity-50"
+              className="my-files-btn my-files-btn--primary"
             >
-              {uploading ? `Uploading (${uploadProgress}%)` : '⬆️ Upload File'}
+              <Upload size={15} strokeWidth={2.2} />
+              {uploading ? `Uploading ${uploadProgress}%` : 'Upload File'}
             </button>
           </div>
         </div>
-
-        <nav className="my-files-muted mt-5 flex flex-wrap items-center gap-2 text-sm text-[#64748B]" aria-label="Folder path">
-          <button type="button" onClick={goToRoot} className="font-semibold text-[#4F46E5] hover:text-[#3730A3]">My Files</button>
-          {folderPath.map((folder, index) => (
-            <div className="flex items-center gap-2" key={folder.id}>
-              <span>/</span>
-              <button type="button" onClick={() => goToFolder(index)} className="font-semibold text-[#4F46E5] hover:text-[#3730A3]">{folder.name}</button>
-            </div>
-          ))}
-        </nav>
-
-        {/* Search Bar */}
-        <div className="mt-6">
-          <SearchBar
-            value={searchQuery}
-            onChange={setSearchQuery}
-            onClear={() => setSearchQuery('')}
-          />
+        <div className="my-files-header-search">
+          <SearchBar value={searchQuery} onChange={setSearchQuery} onClear={() => setSearchQuery('')} />
         </div>
       </header>
 
-      {/* New Folder Modal */}
-      {showNewFolderModal && (
-        <div className="my-files-surface mb-8 rounded-lg border border-[#EEF2FF] bg-[#F8FAFC] p-6 shadow-sm">
-          <form onSubmit={handleCreateFolder} className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <input
-              type="text"
-              placeholder="Enter folder name..."
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              className="my-files-input flex-1 rounded-lg border border-[#E2E8F0] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#4F46E5]"
-              autoFocus
-            />
-            <div className="flex items-center gap-2">
-              <button
-                type="submit"
-                className="rounded-lg bg-[#4F46E5] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#3730A3]"
-              >
-                Create Folder
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowNewFolderModal(false);
-                  setNewFolderName('');
-                }}
-                className="my-files-secondary-button rounded-lg border border-[#E2E8F0] bg-white px-4 py-2.5 text-sm font-semibold text-[#64748B] transition hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
+      {/* Selection bar (only when files selected) */}
+      {hasSelection && (
+        <SelectionBar
+          count={selectedIds.size}
+          totalVisible={filteredFiles.length}
+          allSelected={allSelected}
+          onSelectAll={toggleSelectAll}
+          onClear={clearSelection}
+          onBulkDelete={openBulkDeleteConfirm}
+        />
       )}
 
-      {/* Folders Section */}
+      {/* Folders */}
       {folderCards.length > 0 && (
-        <section className="mb-8 space-y-4">
-          <h2 className="my-files-muted text-xs font-bold uppercase tracking-[0.2em] text-[#64748B]">Folders ({folderCards.length})</h2>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <section className="my-files-section">
+          <h2 className="my-files-section-title">
+            Folders <span className="my-files-section-count">({folderCards.length})</span>
+          </h2>
+          <div className={viewMode === 'list' ? 'my-files-list' : 'my-files-grid'}>
+            {viewMode === 'list' && (
+              <div className="my-files-list-header">
+                <div /> <div /> <div>Name</div> <div>Type</div>
+                <div>Size</div> <div>Modified</div> <div /> <div />
+              </div>
+            )}
             {folderCards.map((folder) => (
               <FolderCard
                 key={folder.id}
                 {...folder}
-                onDelete={handleDeleteFolder}
+                viewMode={viewMode}
+                onDelete={openDeleteFolderConfirm}
+                onRename={openRenameFolderModal}
                 onOpen={openFolder}
                 onFileDrop={handleFileDrop}
                 pointerDraggedFile={pointerDraggedFile}
@@ -244,61 +314,147 @@ export default function MyFiles() {
         </section>
       )}
 
-      {/* Filter Chips Bar */}
-      <section className="my-files-surface mb-6 rounded-lg border border-[#E2E8F0] bg-white p-6 shadow-sm shadow-slate-100">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="my-files-title text-lg font-semibold text-[#0F172A]">All files</h2>
-            <p className="my-files-muted mt-1 text-sm text-[#64748B]">
-              {filteredFiles.length} file{filteredFiles.length === 1 ? '' : 's'} found
-            </p>
-          </div>
+      {/* Toolbar */}
+      <section className="my-files-toolbar">
+        <div className="my-files-toolbar-left">
+          <h2 className="my-files-section-title">
+            All Files <span className="my-files-section-count">({filteredFiles.length})</span>
+          </h2>
+        </div>
+        <div className="my-files-toolbar-right">
           <FilterChips chips={filterChips} activeId={selectedCategory} onChange={setSelectedCategory} />
+          <SortDropdown value={sortBy} options={sortOptions} onChange={setSortBy} />
+          <div className="my-files-view-toggle" role="group" aria-label="View mode">
+            <button
+              type="button"
+              className={`my-files-view-btn ${viewMode === 'grid' ? 'is-active' : ''}`}
+              onClick={() => setViewMode('grid')}
+              title="Grid view"
+              aria-label="Grid view"
+              aria-pressed={viewMode === 'grid'}
+            >
+              <LayoutGrid size={14} strokeWidth={2.2} />
+            </button>
+            <button
+              type="button"
+              className={`my-files-view-btn ${viewMode === 'list' ? 'is-active' : ''}`}
+              onClick={() => setViewMode('list')}
+              title="List view"
+              aria-label="List view"
+              aria-pressed={viewMode === 'list'}
+            >
+              <List size={14} strokeWidth={2.2} />
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* Files Grid or Empty State */}
+      {/* Files list / grid */}
       {isLoading ? (
-        <div className="my-files-surface my-files-muted flex h-48 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white p-12 text-center text-slate-500">
-          <div className="space-y-3">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-[#4F46E5] border-t-transparent"></div>
-            <p className="text-sm font-medium">Loading files...</p>
-          </div>
+        <div className="my-files-loading">
+          <div className="my-files-spinner" />
+          <p>Loading files…</p>
         </div>
       ) : filteredFiles.length > 0 ? (
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <section className={viewMode === 'list' ? 'my-files-list' : 'my-files-grid'}>
+          {viewMode === 'list' && (
+            <div className="my-files-list-header">
+              <div /> <div /> <div>Name</div> <div>Type</div>
+              <div>Size</div> <div>Modified</div> <div /> <div />
+            </div>
+          )}
           {filteredFiles.map((file) => (
             <FileCard
               key={file.id}
               file={file}
+              viewMode={viewMode}
+              selected={selectedIds.has(file.id)}
+              hasSelection={hasSelection}
+              onToggleSelect={toggleSelection}
               onDelete={handleDeleteFile}
               onDownload={handleDownload}
+              onSummarize={handleSummarize}
+              onPreview={handlePreview}
               onPointerDragStart={setPointerDraggedFile}
             />
           ))}
         </section>
       ) : (
-        <div className="my-files-surface rounded-lg border border-dashed border-slate-300 bg-white p-12 text-center">
-          <div className="mx-auto mb-4 text-4xl">📂</div>
-          <h3 className="my-files-title text-lg font-semibold text-[#0F172A]">
+        <div className="my-files-empty">
+          <div className="my-files-empty-icon"><FolderOpen size={40} strokeWidth={1.5} /></div>
+          <h3 className="my-files-empty-title">
             {searchQuery ? `No files matching "${searchQuery}"` : 'No files uploaded yet'}
           </h3>
-          <p className="my-files-muted mt-2 text-sm text-[#64748B]">
-            {searchQuery
-              ? 'Try searching with a different term or clear filters.'
-              : 'Upload your first file to securely store and share documents.'}
+          <p className="my-files-empty-subtitle">
+            {searchQuery ? 'Try a different term or clear filters.' : 'Upload your first file to securely store and share documents.'}
           </p>
-          <div className="mt-6">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-2xl bg-[#4F46E5] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#3730A3]"
-            >
-              ⬆️ Upload File
+          {!searchQuery && (
+            <button type="button" onClick={() => fileInputRef.current?.click()}
+              className="my-files-btn my-files-btn--primary" style={{ marginTop: 20 }}>
+              <Upload size={15} strokeWidth={2.2} /> Upload File
             </button>
-          </div>
+          )}
         </div>
       )}
+
+      {/* Modals */}
+      <FolderModal
+        isOpen={folderModal.open}
+        mode={folderModal.mode}
+        initialName={folderModal.initialName}
+        onClose={closeFolderModal}
+        onSubmit={handleFolderSubmit}
+      />
+
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        onClose={closeConfirmModal}
+        onConfirm={handleConfirmDelete}
+        icon={Trash2}
+        title={
+          confirmModal.type === 'bulk'
+            ? `Delete ${confirmModal.target?.count} file${confirmModal.target?.count > 1 ? 's' : ''}?`
+            : `Delete "${confirmModal.target?.name}"?`
+        }
+        message={
+          confirmModal.type === 'bulk'
+            ? `${confirmModal.target?.count} selected file${confirmModal.target?.count > 1 ? 's' : ''} will be permanently deleted. This action cannot be undone.`
+            : confirmModal.type === 'folder'
+              ? 'This folder and all files and subfolders inside it will be permanently deleted. This action cannot be undone.'
+              : 'This file will be permanently deleted from your storage. This action cannot be undone.'
+        }
+        confirmText="Delete"
+        variant="danger"
+      />
+
+      {summaryFile && (
+        <FileSummaryPanel file={summaryFile} onClose={() => setSummaryFile(null)} />
+      )}
+
+            {previewFile && (
+        <FilePreviewModal
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
+          onDownload={handleDownload}
+          onDelete={handleDeleteFile}
+        />
+      )}
+
+      {/* Upload Progress Modal */}
+      <UploadProgressModal
+        isOpen={uploadQueue.length > 0}
+        files={uploadQueue}
+        overallProgress={uploadProgress}
+        speed={uploadStats.speed}
+        eta={uploadStats.eta}
+        totalSize={uploadStats.totalSize}
+        uploadedSize={uploadStats.uploadedSize}
+        isCancellable={uploadStats.isCancellable}
+        isComplete={uploadStats.isComplete}
+        hasErrors={uploadStats.hasErrors}
+        onCancel={cancelUpload}
+        onClose={resetUploadState}
+      />
     </div>
   );
 }
