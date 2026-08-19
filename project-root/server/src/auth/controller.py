@@ -463,23 +463,6 @@ def oauth_exchange(body: models.OAuthExchangeRequest):
         "token_type": "bearer",
     }
 
-
-@router.post("/mfa/enable", response_model=models.UserOut)
-def enable_mfa(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return service.enable_mfa(db, current_user)
-
-
-@router.post("/mfa/disable", response_model=models.UserOut)
-def disable_mfa(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return service.disable_mfa(db, current_user)
-
-
 @router.post("/mfa/setup")
 def mfa_setup(
     current_user: User = Depends(get_current_user),

@@ -12,6 +12,8 @@ from src.auth import email_service
 import os
 import random
 import secrets
+from collections import defaultdict
+from threading import Lock
 from datetime import datetime, timedelta, timezone
 
 from src.analytics.services import log_event
@@ -33,6 +35,80 @@ _used_reset_tokens: set[str] = set()
 
 DEFAULT_DEV_DUMMY_EMAIL_DOMAINS = "example.com,test.com,invalid,localhost"
 
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LOGIN RATE LIMITING (Brute force protection)
+# ═══════════════════════════════════════════════════════════════════════════
+
+_login_attempts_email: dict[str, list[float]] = defaultdict(list)
+_login_attempts_ip: dict[str, list[float]] = defaultdict(list)
+_login_attempts_lock = Lock()
+
+LOGIN_WINDOW_SECONDS = 15 * 60  # 15 minutes
+LOGIN_MAX_PER_EMAIL = 5         # 5 attempts per email
+LOGIN_MAX_PER_IP = 20           # 20 attempts per IP
+
+
+def _check_login_rate_limit(email: str, ip_address: str | None) -> tuple[bool, int]:
+    """
+    Check if login attempt is allowed.
+
+    Returns:
+        (allowed, retry_after_seconds)
+        - allowed = True → login can proceed
+        - allowed = False → return retry_after seconds to wait
+    """
+    now = datetime.now(timezone.utc).timestamp()
+    cutoff = now - LOGIN_WINDOW_SECONDS
+    email_lower = (email or "").lower().strip()
+
+    with _login_attempts_lock:
+        # Prune expired entries
+        _login_attempts_email[email_lower] = [
+            t for t in _login_attempts_email[email_lower] if t > cutoff
+        ]
+
+        # Check email limit
+        if len(_login_attempts_email[email_lower]) >= LOGIN_MAX_PER_EMAIL:
+            oldest = _login_attempts_email[email_lower][0]
+            retry_after = int(oldest + LOGIN_WINDOW_SECONDS - now)
+            return False, max(1, retry_after)
+
+        # Check IP limit
+        if ip_address:
+            _login_attempts_ip[ip_address] = [
+                t for t in _login_attempts_ip[ip_address] if t > cutoff
+            ]
+            if len(_login_attempts_ip[ip_address]) >= LOGIN_MAX_PER_IP:
+                oldest = _login_attempts_ip[ip_address][0]
+                retry_after = int(oldest + LOGIN_WINDOW_SECONDS - now)
+                return False, max(1, retry_after)
+
+    return True, 0
+
+
+def _record_failed_login(email: str, ip_address: str | None) -> None:
+    """Track a failed login attempt."""
+    now = datetime.now(timezone.utc).timestamp()
+    email_lower = (email or "").lower().strip()
+    with _login_attempts_lock:
+        _login_attempts_email[email_lower].append(now)
+        if ip_address:
+            _login_attempts_ip[ip_address].append(now)
+
+
+def _clear_login_attempts(email: str, ip_address: str | None) -> None:
+    """Clear all login attempts for email (called on successful login)."""
+    email_lower = (email or "").lower().strip()
+    with _login_attempts_lock:
+        _login_attempts_email.pop(email_lower, None)
+        if ip_address:
+            _login_attempts_ip.pop(ip_address, None)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ENVIRONMENT HELPERS
+# ═══════════════════════════════════════════════════════════════════════════
 
 def _environment() -> str:
     return os.getenv("ENVIRONMENT", "development").strip().lower()
@@ -67,9 +143,46 @@ def authenticate_user(
     password: str,
     ip_address: str | None = None,
 ) -> User | None:
+    """
+    Authenticate user with brute force protection.
+
+    Raises HTTPException 429 if rate limit exceeded.
+    Returns None on invalid credentials.
+    Returns User on success.
+    """
+    # ── Check rate limit BEFORE processing credentials ────────────────
+    allowed, retry_after = _check_login_rate_limit(email, ip_address)
+    if not allowed:
+        # Log the rate limit event for security monitoring
+        log_event(
+            db,
+            event_type=AnalyticsEventType.SECURITY,
+            user_id=None,
+            status=AnalyticsEventStatus.FAILED,
+            ip_address=ip_address,
+            event_metadata={
+                "severity_key": "brute_force",
+                "label": "Login rate limit exceeded",
+                "detail": f"Too many login attempts for {email}",
+                "target": email,
+                "attempts": LOGIN_MAX_PER_EMAIL,
+            },
+        )
+        db.commit()
+
+        minutes = max(1, retry_after // 60)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many login attempts. Try again in {minutes} minute{'s' if minutes > 1 else ''}.",
+            headers={"Retry-After": str(retry_after)},
+        )
+
     user = db.query(User).filter(User.email == email).first()
 
     if not user or not verify_password(password, user.hashed_password):
+        # ── Record failed attempt for rate limiting ─────────────────
+        _record_failed_login(email, ip_address)
+
         log_event(
             db,
             event_type=AnalyticsEventType.LOGIN,
@@ -84,6 +197,9 @@ def authenticate_user(
         )
         db.commit()
         return None
+
+    # ── Successful login — clear rate limit counters ────────────────
+    _clear_login_attempts(email, ip_address)
 
     log_event(
         db,
