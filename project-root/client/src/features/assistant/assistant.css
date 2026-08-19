@@ -3155,3 +3155,157 @@ body.dark .asst-active-provider {
   width: 32px;
   height: 32px;
 }
+
+/* ── Mobile hamburger toggle button (hidden on desktop) ─────────── */
+.asst-mobile-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--asst-bg-input);
+  border: 1px solid var(--asst-border);
+  color: var(--asst-text-primary);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+.asst-mobile-toggle:hover {
+  background: var(--asst-bg-hover);
+  border-color: var(--asst-border-strong);
+}
+
+/* ── Mobile backdrop overlay ────────────────────────────────────── */
+.asst-mobile-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 999;
+}
+
+body.dark .asst-mobile-backdrop {
+  background: rgba(5, 12, 26, 0.7);
+}
+
+/* ── Desktop: sidebar-wrapper is just a pass-through ────────────── */
+.asst-sidebar-wrapper {
+  display: flex;
+}
+
+/* ── Tablet ─────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .asst-sidebar {
+    width: 260px;
+    min-width: 260px;
+  }
+}
+
+/* ── Mobile ─────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .asst-page {
+    height: calc(100vh - 76px);
+    border-radius: 0;
+    border: none;
+    position: relative;
+  }
+
+  /* Show hamburger button */
+  .asst-mobile-toggle {
+    display: inline-flex;
+  }
+
+  /* Show backdrop */
+  .asst-mobile-backdrop {
+    display: block;
+  }
+
+  /* Sidebar becomes a drawer */
+  .asst-sidebar-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.15);
+  }
+
+  body.dark .asst-sidebar-wrapper {
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.5);
+  }
+
+  .asst-sidebar-wrapper.is-mobile-open {
+    transform: translateX(0);
+  }
+
+  .asst-sidebar {
+    width: 300px;
+    min-width: 300px;
+    max-width: 85vw;
+    display: flex;
+    height: 100%;
+  }
+
+  .asst-messages,
+  .asst-input-area {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .asst-msg-bubble {
+    max-width: 85%;
+  }
+
+  .asst-page-header {
+    padding: 14px 18px;
+  }
+
+  .asst-page-title {
+    font-size: 16px;
+    gap: 10px;
+  }
+
+  .asst-page-title-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+
+  .asst-bubble-window {
+    width: calc(100vw - 32px);
+    right: 16px;
+    left: 16px;
+    height: calc(100vh - 100px);
+  }
+}
+
+/* ── Small phones ───────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .asst-page-header {
+    padding: 12px 14px;
+  }
+
+  .asst-header-actions {
+    gap: 6px;
+  }
+
+  .asst-live-badge {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  .asst-header-btn span {
+    display: none;
+  }
+
+  .asst-header-btn {
+    padding: 6px 10px;
+  }
+}

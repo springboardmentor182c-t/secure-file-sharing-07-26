@@ -865,12 +865,35 @@ body.dark .notification-mark-all:hover:not(:disabled) {
 }
 
 .navbar-assistant-wrapper .asst-bubble-window {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
+  position: fixed;
+  top: 70px;
+  right: 12px;
   bottom: auto;
   left: auto;
   z-index: 1100;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 90px);
+}
+
+/* On tablet and mobile, make it fill more of the screen */
+@media (max-width: 768px) {
+  .navbar-assistant-wrapper .asst-bubble-window {
+    top: 66px;
+    right: 8px;
+    left: 8px;
+    width: auto !important;
+    max-width: none;
+    max-height: calc(100vh - 80px);
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-assistant-wrapper .asst-bubble-window {
+    top: 62px;
+    right: 6px;
+    left: 6px;
+    max-height: calc(100vh - 74px);
+  }
 }
 
 .nav-assistant-btn {
@@ -941,4 +964,177 @@ body.dark .nav-assistant-btn.active {
     width: 36px;
     justify-content: center;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE — Fix mobile/tablet overflow
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Tablet range (768px - 1024px) ─────────────────────────────────── */
+@media (max-width: 1024px) {
+  .navbar-modern {
+    gap: 12px;
+    padding: 0 12px 0 62px;
+  }
+  .navbar-search {
+    max-width: 100%;
+  }
+  .search-shortcut {
+    display: none;
+  }
+}
+
+/* ── Small tablets and large phones (640px) ────────────────────────── */
+@media (max-width: 640px) {
+  .navbar-modern {
+    gap: 8px;
+    padding: 0 10px 0 58px;
+  }
+
+  .navbar-search {
+    height: 36px;
+    padding: 0 8px;
+    gap: 6px;
+  }
+
+  .navbar-search input {
+    font-size: 12.5px;
+  }
+
+  .navbar-search input::placeholder {
+    opacity: 0.7;
+  }
+
+  /* Compact AI Search button — icon only */
+  .ai-search-trigger-btn {
+    padding: 4px 8px;
+    font-size: 10.5px;
+  }
+
+  .ai-search-trigger-btn span,
+  .ai-search-trigger-btn:not(:has(svg)) {
+    display: none;
+  }
+
+  .navbar-actions {
+    gap: 2px;
+  }
+
+  .nav-icon-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  /* Notification dropdown fits screen */
+  .notification-dropdown {
+    width: calc(100vw - 24px);
+    max-width: 340px;
+    right: -6px;
+  }
+
+  /* Search dropdown fits screen */
+  .search-dropdown {
+    max-height: 60vh;
+  }
+}
+
+/* ── Phones (480px) ────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .navbar-modern {
+    gap: 6px;
+    padding: 0 8px 0 54px;
+  }
+
+  /* Hide AI Search button text on very small screens (keep just icon) */
+  .ai-search-trigger-btn {
+    padding: 4px 6px;
+    min-width: 28px;
+    justify-content: center;
+  }
+
+  .ai-search-trigger-btn > *:not(svg) {
+    display: none;
+  }
+
+  /* AI Assistant button — icon only */
+  .nav-assistant-label {
+    display: none;
+  }
+  .nav-assistant-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  /* Compact icon buttons */
+  .nav-icon-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Connection status icon can hide on very small screens */
+  .navbar-actions > *:nth-child(2) {
+    display: none;
+  }
+
+  /* Notification badge slightly smaller */
+  .notif-dot {
+    min-width: 14px;
+    height: 14px;
+    font-size: 8px;
+  }
+
+  /* Search takes priority — collapse notification dropdown */
+  .notification-dropdown {
+    right: -10px;
+    width: calc(100vw - 20px);
+  }
+
+  /* Search dropdown */
+  .search-dropdown {
+    max-height: 55vh;
+  }
+}
+
+/* ── Very small phones (360px) ─────────────────────────────────────── */
+@media (max-width: 360px) {
+  .navbar-modern {
+    padding: 0 6px 0 52px;
+    gap: 4px;
+  }
+
+  .navbar-search input {
+    font-size: 12px;
+  }
+
+  .navbar-search input::placeholder {
+    font-size: 11px;
+  }
+
+  /* Hide theme toggle on tiny screens — keep just bell + AI */
+  .nav-icon-btn:has(svg[class*="Sun"]),
+  .nav-icon-btn:has(svg[class*="Moon"]) {
+    display: none;
+  }
+}
+
+/* ── Ensure navbar contents never overflow horizontally ─────────────── */
+.navbar-modern {
+  overflow: visible;
+  max-width: 100vw;
+}
+
+.navbar-search,
+.navbar-actions {
+  min-width: 0;
+}
+
+.navbar-actions > * {
+  flex-shrink: 0;
+}
+
+/* Prevent body horizontal scroll caused by navbar */
+body {
+  overflow-x: hidden;
 }

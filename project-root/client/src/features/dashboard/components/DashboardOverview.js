@@ -130,7 +130,7 @@ export default function DashboardOverview({ dashboardData = {}, user }) {
       <PageHeader
         buttonIcon={<Upload aria-hidden="true" size={16} />}
         buttonText="Upload file"
-        onButtonClick={() => navigate('/files')}
+        onButtonClick={() => navigate('/my-files')}
         subtitle={new Intl.DateTimeFormat('en-IN', { dateStyle: 'full' }).format(
           new Date(),
         )}
@@ -148,7 +148,7 @@ export default function DashboardOverview({ dashboardData = {}, user }) {
           <section className="card dashboard-panel">
             <PanelHeader
               action="View all"
-              onAction={() => navigate('/files')}
+              onAction={() => navigate('/my-files')}
               title="Recent files"
             />
             {recentFiles.length === 0 ? (
@@ -157,7 +157,7 @@ export default function DashboardOverview({ dashboardData = {}, user }) {
                 <p>No files have been uploaded yet.</p>
                 <button
                   className="btn btn-primary btn-sm"
-                  onClick={() => navigate('/files')}
+                  onClick={() => navigate('/my-files')}
                   type="button"
                 >
                   Upload your first file
@@ -195,8 +195,8 @@ export default function DashboardOverview({ dashboardData = {}, user }) {
             <PanelHeader title="Quick actions" />
             <div className="dashboard-actions-grid">
               {[
-                ['Upload file', Upload, '/files'],
-                ['Browse files', FolderOpen, '/files'],
+                ['Upload file', Upload, '/my-files'],
+                ['Browse files', FolderOpen, '/my-files'],
                 ['Create share', Share2, '/sharing'],
                 ['Security', ShieldCheck, '/settings?tab=security'],
               ].map(([label, Icon, route]) => (

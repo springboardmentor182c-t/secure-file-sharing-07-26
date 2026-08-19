@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { Sparkles, Loader2, Settings as SettingsIcon } from 'lucide-react';
+import { Sparkles, Loader2, Settings as SettingsIcon, Menu } from 'lucide-react';
 import { useAssistantStatus } from './hooks/useAssistantStatus';
 import { useConversations } from './hooks/useConversations';
 import ConversationSidebar from './components/ConversationSidebar';
@@ -28,6 +28,9 @@ const AssistantPage = () => {
     conversationParam ? parseInt(conversationParam, 10) : null
   );
   const [chatRefreshKey, setChatRefreshKey] = useState(0);
+
+  // ── Mobile sidebar drawer state ─────────────────────────────────
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     const paramId = searchParams.get('conversation');
@@ -76,14 +79,31 @@ const AssistantPage = () => {
     return unsubscribe;
   }, [activeConvId, refetchConversations]);
 
+  // ── Close mobile drawer on Escape ─────────────────────────────
+  useEffect(() => {
+    if (!mobileSidebarOpen) return;
+    const handleKey = (e) => {
+      if (e.key === 'Escape') setMobileSidebarOpen(false);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [mobileSidebarOpen]);
+
+  // ── Close mobile drawer when route changes ────────────────────
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [location.pathname]);
+
   const handleNewChat = useCallback(() => {
     setActiveConvId(null);
     setSearchParams({}, { replace: true });
+    setMobileSidebarOpen(false); // Auto-close on new chat
   }, [setSearchParams]);
 
   const handleSelectConversation = useCallback((id) => {
     setActiveConvId(id);
     setSearchParams({ conversation: String(id) }, { replace: true });
+    setMobileSidebarOpen(false); // Auto-close on select
   }, [setSearchParams]);
 
   const handleDeleteConversation = useCallback(async (id) => {
@@ -125,7 +145,7 @@ const AssistantPage = () => {
     );
   }
 
-  // Admin Setup View 
+  // Admin Setup View
   if (showAdminSetup) {
     return (
       <div className="asst-admin-wrapper">
@@ -134,7 +154,7 @@ const AssistantPage = () => {
     );
   }
 
-  // Assistant disabled 
+  // Assistant disabled
   if (status && !status.is_enabled) {
     return (
       <div style={{
@@ -169,24 +189,50 @@ const AssistantPage = () => {
     );
   }
 
-  // Main Chat Page 
+  // Main Chat Page
   return (
     <div className="asst-page">
-      {/* Sidebar */}
-      <ConversationSidebar
-        conversations={conversations}
-        activeId={activeConvId}
-        onSelect={handleSelectConversation}
-        onDelete={handleDeleteConversation}
-        onRename={rename}
-        onNewChat={handleNewChat}
-      />
+      {/* Mobile backdrop overlay */}
+      <AnimatePresence>
+        {mobileSidebarOpen && (
+          <motion.div
+            className="asst-mobile-backdrop"
+            onClick={() => setMobileSidebarOpen(false)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar — desktop: always visible, mobile: drawer */}
+      <div className={`asst-sidebar-wrapper ${mobileSidebarOpen ? 'is-mobile-open' : ''}`}>
+        <ConversationSidebar
+          conversations={conversations}
+          activeId={activeConvId}
+          onSelect={handleSelectConversation}
+          onDelete={handleDeleteConversation}
+          onRename={rename}
+          onNewChat={handleNewChat}
+        />
+      </div>
 
       {/* Main chat area */}
       <div className="asst-main">
         {/* Header */}
         <div className="asst-page-header">
           <div className="asst-page-title">
+            {/* Mobile hamburger — only visible on mobile */}
+            <button
+              type="button"
+              className="asst-mobile-toggle"
+              onClick={() => setMobileSidebarOpen(true)}
+              aria-label="Open conversation list"
+            >
+              <Menu size={18} />
+            </button>
+
             <div className="asst-page-title-icon">
               <Sparkles size={20} />
             </div>
