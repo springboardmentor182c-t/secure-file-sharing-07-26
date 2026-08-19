@@ -1,12 +1,10 @@
 # server/src/files/service.py
 
-import os
 import re
 import uuid
 import hashlib
 import mimetypes
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
@@ -60,10 +58,10 @@ def sanitize_filename(filename: str) -> str:
     return filename
 
 DANGEROUS_SIGNATURES = [
-    b"X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR",  
-    b"MZ\x90\x00",  
-    b"\x7fELF",     
-    b"#!/",         
+    b"X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR",
+    b"MZ\x90\x00",
+    b"\x7fELF",
+    b"#!/",
 ]
 
 DANGEROUS_EXTENSIONS = {
@@ -72,7 +70,6 @@ DANGEROUS_EXTENSIONS = {
 }
 
 def _basic_malware_check(filename: str, file_bytes: bytes) -> None:
-    
     ext = Path(filename).suffix.lower()
     if ext in DANGEROUS_EXTENSIONS:
         raise HTTPException(
@@ -136,7 +133,6 @@ def _detect_suspicious_activity(
             level="critical",
         )
 
-        # ── Log SECURITY event with brute_force severity ─────────────────
         log_event(
             db,
             event_type=AnalyticsEventType.SECURITY,
@@ -192,7 +188,6 @@ def get_file(
     if not file:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
 
-    # Owner authorization
     if file.owner_id != owner_id:
         _audit(
             db,
@@ -204,7 +199,6 @@ def get_file(
         )
         _detect_suspicious_activity(db, owner_id, ip_address=ip_address)
 
-        # ── Log SECURITY event ─────────────────────────────────────────
         log_event(
             db,
             event_type=AnalyticsEventType.SECURITY,
@@ -229,6 +223,7 @@ def get_file(
 
     return file
 
+
 # ═══════════════════════════════════════════════════════════════════════════
 # UPLOAD
 # ═══════════════════════════════════════════════════════════════════════════
@@ -252,8 +247,7 @@ def upload_file(
     except HTTPException:
         raise
 
-
-    # ── Validate upload (log FAILED analytics event if invalid) ───────────
+    # ── Validate upload ─────────────────────────────────────────────
     try:
         validate_upload(db, upload, file_size)
     except HTTPException as e:
@@ -314,14 +308,12 @@ def upload_file(
     )
 
     db.add(file)
-    db.flush()  # Generate PK before audit log
+    db.flush()
 
-    # Update user storage
     user = db.query(User).filter(User.id == owner_id).first()
     if user:
         user.storage_used = (user.storage_used or 0) + file_size
 
-    # Audit log
     _audit(
         db,
         owner_id,
@@ -331,7 +323,6 @@ def upload_file(
         level="info",
     )
 
-    # ── Log UPLOAD analytics event ─────────────────────────────────────────
     log_event(
         db,
         event_type=AnalyticsEventType.UPLOAD,
@@ -360,7 +351,6 @@ def upload_file(
     db.commit()
     db.refresh(file)
 
-    # Automatically index document content for AI search
     try:
         from src.search.service import get_or_index_file_content
         get_or_index_file_content(db, file)
@@ -421,23 +411,18 @@ def delete_file(
             detail="Not authorized",
         )
 
-    # Delete encrypted file from disk
     try:
         delete_encrypted_file(file.stored_name)
     except Exception:
         pass
 
-    # Delete AES key
     if file.encrypted:
         try:
             delete_key(file.stored_name)
         except Exception:
             pass
 
-    # ── FIX P1-04: Clean up ALL derived data ──────────────────────────────
-    # Prevents confidential content leaking through cached derived data
-
-    # 1. Delete file content index used for AI search
+    # ── Clean up ALL derived data ──────────────────────────────
     try:
         from src.entities.file_content import FileContent
         db.query(FileContent).filter(
@@ -446,7 +431,6 @@ def delete_file(
     except Exception as _e:
         print(f"[DELETE CLEANUP] FileContent: {_e}", flush=True)
 
-    # 2. Delete AI generated summaries
     try:
         from src.entities.file_summary import FileSummary
         db.query(FileSummary).filter(
@@ -455,7 +439,6 @@ def delete_file(
     except Exception as _e:
         print(f"[DELETE CLEANUP] FileSummary: {_e}", flush=True)
 
-    # 3. Delete shared access permissions
     try:
         from src.entities.file_permission import FilePermission
         db.query(FilePermission).filter(
@@ -464,7 +447,6 @@ def delete_file(
     except Exception as _e:
         print(f"[DELETE CLEANUP] FilePermission: {_e}", flush=True)
 
-    # 4. Deactivate share links for this file
     try:
         from src.entities.share_link import ShareLink
         db.query(ShareLink).filter(
@@ -473,15 +455,12 @@ def delete_file(
     except Exception as _e:
         print(f"[DELETE CLEANUP] ShareLink: {_e}", flush=True)
 
-    # Soft delete metadata
     file.is_deleted = True
 
-    # Update storage usage
     user = db.query(User).filter(User.id == owner_id).first()
     if user:
         user.storage_used = max(0, user.storage_used - file.size)
 
-    # Audit log
     _audit(
         db,
         owner_id,
@@ -506,8 +485,9 @@ def delete_file(
 
     db.commit()
 
+
 # ═══════════════════════════════════════════════════════════════════════════
-# DOWNLOAD (decrypts + integrity check)
+# DOWNLOAD (in-memory decryption — no temp file, faster)
 # ═══════════════════════════════════════════════════════════════════════════
 
 def get_file_path(
@@ -516,7 +496,17 @@ def get_file_path(
     owner_id: int,
     ip_address: str | None = None,
     notification_user_id: int | None = None,
-) -> tuple[Path, str]:
+) -> tuple[bytes, str, str]:
+    """
+    Decrypt file in memory and return raw bytes.
+
+    Returns:
+        Tuple of (decrypted_bytes, original_filename, mimetype)
+
+    Note: Function name kept as 'get_file_path' for backward compatibility.
+    Previously returned (Path, str) — now returns (bytes, str, str) for
+    faster in-memory streaming without temp file overhead.
+    """
     # Fetch file metadata
     file = (
         db.query(File)
@@ -530,7 +520,7 @@ def get_file_path(
     if file.owner_id != owner_id:
         raise HTTPException(status_code=403, detail="You are not authorized to download this file.")
 
-    LARGE_FILE_THRESHOLD = 100 * 1024 * 1024  
+    LARGE_FILE_THRESHOLD = 100 * 1024 * 1024
     if file.size > LARGE_FILE_THRESHOLD:
         print(
             f"[LARGE FILE WARNING] Decrypting {file.original_name} "
@@ -640,18 +630,8 @@ def get_file_path(
     else:
         decrypted_bytes = encrypted_bytes
 
-    # Write to temp file
-    temp_file = NamedTemporaryFile(
-        delete=False,
-        suffix=Path(file.original_name).suffix,
-    )
-    temp_file.write(decrypted_bytes)
-    temp_file.close()
-
-    # Verify integrity
-    sha256 = hashlib.sha256()
-    sha256.update(decrypted_bytes)
-    calculated_hash = sha256.hexdigest()
+    # Verify integrity in memory (no temp file needed)
+    calculated_hash = hashlib.sha256(decrypted_bytes).hexdigest()
 
     if calculated_hash != file.hash_sha256:
         _audit(
@@ -678,7 +658,6 @@ def get_file_path(
             },
         )
         db.commit()
-        os.remove(temp_file.name)
         raise HTTPException(
             status_code=500,
             detail="File integrity verification failed.",
@@ -688,7 +667,6 @@ def get_file_path(
     file.download_count += 1
     file.last_downloaded_at = datetime.now(timezone.utc)
 
-    # Audit log
     _audit(
         db,
         owner_id,
@@ -698,7 +676,6 @@ def get_file_path(
         level="info",
     )
 
-    # ── Log DOWNLOAD analytics event ───────────────────────────────────────
     log_event(
         db,
         event_type=AnalyticsEventType.DOWNLOAD,
@@ -724,7 +701,12 @@ def get_file_path(
 
     db.commit()
 
-    return Path(temp_file.name), file.original_name
+    # Return decrypted bytes + filename + mimetype (no temp file overhead)
+    return (
+        decrypted_bytes,
+        file.original_name,
+        file.mimetype or "application/octet-stream",
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -751,7 +733,6 @@ def rotate_file_key(
 
     save_encrypted_file(file.stored_name, new_encrypted_bytes)
 
-    # Atomic key replacement with rollback safety
     try:
         save_key(file.stored_name, new_key)
     except Exception as e:
@@ -815,7 +796,6 @@ def rotate_file_key(
             f"Key rotation failed, rolled back to previous key: {e}"
         )
 
-    # Audit + analytics for success
     _audit(
         db,
         owner_id,

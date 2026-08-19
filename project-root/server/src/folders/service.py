@@ -15,6 +15,8 @@ class FolderCreate(BaseModel):
     name: str
     parent_id: Optional[int] = None
 
+class FolderRename(BaseModel):
+    name: str
 
 class FolderOut(BaseModel):
     id: int
@@ -68,6 +70,42 @@ def create_folder(db: Session, data: FolderCreate, owner_id: int) -> FolderOut:
     db.commit()
     db.refresh(folder)
     return folder
+
+def rename_folder(
+    db: Session,
+    folder_id: int,
+    owner_id: int,
+    new_name: str,
+) -> FolderOut:
+    
+    if not new_name or not new_name.strip():
+        raise HTTPException(status_code=400, detail="Folder name cannot be empty")
+
+    folder = (
+        db.query(Folder)
+        .filter(Folder.id == folder_id, Folder.owner_id == owner_id)
+        .first()
+    )
+    if not folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+
+    folder.name = new_name.strip()
+    db.commit()
+    db.refresh(folder)
+
+    return FolderOut(
+        id=folder.id,
+        name=folder.name,
+        owner_id=folder.owner_id,
+        parent_id=folder.parent_id,
+        created_at=folder.created_at,
+        item_count=(
+            db.query(File)
+            .filter(File.folder_id == folder.id, File.is_deleted == False)
+            .count()
+            + db.query(Folder).filter(Folder.parent_id == folder.id).count()
+        ),
+    )
 
 
 def _folder_tree(db: Session, folder: Folder, owner_id: int) -> list[Folder]:

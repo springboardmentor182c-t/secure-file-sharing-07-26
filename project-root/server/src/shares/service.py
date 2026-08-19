@@ -123,14 +123,13 @@ def get_public_file_path(
 
     from src.files.service import get_file_path
 
-    path, original_name = get_file_path(
+    decrypted_bytes, original_name, mimetype = get_file_path(
         db,
         file.id,
         file.owner_id,
         ip_address=ip_address,
     )
-    return path, original_name, file.mimetype, share_out.permission
-
+    return decrypted_bytes, original_name, mimetype, share_out.permission
 
 # ═══════════════════════════════════════════════════════════════════════════
 # CREATE SHARE

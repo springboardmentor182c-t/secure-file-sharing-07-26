@@ -1,4 +1,3 @@
-import os
 from io import BytesIO
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -11,7 +10,12 @@ from src.entities.user import User
 from src.entities.file import File
 from src.entities.file_permission import FilePermission
 from src.files.service import get_file_path
-from src.shared_with_me.models import DirectShareCreate, DirectShareOut, DirectSharesResponse, SharedFilesResponse
+from src.shared_with_me.models import (
+    DirectShareCreate,
+    DirectShareOut,
+    DirectSharesResponse,
+    SharedFilesResponse,
+)
 from src.shared_with_me.service import (
     get_downloadable_shared_file,
     grant_direct_share,
@@ -25,7 +29,10 @@ router = APIRouter()
 
 
 @router.get("/direct", response_model=DirectSharesResponse)
-def direct_shares(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def direct_shares(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     return list_direct_shares(db, current_user.id)
 
 
@@ -49,7 +56,10 @@ def delete_direct_share(
 
 
 @router.get("/", response_model=SharedFilesResponse)
-def shared_with_me(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def shared_with_me(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     return list_shared_files(db, current_user.id)
 
 
@@ -57,33 +67,32 @@ def shared_with_me(db: Session = Depends(get_db), current_user: User = Depends(g
 def download_shared_file(
     file_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     file = get_downloadable_shared_file(db, file_id, current_user.id)
-    path, original_name = get_file_path(
+
+    decrypted_bytes, original_name, mimetype = get_file_path(
         db,
         file.id,
-        file.owner_id,
-        notification_user_id=current_user.id,
+        file.owner_id,                          
+        notification_user_id=current_user.id,   
     )
-    try:
-        with open(path, "rb") as source:
-            data = source.read()
-        return StreamingResponse(
-            BytesIO(data),
-            media_type=file.mimetype,
-            headers={"Content-Disposition": f'attachment; filename="{original_name}"'}
-        )
-    finally:
-        if os.path.exists(path):
-            os.remove(path)
+
+    return StreamingResponse(
+        BytesIO(decrypted_bytes),
+        media_type=mimetype,
+        headers={
+            "Content-Disposition": f'attachment; filename="{original_name}"',
+            "Content-Length": str(len(decrypted_bytes)),
+        },
+    )
 
 
 @router.get("/{file_id}/view")
 def view_shared_file(
     file_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     row = (
         db.query(FilePermission, File)
@@ -99,37 +108,22 @@ def view_shared_file(
     if not row:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to view this file."
+            detail="You do not have permission to view this file.",
         )
 
     permission, file = row
+    decrypted_bytes, original_name, mimetype = get_file_path(
+        db,
+        file.id,
+        file.owner_id,                          
+        notification_user_id=current_user.id,
+    )
 
-    try:
-        path, original_name = get_file_path(
-            db,
-            file.id,
-            file.owner_id,
-            notification_user_id=current_user.id,
-        )
-        print(f"DEBUG view: path={path} original_name={original_name}")
-        with open(path, "rb") as source:
-            data = source.read()
-        return StreamingResponse(
-            BytesIO(data),
-            media_type=file.mimetype,
-            headers={
-                "Content-Disposition": f'inline; filename="{original_name}"'
-            }
-        )
-    except Exception as e:
-        print(f"DEBUG view ERROR: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to load file: {str(e)}"
-        )
-    finally:
-        try:
-            if os.path.exists(path):
-                os.remove(path)
-        except Exception:
-            pass
+    return StreamingResponse(
+        BytesIO(decrypted_bytes),
+        media_type=mimetype or file.mimetype or "application/octet-stream",
+        headers={
+            "Content-Disposition": f'inline; filename="{original_name}"',
+            "Content-Length": str(len(decrypted_bytes)),
+        },
+    )

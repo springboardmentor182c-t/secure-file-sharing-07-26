@@ -117,28 +117,21 @@ def download_file(
 ):
     ip = _get_client_ip(request)
 
-    path, original_name = service.get_file_path(
+    decrypted_bytes, original_name, mimetype = service.get_file_path(
         db,
         file_id,
         current_user.id,
         ip_address=ip,
     )
 
-    try:
-        with open(path, "rb") as file:
-            data = file.read()
-
-        return StreamingResponse(
-            BytesIO(data),
-            media_type="application/octet-stream",
-            headers={
-                "Content-Disposition": f'attachment; filename="{original_name}"'
-            },
-        )
-    finally:
-        if os.path.exists(path):
-            os.remove(path)
-
+    return StreamingResponse(
+        BytesIO(decrypted_bytes),
+        media_type=mimetype,
+        headers={
+            "Content-Disposition": f'attachment; filename="{original_name}"',
+            "Content-Length": str(len(decrypted_bytes)),
+        },
+    )
 
 @router.delete("/{file_id}", status_code=204)
 def delete_file(
