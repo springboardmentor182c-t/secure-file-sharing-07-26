@@ -1,5 +1,5 @@
+from datetime import datetime, timezone
 from io import BytesIO
-
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -24,8 +24,18 @@ from src.shared_with_me.service import (
     revoke_direct_share,
 )
 
-
 router = APIRouter()
+
+
+def _should_increment_access(permission: FilePermission) -> bool:
+    """Debounce rapid double-requests (e.g. React StrictMode or browser range requests) within 3 seconds."""
+    now = datetime.now(timezone.utc)
+    if not permission.last_accessed_at:
+        return True
+    last = permission.last_accessed_at
+    if last.tzinfo is None:
+        last = last.replace(tzinfo=timezone.utc)
+    return (now - last).total_seconds() > 3.0
 
 
 @router.get("/direct", response_model=DirectSharesResponse)
@@ -69,18 +79,24 @@ def download_shared_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    file = get_downloadable_shared_file(db, file_id, current_user.id)
+    file, permission = get_downloadable_shared_file(db, file_id, current_user.id)
+
+    # Debounced view increment
+    if _should_increment_access(permission):
+        permission.access_count = (permission.access_count or 0) + 1
+        permission.last_accessed_at = datetime.now(timezone.utc)
+        db.commit()
 
     decrypted_bytes, original_name, mimetype = get_file_path(
         db,
         file.id,
-        file.owner_id,                          
-        notification_user_id=current_user.id,   
+        file.owner_id,
+        notification_user_id=current_user.id,
     )
 
     return StreamingResponse(
         BytesIO(decrypted_bytes),
-        media_type=mimetype,
+        media_type=mimetype or "application/octet-stream",
         headers={
             "Content-Disposition": f'attachment; filename="{original_name}"',
             "Content-Length": str(len(decrypted_bytes)),
@@ -112,10 +128,16 @@ def view_shared_file(
         )
 
     permission, file = row
+
+    if _should_increment_access(permission):
+        permission.access_count = (permission.access_count or 0) + 1
+        permission.last_accessed_at = datetime.now(timezone.utc)
+        db.commit()
+
     decrypted_bytes, original_name, mimetype = get_file_path(
         db,
         file.id,
-        file.owner_id,                          
+        file.owner_id,
         notification_user_id=current_user.id,
     )
 

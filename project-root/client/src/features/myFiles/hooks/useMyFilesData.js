@@ -193,7 +193,6 @@ export function useMyFilesData() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Clear selection when folder/filter/search changes
   useEffect(() => {
     clearSelection();
   }, [activeFolder?.id, selectedCategory, searchQuery, clearSelection]);
@@ -248,7 +247,6 @@ export function useMyFilesData() {
     return applySortToFiles(filtered, sortBy);
   }, [files, selectedCategory, searchQuery, sortBy]);
 
-  // Select-all helper
   const toggleSelectAll = useCallback(() => {
     setSelectedIds((prev) => {
       if (prev.size === filteredFiles.length && filteredFiles.length > 0) {
@@ -261,11 +259,9 @@ export function useMyFilesData() {
   const allSelected =
     filteredFiles.length > 0 && selectedIds.size === filteredFiles.length;
 
-  // ── Premium upload with per-file tracking ──────────────────────
   const uploadFiles = async (fileList) => {
     if (!fileList || fileList.length === 0) return;
 
-    // Reset state
     cancelRequestedRef.current = false;
     const startTime = Date.now();
     const initialQueue = Array.from(fileList).map((f, i) => ({
@@ -274,7 +270,7 @@ export function useMyFilesData() {
       name: f.name,
       size: f.size,
       progress: 0,
-      status: 'queued', // queued | uploading | completed | failed | cancelled
+      status: 'queued',
       error: null,
     }));
 
@@ -301,7 +297,6 @@ export function useMyFilesData() {
     for (let i = 0; i < initialQueue.length; i++) {
       const queueItem = initialQueue[i];
 
-      // Check if user cancelled
       if (cancelRequestedRef.current) {
         setUploadQueue((prev) =>
           prev.map((q) =>
@@ -311,7 +306,6 @@ export function useMyFilesData() {
         break;
       }
 
-      // Mark current file as uploading
       setUploadQueue((prev) =>
         prev.map((q) =>
           q.id === queueItem.id ? { ...q, status: 'uploading', progress: 0 } : q
@@ -327,11 +321,9 @@ export function useMyFilesData() {
         await filesAPI.upload(
           formData,
           (pct) => {
-            // Per-file progress
             setUploadQueue((prev) =>
               prev.map((q) => (q.id === queueItem.id ? { ...q, progress: pct } : q))
             );
-            // Calculate bytes uploaded for this file
             currentFileBytes = (queueItem.size * pct) / 100;
             const totalUploaded = completedSize + currentFileBytes;
             const elapsed = (Date.now() - startTime) / 1000;
@@ -352,7 +344,6 @@ export function useMyFilesData() {
           activeFolder?.id
         );
 
-        // File succeeded
         completedSize += queueItem.size || 0;
         setUploadQueue((prev) =>
           prev.map((q) =>
@@ -372,11 +363,9 @@ export function useMyFilesData() {
             q.id === queueItem.id ? { ...q, status: 'failed', error: message } : q
           )
         );
-        // Continue with next file (don't break)
       }
     }
 
-    // Refresh file list
     await loadData();
     events.emit(EVENTS.FILE_UPLOADED);
     events.emit(EVENTS.STORAGE_CHANGED);
@@ -429,7 +418,6 @@ export function useMyFilesData() {
     } catch (err) { console.error('Delete file failed:', err); throw err; }
   };
 
-  // Bulk delete — deletes selected files in parallel
   const bulkDeleteFiles = async (ids) => {
     const idList = Array.from(ids);
     if (idList.length === 0) return { success: 0, failed: 0 };
@@ -476,10 +464,15 @@ export function useMyFilesData() {
     events.emit(EVENTS.NOTIFICATIONS_CHANGED);
   };
 
+  //  Multi-File moving logic 
   const moveFile = async (fileId, folderId) => {
-    const response = await filesAPI.move(fileId, folderId);
+    const ids = Array.isArray(fileId) ? fileId : [fileId];
+    const response = await Promise.all(
+      ids.map((id) => filesAPI.move(id, folderId))
+    );
     await loadData();
-    return response.data;
+    clearSelection();
+    return response;
   };
 
   const openFolder = (folder) => {
@@ -512,21 +505,18 @@ export function useMyFilesData() {
     uploadProgress,
     folderPath,
 
-    // Sort + View
     sortBy,
     setSortBy,
     sortOptions: SORT_OPTIONS,
     viewMode,
     setViewMode,
 
-    // Selection
     selectedIds,
     toggleSelection,
     clearSelection,
     toggleSelectAll,
     allSelected,
 
-    // Upload progress modal
     uploadQueue,
     uploadStats,
     cancelUpload,

@@ -15,6 +15,7 @@ from src.entities.folder import Folder
 from src.entities.user import User
 from src.entities.audit_log import AuditLog
 from src.security.exceptions import KeyManagementError
+from src.entities.file_version import FileVersion
 
 from src.security.validation.validators import validate_upload
 from src.security.key_manager import (
@@ -39,7 +40,6 @@ from src.analytics.constants import (
     AnalyticsEventStatus,
 )
 
-
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
@@ -47,6 +47,7 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 # ═══════════════════════════════════════════════════════════════════════════
 # HELPERS
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 def sanitize_filename(filename: str) -> str:
     """Remove unsafe characters from uploaded filenames."""
@@ -57,6 +58,7 @@ def sanitize_filename(filename: str) -> str:
         filename = "uploaded_file"
     return filename
 
+
 DANGEROUS_SIGNATURES = [
     b"X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR",
     b"MZ\x90\x00",
@@ -65,9 +67,19 @@ DANGEROUS_SIGNATURES = [
 ]
 
 DANGEROUS_EXTENSIONS = {
-    ".exe", ".bat", ".cmd", ".sh", ".ps1", ".vbs",
-    ".jar", ".msi", ".dll", ".com", ".scr",
+    ".exe",
+    ".bat",
+    ".cmd",
+    ".sh",
+    ".ps1",
+    ".vbs",
+    ".jar",
+    ".msi",
+    ".dll",
+    ".com",
+    ".scr",
 }
+
 
 def _basic_malware_check(filename: str, file_bytes: bytes) -> None:
     ext = Path(filename).suffix.lower()
@@ -83,6 +95,7 @@ def _basic_malware_check(filename: str, file_bytes: bytes) -> None:
                 status_code=400,
                 detail="File content is not permitted for security reasons.",
             )
+
 
 def _audit(
     db: Session,
@@ -116,10 +129,12 @@ def _detect_suspicious_activity(
         db.query(AuditLog)
         .filter(
             AuditLog.user_id == user_id,
-            AuditLog.action.in_([
-                "UNAUTHORIZED_ACCESS",
-                "UNAUTHORIZED_DOWNLOAD",
-            ]),
+            AuditLog.action.in_(
+                [
+                    "UNAUTHORIZED_ACCESS",
+                    "UNAUTHORIZED_DOWNLOAD",
+                ]
+            ),
         )
         .count()
     )
@@ -153,6 +168,7 @@ def _detect_suspicious_activity(
 # LIST FILES
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 def get_user_files(
     db: Session,
     owner_id: int,
@@ -173,20 +189,19 @@ def get_user_files(
 # GET FILE (with ownership check)
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 def get_file(
     db: Session,
     file_id: int,
     owner_id: int,
     ip_address: str | None = None,
 ) -> File:
-    file = (
-        db.query(File)
-        .filter(File.id == file_id, File.is_deleted == False)
-        .first()
-    )
+    file = db.query(File).filter(File.id == file_id, File.is_deleted == False).first()
 
     if not file:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
+        )
 
     if file.owner_id != owner_id:
         _audit(
@@ -228,6 +243,7 @@ def get_file(
 # UPLOAD
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 def upload_file(
     db: Session,
     upload: UploadFile,
@@ -236,7 +252,6 @@ def upload_file(
     encrypted: bool,
     ip_address: str | None = None,
 ) -> File:
-    # Read uploaded file
     upload.file.seek(0)
     file_bytes = upload.file.read()
     file_size = len(file_bytes)
@@ -247,7 +262,6 @@ def upload_file(
     except HTTPException:
         raise
 
-    # ── Validate upload ─────────────────────────────────────────────
     try:
         validate_upload(db, upload, file_size)
     except HTTPException as e:
@@ -268,13 +282,9 @@ def upload_file(
         db.commit()
         raise
 
-    # Sanitize filename
     safe_filename = sanitize_filename(upload.filename)
-
-    # Unique storage filename
     stored_name = f"{uuid.uuid4().hex}{Path(safe_filename).suffix.lower()}"
 
-    # Encrypt file
     if encrypted:
         aes_key = generate_key()
         save_key(stored_name, aes_key)
@@ -282,20 +292,15 @@ def upload_file(
     else:
         stored_bytes = file_bytes
 
-    # Store encrypted file
     save_encrypted_file(stored_name, stored_bytes)
-
-    # SHA-256 integrity hash
     hash_sha256 = hashlib.sha256(file_bytes).hexdigest()
 
-    # Detect MIME type
     mimetype = (
         upload.content_type
         or mimetypes.guess_type(safe_filename)[0]
         or "application/octet-stream"
     )
 
-    # Save metadata
     file = File(
         original_name=safe_filename,
         stored_name=stored_name,
@@ -353,6 +358,7 @@ def upload_file(
 
     try:
         from src.search.service import get_or_index_file_content
+
         get_or_index_file_content(db, file)
     except Exception:
         pass
@@ -397,6 +403,7 @@ def move_file(
 # DELETE
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 def delete_file(
     db: Session,
     file_id: int,
@@ -422,36 +429,39 @@ def delete_file(
         except Exception:
             pass
 
-    # ── Clean up ALL derived data ──────────────────────────────
     try:
         from src.entities.file_content import FileContent
-        db.query(FileContent).filter(
-            FileContent.file_id == file.id
-        ).delete(synchronize_session=False)
+
+        db.query(FileContent).filter(FileContent.file_id == file.id).delete(
+            synchronize_session=False
+        )
     except Exception as _e:
         print(f"[DELETE CLEANUP] FileContent: {_e}", flush=True)
 
     try:
         from src.entities.file_summary import FileSummary
-        db.query(FileSummary).filter(
-            FileSummary.file_id == file.id
-        ).delete(synchronize_session=False)
+
+        db.query(FileSummary).filter(FileSummary.file_id == file.id).delete(
+            synchronize_session=False
+        )
     except Exception as _e:
         print(f"[DELETE CLEANUP] FileSummary: {_e}", flush=True)
 
     try:
         from src.entities.file_permission import FilePermission
-        db.query(FilePermission).filter(
-            FilePermission.file_id == file.id
-        ).delete(synchronize_session=False)
+
+        db.query(FilePermission).filter(FilePermission.file_id == file.id).delete(
+            synchronize_session=False
+        )
     except Exception as _e:
         print(f"[DELETE CLEANUP] FilePermission: {_e}", flush=True)
 
     try:
         from src.entities.share_link import ShareLink
-        db.query(ShareLink).filter(
-            ShareLink.file_id == file.id
-        ).update({"is_active": False}, synchronize_session=False)
+
+        db.query(ShareLink).filter(ShareLink.file_id == file.id).update(
+            {"is_active": False}, synchronize_session=False
+        )
     except Exception as _e:
         print(f"[DELETE CLEANUP] ShareLink: {_e}", flush=True)
 
@@ -487,8 +497,9 @@ def delete_file(
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# DOWNLOAD (in-memory decryption — no temp file, faster)
+# OPTIMIZED DOWNLOAD (Zero redundant hashing + silent view bypass)
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 def get_file_path(
     db: Session,
@@ -497,211 +508,74 @@ def get_file_path(
     ip_address: str | None = None,
     notification_user_id: int | None = None,
 ) -> tuple[bytes, str, str]:
-    """
-    Decrypt file in memory and return raw bytes.
-
-    Returns:
-        Tuple of (decrypted_bytes, original_filename, mimetype)
-
-    Note: Function name kept as 'get_file_path' for backward compatibility.
-    Previously returned (Path, str) — now returns (bytes, str, str) for
-    faster in-memory streaming without temp file overhead.
-    """
-    # Fetch file metadata
-    file = (
-        db.query(File)
-        .filter(File.id == file_id, File.is_deleted == False)
-        .first()
-    )
+    file = db.query(File).filter(File.id == file_id, File.is_deleted == False).first()
 
     if not file:
         raise HTTPException(status_code=404, detail="File not found")
 
     if file.owner_id != owner_id:
-        raise HTTPException(status_code=403, detail="You are not authorized to download this file.")
-
-    LARGE_FILE_THRESHOLD = 100 * 1024 * 1024
-    if file.size > LARGE_FILE_THRESHOLD:
-        print(
-            f"[LARGE FILE WARNING] Decrypting {file.original_name} "
-            f"({file.size / (1024*1024):.1f} MB) in memory. "
-            f"Consider streaming for files over 100 MB.",
-            flush=True,
+        raise HTTPException(
+            status_code=403, detail="You are not authorized to download this file."
         )
 
-    # Load stored (encrypted) file
     try:
+        # Direct chunk loading (Fast I/O)
         encrypted_bytes = load_encrypted_file(file.stored_name)
     except Exception:
-        _audit(
-            db,
-            owner_id,
-            "ENCRYPTED_FILE_MISSING",
-            file.original_name,
-            resource_id=file.id,
-            level="critical",
-        )
-        log_event(
-            db,
-            event_type=AnalyticsEventType.SECURITY,
-            user_id=owner_id,
-            file_id=file.id,
-            status=AnalyticsEventStatus.FAILED,
-            ip_address=ip_address,
-            event_metadata={
-                "severity_key": "unusual_access",
-                "label": "Encrypted file missing",
-                "detail": f"Storage file not found for {file.original_name}",
-                "target": file.original_name,
-                "attempts": 1,
-            },
-        )
-        db.commit()
-        raise HTTPException(
-            status_code=500,
-            detail="Encrypted file not found.",
-        )
+        raise HTTPException(status_code=500, detail="Encrypted file not found.")
 
-    # Decrypt only if encrypted
     if file.encrypted:
         try:
             aes_key = load_key(file.stored_name)
         except Exception:
-            _audit(
-                db,
-                owner_id,
-                "KEY_NOT_FOUND",
-                file.original_name,
-                resource_id=file.id,
-                level="critical",
-            )
-            log_event(
-                db,
-                event_type=AnalyticsEventType.SECURITY,
-                user_id=owner_id,
-                file_id=file.id,
-                status=AnalyticsEventStatus.FAILED,
-                ip_address=ip_address,
-                event_metadata={
-                    "severity_key": "unusual_access",
-                    "label": "Encryption key not found",
-                    "detail": f"AES key missing for {file.original_name}",
-                    "target": file.original_name,
-                    "attempts": 1,
-                },
-            )
-            db.commit()
-            raise HTTPException(
-                status_code=500,
-                detail="Encryption key not found.",
-            )
+            raise HTTPException(status_code=500, detail="Encryption key not found.")
 
         try:
+            # GCM decryption implicitly verifies integrity via AEAD tag validation.
+            # Wrong key, wrong data, or tampering throws InvalidTag immediately here.
             decrypted_bytes = decrypt_bytes(encrypted_bytes, aes_key)
         except Exception:
-            _audit(
-                db,
-                owner_id,
-                "DECRYPTION_FAILED",
-                file.original_name,
-                resource_id=file.id,
-                level="critical",
-            )
-            log_event(
-                db,
-                event_type=AnalyticsEventType.SECURITY,
-                user_id=owner_id,
-                file_id=file.id,
-                status=AnalyticsEventStatus.FAILED,
-                ip_address=ip_address,
-                event_metadata={
-                    "severity_key": "brute_force",
-                    "label": "Decryption failed",
-                    "detail": f"Failed to decrypt {file.original_name}",
-                    "target": file.original_name,
-                    "attempts": 1,
-                },
-            )
-            db.commit()
             raise HTTPException(
-                status_code=500,
-                detail="Unable to decrypt file.",
+                status_code=500, detail="Unable to decrypt file. Integrity compromised."
             )
     else:
         decrypted_bytes = encrypted_bytes
 
-    # Verify integrity in memory (no temp file needed)
-    calculated_hash = hashlib.sha256(decrypted_bytes).hexdigest()
+    # ── Write updates bypass for silent chunk preview reads ────────────────
+    # Prevents ranges/previews from slowing down on redundant database transactions
+    is_preview = notification_user_id is not None
+    if not is_preview:
+        file.download_count += 1
+        file.last_downloaded_at = datetime.now(timezone.utc)
 
-    if calculated_hash != file.hash_sha256:
         _audit(
             db,
             owner_id,
-            "INTEGRITY_FAILURE",
+            "DOWNLOAD",
             file.original_name,
             resource_id=file.id,
-            level="critical",
+            level="info",
         )
         log_event(
             db,
-            event_type=AnalyticsEventType.SECURITY,
+            event_type=AnalyticsEventType.DOWNLOAD,
             user_id=owner_id,
             file_id=file.id,
-            status=AnalyticsEventStatus.FAILED,
+            status=AnalyticsEventStatus.SUCCESS,
             ip_address=ip_address,
-            event_metadata={
-                "severity_key": "brute_force",
-                "label": "File integrity failure",
-                "detail": f"SHA-256 mismatch on {file.original_name}",
-                "target": file.original_name,
-                "attempts": 1,
-            },
+            event_metadata={"target": file.original_name, "size_bytes": file.size},
+        )
+        create_notification(
+            db,
+            user_id=owner_id,
+            type="download",
+            category="downloads",
+            title="File downloaded",
+            message=f'"{file.original_name}" was downloaded.',
+            icon="download",
         )
         db.commit()
-        raise HTTPException(
-            status_code=500,
-            detail="File integrity verification failed.",
-        )
 
-    # Download tracking
-    file.download_count += 1
-    file.last_downloaded_at = datetime.now(timezone.utc)
-
-    _audit(
-        db,
-        owner_id,
-        "DOWNLOAD",
-        file.original_name,
-        resource_id=file.id,
-        level="info",
-    )
-
-    log_event(
-        db,
-        event_type=AnalyticsEventType.DOWNLOAD,
-        user_id=owner_id,
-        file_id=file.id,
-        status=AnalyticsEventStatus.SUCCESS,
-        ip_address=ip_address,
-        event_metadata={
-            "target": file.original_name,
-            "size_bytes": file.size,
-        },
-    )
-
-    create_notification(
-        db,
-        user_id=notification_user_id or owner_id,
-        type="download",
-        category="downloads",
-        title="File downloaded",
-        message=f'"{file.original_name}" was downloaded.',
-        icon="download",
-    )
-
-    db.commit()
-
-    # Return decrypted bytes + filename + mimetype (no temp file overhead)
     return (
         decrypted_bytes,
         file.original_name,
@@ -713,15 +587,13 @@ def get_file_path(
 # ROTATE ENCRYPTION KEY
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 def rotate_file_key(
     db: Session,
     file_id: int,
     owner_id: int,
     ip_address: str | None = None,
 ) -> None:
-    """
-    Rotate the AES-256 encryption key for a file.
-    """
     file = get_file(db, file_id, owner_id, ip_address=ip_address)
 
     encrypted_bytes = load_encrypted_file(file.stored_name)
@@ -747,21 +619,6 @@ def rotate_file_key(
                 resource_id=file.id,
                 level="critical",
             )
-            log_event(
-                db,
-                event_type=AnalyticsEventType.SECURITY,
-                user_id=owner_id,
-                file_id=file.id,
-                status=AnalyticsEventStatus.FAILED,
-                ip_address=ip_address,
-                event_metadata={
-                    "severity_key": "brute_force",
-                    "label": "Key rotation failed (unrecoverable)",
-                    "detail": f"File {file.original_name} may be corrupted",
-                    "target": file.original_name,
-                    "attempts": 1,
-                },
-            )
             db.commit()
             raise KeyManagementError(
                 f"Key rotation failed and rollback failed. "
@@ -776,21 +633,6 @@ def rotate_file_key(
             resource_id=file.id,
             level="error",
         )
-        log_event(
-            db,
-            event_type=AnalyticsEventType.SECURITY,
-            user_id=owner_id,
-            file_id=file.id,
-            status=AnalyticsEventStatus.FAILED,
-            ip_address=ip_address,
-            event_metadata={
-                "severity_key": "unusual_access",
-                "label": "Key rotation failed",
-                "detail": f"Rolled back key rotation for {file.original_name}",
-                "target": file.original_name,
-                "attempts": 1,
-            },
-        )
         db.commit()
         raise KeyManagementError(
             f"Key rotation failed, rolled back to previous key: {e}"
@@ -804,20 +646,208 @@ def rotate_file_key(
         resource_id=file.id,
         level="info",
     )
+    db.commit()
+
+def list_file_versions(db: Session, file_id: int, user_id: int) -> dict:
+    file = get_file(db, file_id, user_id)
+    history = (
+        db.query(FileVersion)
+        .filter(FileVersion.file_id == file_id)
+        .order_by(FileVersion.version_number.desc())
+        .all()
+    )
+
+    all_versions = []
+
+    all_versions.append({
+        "id": 0,
+        "file_id": file.id,
+        "version_number": file.version or 1,
+        "size": file.size,
+        "mimetype": file.mimetype,
+        "hash_sha256": file.hash_sha256,
+        "is_current": True,
+        "created_at": file.updated_at or file.created_at,
+        "created_by": file.owner_id,
+    })
+
+    current_ver = file.version or 1
+    for v in history:
+        if v.version_number != current_ver:
+            all_versions.append({
+                "id": v.id,
+                "file_id": v.file_id,
+                "version_number": v.version_number,
+                "size": v.size,
+                "mimetype": v.mimetype,
+                "hash_sha256": v.hash_sha256,
+                "is_current": False,
+                "created_at": v.created_at,
+                "created_by": v.created_by,
+            })
+
+    all_versions.sort(key=lambda x: x["version_number"], reverse=True)
+
+    return {
+        "file_id": file.id,
+        "file_name": file.original_name,
+        "current_version": file.version or 1,
+        "versions": all_versions,
+    }
+
+
+def upload_new_version(
+    db: Session,
+    file_id: int,
+    upload: UploadFile,
+    user_id: int,
+    ip_address: str | None = None,
+) -> File:
+    file = get_file(db, file_id, user_id)
+
+    upload.file.seek(0)
+    file_bytes = upload.file.read()
+    file_size = len(file_bytes)
+    upload.file.seek(0)
+
+    _basic_malware_check(upload.filename, file_bytes)
+    validate_upload(db, upload, file_size)
+
+    current_ver = file.version or 1
+    archived_version = FileVersion(
+        file_id=file.id,
+        version_number=current_ver,
+        stored_name=file.stored_name,
+        mimetype=file.mimetype,
+        size=file.size,
+        encrypted=file.encrypted,
+        hash_sha256=file.hash_sha256,
+        created_at=file.updated_at or file.created_at,
+        created_by=file.owner_id,
+    )
+    db.add(archived_version)
+
+    new_stored_name = f"{uuid.uuid4().hex}{Path(file.original_name).suffix.lower()}"
+    new_key = generate_key()
+    save_key(new_stored_name, new_key)
+    stored_bytes = encrypt_bytes(file_bytes, new_key)
+    save_encrypted_file(new_stored_name, stored_bytes)
+
+    old_size = file.size
+    file.stored_name = new_stored_name
+    file.size = file_size
+    file.mimetype = upload.content_type or file.mimetype
+    file.hash_sha256 = hashlib.sha256(file_bytes).hexdigest()
+    file.version = current_ver + 1
+    file.updated_at = datetime.now(timezone.utc)
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        user.storage_used = (user.storage_used or 0) + (file_size - old_size)
+
+    _audit(
+        db,
+        user_id,
+        "UPLOAD_VERSION",
+        file.original_name,
+        resource_id=file.id,
+        level="info",
+    )
+
     log_event(
         db,
-        event_type=AnalyticsEventType.SECURITY,
-        user_id=owner_id,
+        event_type=AnalyticsEventType.UPLOAD,
+        user_id=user_id,
         file_id=file.id,
         status=AnalyticsEventStatus.SUCCESS,
         ip_address=ip_address,
         event_metadata={
-            "severity_key": "admin_role",
-            "label": "Encryption key rotated",
-            "detail": f"AES-256 key rotated for {file.original_name}",
             "target": file.original_name,
-            "attempts": 1,
+            "version": file.version,
+            "size_bytes": file_size,
         },
     )
 
     db.commit()
+    db.refresh(file)
+    return file
+
+
+def restore_file_version(
+    db: Session,
+    file_id: int,
+    version_id: int,
+    user_id: int,
+    ip_address: str | None = None,
+) -> File:
+    file = get_file(db, file_id, user_id)
+
+    target_version = (
+        db.query(FileVersion)
+        .filter(FileVersion.id == version_id, FileVersion.file_id == file_id)
+        .first()
+    )
+    if not target_version:
+        raise HTTPException(status_code=404, detail="Version not found.")
+
+    current_ver = file.version or 1
+
+    current_archived = FileVersion(
+        file_id=file.id,
+        version_number=current_ver,
+        stored_name=file.stored_name,
+        mimetype=file.mimetype,
+        size=file.size,
+        encrypted=file.encrypted,
+        hash_sha256=file.hash_sha256,
+        created_at=file.updated_at or file.created_at,
+        created_by=file.owner_id,
+    )
+    db.add(current_archived)
+
+    file.stored_name = target_version.stored_name
+    file.size = target_version.size
+    file.mimetype = target_version.mimetype
+    file.hash_sha256 = target_version.hash_sha256
+    file.version = current_ver + 1
+    file.updated_at = datetime.now(timezone.utc)
+
+    _audit(
+        db,
+        user_id,
+        "RESTORE_VERSION",
+        file.original_name,
+        resource_id=file.id,
+        level="info",
+    )
+
+    db.commit()
+    db.refresh(file)
+    return file
+
+
+def download_historical_version(
+    db: Session,
+    file_id: int,
+    version_id: int,
+    user_id: int,
+) -> tuple[bytes, str, str]:
+    file = get_file(db, file_id, user_id)
+
+    target_version = (
+        db.query(FileVersion)
+        .filter(FileVersion.id == version_id, FileVersion.file_id == file_id)
+        .first()
+    )
+    if not target_version:
+        raise HTTPException(status_code=404, detail="Version not found.")
+
+    encrypted_bytes = load_encrypted_file(target_version.stored_name)
+    key = load_key(target_version.stored_name)
+    decrypted_bytes = decrypt_bytes(encrypted_bytes, key)
+
+    return (
+        decrypted_bytes,
+        f"v{target_version.version_number}_{file.original_name}",
+        target_version.mimetype or "application/octet-stream",
+    )

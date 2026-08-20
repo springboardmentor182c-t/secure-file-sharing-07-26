@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Upload, FolderPlus, FolderOpen, CheckCircle2, XCircle, Trash2, LayoutGrid, List } from 'lucide-react';
 import FolderCard from './components/FolderCard';
 import FileCard from './components/FileCard';
@@ -10,6 +10,8 @@ import SortDropdown from './components/SortDropdown';
 import SelectionBar from './components/SelectionBar';
 import FilePreviewModal from './components/FilePreviewModal';
 import UploadProgressModal from './components/UploadProgressModal';
+import MoveModal from './components/MoveModal';
+import VersionHistoryModal from './components/VersionHistoryModal';
 import FileSummaryPanel from '../fileSummary/components/FileSummaryPanel';
 import { useMyFilesData } from './hooks/useMyFilesData';
 
@@ -23,6 +25,7 @@ export default function MyFiles() {
     uploadFiles, createFolder, renameFolder,
     deleteFile, bulkDeleteFiles, deleteFolder, downloadFile, moveFile,
     openFolder, goToFolder, goToRoot, uploadQueue, uploadStats, cancelUpload, resetUploadState,
+    refetch,
   } = useMyFilesData();
 
   const fileInputRef = useRef(null);
@@ -33,9 +36,11 @@ export default function MyFiles() {
   const [pointerDraggedFile, setPointerDraggedFile] = useState(null);
   const [summaryFile, setSummaryFile] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
+  const [versionModalFile, setVersionModalFile] = useState(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [folderModal, setFolderModal] = useState({ open: false, mode: 'create', folderId: null, initialName: '' });
   const [confirmModal, setConfirmModal] = useState({ open: false, type: null, target: null });
+  const [showMoveModal, setShowMoveModal] = useState(false);
 
   const showNotification = (msg, isError = false) => {
     setStatusMessage({ text: msg, isError });
@@ -122,6 +127,7 @@ export default function MyFiles() {
 
   const handleSummarize = (file) => setSummaryFile(file);
   const handlePreview = (file) => setPreviewFile(file);
+  const handleVersionHistory = (file) => setVersionModalFile(file);
 
   useEffect(() => {
     if (!pointerDraggedFile) return undefined;
@@ -130,15 +136,36 @@ export default function MyFiles() {
     return () => window.removeEventListener('pointerup', clearPointerDrag);
   }, [pointerDraggedFile]);
 
-  const handleFileDrop = async (folder, file) => {
+  const handleFileDrop = async (folder, filePayload) => {
     if (moveInProgressRef.current) return;
     moveInProgressRef.current = true;
     setPointerDraggedFile(null);
     try {
-      await moveFile(file.id, folder.id);
-      showNotification(`${file.name} moved to ${folder.name}`);
+      if (filePayload.isBulk) {
+        const idsToMove = Array.from(selectedIds);
+        await moveFile(idsToMove, folder.id);
+        showNotification(`${idsToMove.length} files successfully moved to "${folder.name}"`);
+      } else {
+        await moveFile(filePayload.id, folder.id);
+        showNotification(`"${filePayload.name}" successfully moved to "${folder.name}"`);
+      }
     } catch {
-      showNotification('File could not be moved.', true);
+      showNotification('Files could not be moved.', true);
+    } finally {
+      moveInProgressRef.current = false;
+    }
+  };
+
+  const handleConfirmBulkMove = async (targetFolderId, targetFolderName) => {
+    setShowMoveModal(false);
+    if (moveInProgressRef.current) return;
+    moveInProgressRef.current = true;
+    try {
+      const idsToMove = Array.from(selectedIds);
+      await moveFile(idsToMove, targetFolderId);
+      showNotification(`${idsToMove.length} files successfully moved to "${targetFolderName}"`);
+    } catch {
+      showNotification('Files could not be moved.', true);
     } finally {
       moveInProgressRef.current = false;
     }
@@ -273,7 +300,7 @@ export default function MyFiles() {
         </div>
       </header>
 
-      {/* Selection bar (only when files selected) */}
+      {/* Selection bar */}
       {hasSelection && (
         <SelectionBar
           count={selectedIds.size}
@@ -282,6 +309,7 @@ export default function MyFiles() {
           onSelectAll={toggleSelectAll}
           onClear={clearSelection}
           onBulkDelete={openBulkDeleteConfirm}
+          onBulkMove={() => setShowMoveModal(true)}
         />
       )}
 
@@ -375,6 +403,7 @@ export default function MyFiles() {
               onDownload={handleDownload}
               onSummarize={handleSummarize}
               onPreview={handlePreview}
+              onVersionHistory={handleVersionHistory}
               onPointerDragStart={setPointerDraggedFile}
             />
           ))}
@@ -431,7 +460,7 @@ export default function MyFiles() {
         <FileSummaryPanel file={summaryFile} onClose={() => setSummaryFile(null)} />
       )}
 
-            {previewFile && (
+      {previewFile && (
         <FilePreviewModal
           file={previewFile}
           onClose={() => setPreviewFile(null)}
@@ -439,6 +468,26 @@ export default function MyFiles() {
           onDelete={handleDeleteFile}
         />
       )}
+
+      {/* Version History Modal */}
+      {versionModalFile && (
+        <VersionHistoryModal
+          file={versionModalFile}
+          isOpen={Boolean(versionModalFile)}
+          onClose={() => setVersionModalFile(null)}
+          onVersionUpdated={() => {
+            refetch();
+            showNotification('File version updated successfully');
+          }}
+        />
+      )}
+
+      <MoveModal
+        isOpen={showMoveModal}
+        selectedCount={selectedIds.size}
+        onClose={() => setShowMoveModal(false)}
+        onConfirm={handleConfirmBulkMove}
+      />
 
       {/* Upload Progress Modal */}
       <UploadProgressModal

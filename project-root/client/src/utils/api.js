@@ -104,6 +104,18 @@ export const filesAPI = {
     api.get(`/api/files/${id}/download`, { responseType: 'blob' }),
   move: (id, folderId) => api.patch(`/api/files/${id}/move`, { folder_id: folderId }),
   delete: (id) => api.delete(`/api/files/${id}`),
+
+  listVersions: (fileId) => api.get(`/api/files/${fileId}/versions`),
+  uploadVersion: (fileId, formData) =>
+    api.post(`/api/files/${fileId}/versions`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  restoreVersion: (fileId, versionId) =>
+    api.post(`/api/files/${fileId}/versions/${versionId}/restore`),
+  downloadVersion: (fileId, versionId) =>
+    api.get(`/api/files/${fileId}/versions/${versionId}/download`, {
+      responseType: 'blob',
+    }),
 };
 
 export const fileSummaryAPI = {
@@ -154,7 +166,7 @@ export const analyticsAPI = {
   systemStats: () => api.get('/api/analytics/system-stats'),
   trends: () => api.get('/api/analytics/trends'),
 
-  // ═══ ✅ Now support custom date range ═══
+  // ═══ Custom date range ═══
   exportFileAnalytics: (days = 30, startDate = null, endDate = null) => {
     const params = { days };
     if (startDate) params.start_date = startDate;

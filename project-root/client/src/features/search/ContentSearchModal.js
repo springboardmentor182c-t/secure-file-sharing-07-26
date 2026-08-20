@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RiSearch2Line, RiCloseLine, RiFileTextLine } from "react-icons/ri";
-import { Sparkles } from "lucide-react";
+import { RiSearch2Line, RiCloseLine, RiFileTextLine, RiFileSearchLine } from "react-icons/ri";
 import { searchAPI } from "../../utils/api";
 import "./ContentSearchModal.css";
 
@@ -52,7 +51,7 @@ export default function ContentSearchModal({ isOpen, onClose }) {
         >
           <div className="content-search-header">
             <div className="content-search-badge">
-              <Sparkles className="sparkle-icon" size={16} /> AI Content Search
+              <RiFileSearchLine className="search-badge-icon" size={16} /> Deep Content Search
             </div>
             <button className="content-search-close" onClick={onClose} aria-label="Close search modal">
               <RiCloseLine size={20} />

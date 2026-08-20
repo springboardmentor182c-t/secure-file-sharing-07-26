@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session, aliased
@@ -13,7 +14,6 @@ from src.shared_with_me.models import (
     SharedFileOut,
     SharedFilesResponse,
 )
-
 
 DOWNLOAD_PERMISSIONS = {"download", "edit", "admin"}
 
@@ -48,6 +48,8 @@ def list_direct_shares(db: Session, owner_id: int) -> DirectSharesResponse:
             recipient_name=user.name,
             recipient_email=user.email,
             permission=permission.permission_level,
+            access_count=permission.access_count or 0,
+            last_accessed_at=permission.last_accessed_at,
             shared_at=permission.created_at,
         )
         for permission, file, user in rows
@@ -67,22 +69,25 @@ def grant_direct_share(db: Session, data: DirectShareCreate, owner_id: int) -> D
     if recipient.id == owner_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot share a file with yourself.")
 
-    permission = (
+    existing_permission = (
         db.query(FilePermission)
         .filter(FilePermission.file_id == file.id, FilePermission.user_id == recipient.id)
         .first()
     )
-    if permission:
-        permission.permission_level = data.permission
-        permission.granted_by = owner_id
-    else:
-        permission = FilePermission(
-            file_id=file.id,
-            user_id=recipient.id,
-            granted_by=owner_id,
-            permission_level=data.permission,
+    if existing_permission:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'"{file.original_name}" is already shared with this teammate. Revoke their current access first if you want to modify permissions.',
         )
-        db.add(permission)
+
+    permission = FilePermission(
+        file_id=file.id,
+        user_id=recipient.id,
+        granted_by=owner_id,
+        permission_level=data.permission,
+        access_count=0,
+    )
+    db.add(permission)
 
     owner = db.query(User).filter(User.id == owner_id).first()
     create_notification(
@@ -104,6 +109,8 @@ def grant_direct_share(db: Session, data: DirectShareCreate, owner_id: int) -> D
         recipient_name=recipient.name,
         recipient_email=recipient.email,
         permission=permission.permission_level,
+        access_count=permission.access_count or 0,
+        last_accessed_at=permission.last_accessed_at,
         shared_at=permission.created_at,
     )
 
@@ -150,6 +157,8 @@ def list_shared_files(db: Session, user_id: int) -> SharedFilesResponse:
             shared_at=permission.created_at,
             updated_at=file.updated_at,
             can_download=permission.permission_level in DOWNLOAD_PERMISSIONS,
+            access_count=permission.access_count or 0,
+            last_accessed_at=permission.last_accessed_at,
         )
         for permission, file, owner in rows
     ]
@@ -157,7 +166,7 @@ def list_shared_files(db: Session, user_id: int) -> SharedFilesResponse:
     return SharedFilesResponse(files=files, total=len(files), view_only=len(files) - downloadable, downloadable=downloadable)
 
 
-def get_downloadable_shared_file(db: Session, file_id: int, user_id: int) -> File:
+def get_downloadable_shared_file(db: Session, file_id: int, user_id: int) -> tuple[File, FilePermission]:
     row = (
         db.query(FilePermission, File)
         .join(File, FilePermission.file_id == File.id)
@@ -172,4 +181,4 @@ def get_downloadable_shared_file(db: Session, file_id: int, user_id: int) -> Fil
     )
     if not row:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to download this file.")
-    return row[1]
+    return row[1], row[0]

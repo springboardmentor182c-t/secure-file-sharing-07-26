@@ -1,4 +1,5 @@
-import { CheckSquare, Square, Trash2, X } from 'lucide-react';
+import React from 'react';
+import { CheckSquare, Square, Trash2, X, FolderInput } from 'lucide-react';
 
 export default function SelectionBar({
   count,
@@ -7,6 +8,7 @@ export default function SelectionBar({
   onSelectAll,
   onClear,
   onBulkDelete,
+  onBulkMove,
 }) {
   return (
     <div className="my-files-selection-bar">
@@ -29,6 +31,17 @@ export default function SelectionBar({
       </div>
 
       <div className="my-files-selection-actions">
+        {onBulkMove && (
+          <button
+            type="button"
+            className="my-files-btn my-files-btn--secondary my-files-btn--compact"
+            onClick={onBulkMove}
+            style={{ marginRight: '4px' }}
+          >
+            <FolderInput size={14} strokeWidth={2.2} />
+            Move to…
+          </button>
+        )}
         <button
           type="button"
           className="my-files-btn my-files-btn--danger my-files-btn--compact"

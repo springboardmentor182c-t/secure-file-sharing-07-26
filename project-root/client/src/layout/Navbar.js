@@ -16,6 +16,7 @@ import {
   RiVideoLine,
   RiShieldCheckLine,
   RiUserLine,
+  RiFileSearchLine,
 } from "react-icons/ri";
 import { searchAPI, notificationsAPI } from "../utils/api";
 import { events, EVENTS } from "../utils/events";
@@ -372,7 +373,7 @@ export default function Navbar({
         case "folder": return <RiFolderOpenLine className="search-icon" />;
         case "share": return <RiShareForwardLine className="search-icon" />;
         case "notification": return <RiNotification3Line className="search-icon" />;
-        case "content": return <Sparkles className="search-icon" style={{ color: "#6366f1", width: 16, height: 16 }} />;
+        case "content": return <RiFileSearchLine className="search-icon" style={{ color: "#6366f1" }} />;
         case "user": return <RiUserLine className="search-icon" style={{ color: "#10B981" }} />;
         case "people_file": return getSearchFileIcon(item.data.original_name || item.data.name || "");
         default: return <RiFileTextLine className="search-icon" />;
@@ -463,9 +464,9 @@ export default function Navbar({
           type="button"
           className="ai-search-trigger-btn"
           onClick={() => setShowContentModal(true)}
-          title="Open AI Content Search"
+          title="Open Deep Content Search"
         >
-          <Sparkles size={13} /> AI Search
+          <RiFileSearchLine size={14} /> Deep Search
         </button>
 
         <AnimatePresence>
@@ -496,7 +497,7 @@ export default function Navbar({
                 currentIndex = 0;
                 return (
                   <>
-                    {renderSection("Inside Document Content (AI)", results.content_matches, "content")}
+                    {renderSection("Inside Document Content", results.content_matches, "content")}
                     {renderSection("Files", results.files, "file")}
                     {renderSection("Folders", results.folders, "folder")}
                     {renderSection("Shares", results.shares, "share")}

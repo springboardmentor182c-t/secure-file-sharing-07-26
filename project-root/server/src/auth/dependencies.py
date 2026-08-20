@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Query
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from src.database.core import get_db
@@ -14,8 +14,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REFRESH_TOKEN_EXPIRE_DAYS = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login/swagger")
 
 
@@ -32,9 +30,6 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    # FIX A: preserve caller-supplied "type" (e.g. "mfa_pending", "password_recovery").
-    # Previously we used to_encode.update({"exp": ..., "type": "access"}) which
-    # silently overwrote any type the caller passed in, breaking MFA + reset flows.
     to_encode["exp"] = expire
     to_encode.setdefault("type", "access")
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -64,7 +59,6 @@ def get_current_user(
 ) -> User:
     payload = decode_token(token)
 
-    # FIX ISS-D5: reject non-access tokens (mfa_pending, refresh, etc.)
     token_type = payload.get("type", "access")
     if token_type != "access":
         raise HTTPException(
@@ -80,7 +74,44 @@ def get_current_user(
             detail="Invalid token payload",
         )
 
-    # FIX ISS-D4: safely cast sub to int to prevent 500 errors
+    try:
+        user_id_int = int(user_id)
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+        )
+
+    user = db.query(User).filter(User.id == user_id_int).first()
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found or inactive",
+        )
+    return user
+
+
+def get_current_user_from_query(
+    token: str = Query(..., alias="token"),
+    db: Session = Depends(get_db),
+) -> User:
+    """Authenticate via URL query parameter for browser native media streaming."""
+    payload = decode_token(token)
+
+    token_type = payload.get("type", "access")
+    if token_type != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type",
+        )
+
+    user_id = payload.get("sub")
+    if user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+        )
+
     try:
         user_id_int = int(user_id)
     except (ValueError, TypeError):

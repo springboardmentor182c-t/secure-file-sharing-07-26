@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Folder, Trash2, Pencil } from 'lucide-react';
 
 export default function FolderCard({
@@ -20,8 +20,10 @@ export default function FolderCard({
     event.stopPropagation();
     setIsDropTarget(false);
     try {
-      const file = JSON.parse(event.dataTransfer.getData('application/x-trustshare-file'));
-      if (file?.id) onFileDrop?.({ id, name: title }, file);
+      const payload = JSON.parse(event.dataTransfer.getData('application/x-trustshare-file'));
+      if (payload) {
+        onFileDrop?.({ id, name: title }, payload);
+      }
     } catch {}
   };
 

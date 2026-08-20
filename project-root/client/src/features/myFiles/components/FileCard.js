@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   FileText, FileImage, FileVideo, FileAudio, FileArchive, FileSpreadsheet,
-  File as FileIcon, Sparkles, Trash2, Download, Lock, LockOpen, Check,
+  File as FileIcon, Sparkles, Trash2, Download, Lock, LockOpen, Check, Play, Eye, History
 } from 'lucide-react';
 
 const AI_SUMMARY_EXTENSIONS = new Set([
@@ -65,8 +65,20 @@ const formatSize = (size) => {
   return `${(size / 1073741824).toFixed(2)} GB`;
 };
 
+const isPreviewable = (file) => {
+  const ext = getExtension(file?.name || file?.original_name || '');
+  const mime = (file?.mimetype || '').toLowerCase();
+  const previewSet = new Set([
+    'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg',
+    'txt', 'md', 'json', 'xml', 'csv', 'log', 'pdf',
+    'mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac',
+    'mp4', 'webm', 'avi', 'mov', 'mkv'
+  ]);
+  return previewSet.has(ext) || mime.startsWith('image/') || mime.startsWith('video/') || mime.startsWith('audio/') || mime.startsWith('text/');
+};
+
 export default function FileCard({
-  file, onDelete, onDownload, onSummarize, onPreview, onPointerDragStart,
+  file, onDelete, onDownload, onSummarize, onPreview, onVersionHistory, onPointerDragStart,
   viewMode = 'grid',
   selected = false,
   onToggleSelect,
@@ -78,18 +90,26 @@ export default function FileCard({
   const displayModified = file?.modified || file?.last_modified || (file?.created_at ? new Date(file.created_at).toLocaleDateString() : 'Recent');
   const isEncrypted = file?.encrypted !== false;
   const canSummarize = supportsAISummary(file);
+  const versionNumber = file?.version || 1;
   const [isDragging, setIsDragging] = useState(false);
 
   const IconComponent = getFileIcon(file);
   const iconColorClass = getIconColor(file);
 
+  const isPlayable = category === 'AUDIO' || category === 'VIDEO';
+  const previewCapable = isPreviewable(file);
+
   const handleDragStart = (event) => {
-    if (selected || hasSelection) { event.preventDefault(); return; } // disable drag during selection
+    if (hasSelection && !selected) {
+      event.preventDefault();
+      return;
+    }
+    const dragPayload = selected
+      ? { isBulk: true, name: 'Selected files' }
+      : { id: file.id, name: fileName, isBulk: false };
+
     event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData(
-      'application/x-trustshare-file',
-      JSON.stringify({ id: file.id, name: fileName })
-    );
+    event.dataTransfer.setData('application/x-trustshare-file', JSON.stringify(dragPayload));
     setIsDragging(true);
   };
 
@@ -101,20 +121,11 @@ export default function FileCard({
 
   const handleCardClick = (event) => {
     if (event.target.closest('button, .my-files-select-toggle')) return;
-    // If user is in selection mode, clicking card toggles selection
     if (hasSelection && onToggleSelect) {
       onToggleSelect(file.id);
       return;
     }
     if (onPreview) onPreview(file);
-  };
-
-  const handleKeyDown = (event) => {
-    if ((event.key === 'Enter' || event.key === ' ') && onPreview) {
-      event.preventDefault();
-      if (hasSelection && onToggleSelect) onToggleSelect(file.id);
-      else onPreview(file);
-    }
   };
 
   const handleCheckboxClick = (e) => {
@@ -127,12 +138,12 @@ export default function FileCard({
     return (
       <article
         className={`my-files-list-row ${isDragging ? 'is-dragging' : ''} ${selected ? 'is-selected' : ''}`}
-        draggable={!selected && !hasSelection}
+        draggable={!hasSelection || selected}
         onDragStart={handleDragStart}
         onDragEnd={() => setIsDragging(false)}
         onPointerDown={handlePointerDown}
         onClick={handleCardClick}
-        onKeyDown={handleKeyDown}
+        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onPreview?.(file)}
         role="button"
         tabIndex={0}
       >
@@ -149,7 +160,14 @@ export default function FileCard({
           <IconComponent size={16} strokeWidth={2} />
         </div>
 
-        <div className="my-files-list-name" title={fileName}>{fileName}</div>
+        <div className="my-files-list-name" title={fileName}>
+          {fileName}
+          {versionNumber > 1 && (
+            <span className="badge badge-blue" style={{ marginLeft: 8, fontSize: 10, padding: '1px 6px' }}>
+              v{versionNumber}
+            </span>
+          )}
+        </div>
         <div className="my-files-list-type">{category}</div>
         <div className="my-files-list-size">{displaySize}</div>
         <div className="my-files-list-date">{displayModified}</div>
@@ -165,22 +183,42 @@ export default function FileCard({
           )}
         </div>
 
-        <div className="my-files-list-actions">
+        <div className="my-files-list-actions" onClick={(e) => e.stopPropagation()}>
+          {onVersionHistory && (
+            <button
+              type="button"
+              className="my-files-quick-btn"
+              onClick={() => onVersionHistory(file)}
+              title="Version History"
+            >
+              <History size={13} strokeWidth={2.2} />
+            </button>
+          )}
           {canSummarize && onSummarize && (
             <button
               type="button"
               className="my-files-quick-btn my-files-quick-btn--ai"
-              onClick={(e) => { e.stopPropagation(); onSummarize(file); }}
+              onClick={() => onSummarize(file)}
               title="Generate AI Summary"
             >
               <Sparkles size={13} strokeWidth={2.2} />
+            </button>
+          )}
+          {previewCapable && onPreview && (
+            <button
+              type="button"
+              className="my-files-quick-btn"
+              onClick={() => onPreview(file)}
+              title={isPlayable ? "Play / Stream" : "Preview"}
+            >
+              {isPlayable ? <Play size={13} strokeWidth={2.2} /> : <Eye size={13} strokeWidth={2.2} />}
             </button>
           )}
           {onDownload && (
             <button
               type="button"
               className="my-files-quick-btn"
-              onClick={(e) => { e.stopPropagation(); onDownload(file); }}
+              onClick={() => onDownload(file)}
               title="Download"
             >
               <Download size={13} strokeWidth={2.2} />
@@ -190,7 +228,7 @@ export default function FileCard({
             <button
               type="button"
               className="my-files-quick-btn my-files-quick-btn--danger"
-              onClick={(e) => { e.stopPropagation(); onDelete(file.id); }}
+              onClick={() => onDelete(file.id)}
               title="Delete"
             >
               <Trash2 size={13} strokeWidth={2.2} />
@@ -205,12 +243,12 @@ export default function FileCard({
   return (
     <article
       className={`my-files-card my-files-file-card group ${isDragging ? 'is-dragging' : ''} ${selected ? 'is-selected' : ''}`}
-      draggable={!selected && !hasSelection}
+      draggable={!hasSelection || selected}
       onDragStart={handleDragStart}
       onDragEnd={() => setIsDragging(false)}
       onPointerDown={handlePointerDown}
       onClick={handleCardClick}
-      onKeyDown={handleKeyDown}
+      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onPreview?.(file)}
       role={onPreview ? 'button' : undefined}
       tabIndex={onPreview ? 0 : undefined}
       style={onPreview ? { cursor: 'pointer' } : undefined}
@@ -229,15 +267,32 @@ export default function FileCard({
           <IconComponent size={18} strokeWidth={2} />
         </div>
         <div className="my-files-card-top-right">
-          <span className="my-files-type-chip">{category}</span>
-          <div className="my-files-quick-actions">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {versionNumber > 1 && (
+              <span className="badge badge-blue" style={{ fontSize: 10, padding: '2px 6px' }}>
+                v{versionNumber}
+              </span>
+            )}
+            <span className="my-files-type-chip">{category}</span>
+          </div>
+
+          <div className="my-files-quick-actions" onClick={(e) => e.stopPropagation()}>
+            {onVersionHistory && (
+              <button
+                type="button"
+                className="my-files-quick-btn"
+                onClick={() => onVersionHistory(file)}
+                title="Version History"
+              >
+                <History size={14} strokeWidth={2.2} />
+              </button>
+            )}
             {canSummarize && onSummarize && (
               <button
                 type="button"
                 className="my-files-quick-btn my-files-quick-btn--ai"
-                onClick={(e) => { e.stopPropagation(); onSummarize(file); }}
+                onClick={() => onSummarize(file)}
                 title="Generate AI Summary"
-                aria-label="Generate AI Summary"
               >
                 <Sparkles size={14} strokeWidth={2.2} />
               </button>
@@ -246,9 +301,8 @@ export default function FileCard({
               <button
                 type="button"
                 className="my-files-quick-btn my-files-quick-btn--danger"
-                onClick={(e) => { e.stopPropagation(); onDelete(file.id); }}
+                onClick={() => onDelete(file.id)}
                 title="Delete file"
-                aria-label="Delete file"
               >
                 <Trash2 size={14} strokeWidth={2.2} />
               </button>
@@ -265,7 +319,7 @@ export default function FileCard({
         <span>{displayModified}</span>
       </div>
 
-      <div className="my-files-card-footer">
+      <div className="my-files-card-footer" onClick={(e) => e.stopPropagation()}>
         <span className={`my-files-encrypted-badge ${isEncrypted ? 'is-encrypted' : ''}`}>
           {isEncrypted ? (
             <><Lock size={11} strokeWidth={2.4} /> Encrypted</>
@@ -273,15 +327,33 @@ export default function FileCard({
             <><LockOpen size={11} strokeWidth={2.4} /> Unencrypted</>
           )}
         </span>
-        {onDownload && (
+
+        {previewCapable ? (
           <button
             type="button"
             className="my-files-download-btn"
-            onClick={(e) => { e.stopPropagation(); onDownload(file); }}
+            style={{ color: 'var(--blue-400)', background: 'rgba(59, 130, 246, 0.08)', borderColor: 'rgba(59, 130, 246, 0.15)' }}
+            onClick={() => onPreview(file)}
           >
-            <Download size={12} strokeWidth={2.4} />
-            Download
+            {category === 'AUDIO' ? (
+              <><Play size={12} strokeWidth={2.4} /> Play</>
+            ) : category === 'VIDEO' ? (
+              <><Play size={12} strokeWidth={2.4} /> Watch</>
+            ) : (
+              <><Eye size={12} strokeWidth={2.4} /> View</>
+            )}
           </button>
+        ) : (
+          onDownload && (
+            <button
+              type="button"
+              className="my-files-download-btn"
+              onClick={() => onDownload(file)}
+            >
+              <Download size={12} strokeWidth={2.4} />
+              Download
+            </button>
+          )
         )}
       </div>
     </article>

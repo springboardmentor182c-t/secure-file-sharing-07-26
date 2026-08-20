@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Literal, Optional
-
 from pydantic import BaseModel, EmailStr
 
 
@@ -17,6 +16,8 @@ class SharedFileOut(BaseModel):
     shared_at: datetime
     updated_at: Optional[datetime] = None
     can_download: bool
+    access_count: int = 0
+    last_accessed_at: Optional[datetime] = None
 
 
 class SharedFilesResponse(BaseModel):
@@ -40,6 +41,8 @@ class DirectShareOut(BaseModel):
     recipient_name: str
     recipient_email: str
     permission: str
+    access_count: int = 0
+    last_accessed_at: Optional[datetime] = None
     shared_at: datetime
 
 

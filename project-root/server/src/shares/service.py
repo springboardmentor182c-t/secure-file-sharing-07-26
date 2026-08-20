@@ -1,19 +1,16 @@
-# server/src/shares/service.py
-
 import os
 import secrets
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
+from typing import Optional
 from fastapi import HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from sqlalchemy.orm import Session
 
 from src.entities.share_link import ShareLink
 from src.entities.file import File
 from src.entities.audit_log import AuditLog
 from src.auth.dependencies import hash_password, verify_password
 from src.notifications.service import create_notification
-
 from src.analytics.services import log_event
 from src.analytics.constants import (
     AnalyticsEventType,
@@ -36,12 +33,16 @@ class ShareCreate(BaseModel):
 class ShareOut(BaseModel):
     id: int
     file_id: int
+    file_name: Optional[str] = None
+    file_size: Optional[int] = None
+    mimetype: Optional[str] = None
     token: str
     permission: str
     expires_at: Optional[datetime]
     access_count: int
     max_views: Optional[int]
     is_active: bool
+    password_protected: bool
     created_at: datetime
     link: str
 
@@ -73,6 +74,26 @@ def _is_expired(expires_at: datetime | None) -> bool:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
     return expires_at < datetime.now(timezone.utc)
 
+
+def _to_out(share: ShareLink, file: Optional[File] = None) -> ShareOut:
+    return ShareOut(
+        id=share.id,
+        file_id=share.file_id,
+        file_name=file.original_name if file else getattr(share, "file_name", None),
+        file_size=file.size if file else getattr(share, "file_size", None),
+        mimetype=file.mimetype if file else getattr(share, "mimetype", None),
+        token=share.token,
+        permission=share.permission,
+        expires_at=share.expires_at,
+        access_count=share.access_count,
+        max_views=share.max_views,
+        is_active=share.is_active,
+        password_protected=bool(share.password_hash),
+        created_at=share.created_at,
+        link=_build_link(share.token),
+    )
+
+# INSPECT & STREAM PUBLIC SHARES
 
 def inspect_public_share(db: Session, token: str, password: str | None = None) -> PublicShareOut:
     share = (
@@ -131,6 +152,7 @@ def get_public_file_path(
     )
     return decrypted_bytes, original_name, mimetype, share_out.permission
 
+
 # ═══════════════════════════════════════════════════════════════════════════
 # CREATE SHARE
 # ═══════════════════════════════════════════════════════════════════════════
@@ -141,7 +163,6 @@ def create_share(
     user_id: int,
     ip_address: str | None = None,
 ) -> ShareOut:
-    # Verify file ownership
     file = (
         db.query(File)
         .filter(
@@ -187,7 +208,6 @@ def create_share(
     db.commit()
     db.refresh(share)
 
-    # ── Log SHARE analytics event ──────────────────────────────────────────
     log_event(
         db,
         event_type=AnalyticsEventType.SHARE,
@@ -203,7 +223,7 @@ def create_share(
     )
     db.commit()
 
-    return _to_out(share)
+    return _to_out(share, file)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -211,14 +231,14 @@ def create_share(
 # ═══════════════════════════════════════════════════════════════════════════
 
 def list_shares(db: Session, user_id: int) -> list[ShareOut]:
-    shares = (
-        db.query(ShareLink)
+    rows = (
+        db.query(ShareLink, File)
         .join(File, ShareLink.file_id == File.id)
         .filter(ShareLink.created_by == user_id)
         .order_by(ShareLink.created_at.desc())
         .all()
     )
-    return [_to_out(s) for s in shares]
+    return [_to_out(share, file) for share, file in rows]
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -254,7 +274,6 @@ def revoke_share(
     db.add(log)
     db.commit()
 
-    # ── Log SECURITY event for share revocation ────────────────────────────
     log_event(
         db,
         event_type=AnalyticsEventType.SECURITY,
@@ -291,7 +310,6 @@ def access_share(
         .first()
     )
 
-    # ── Share not found or revoked ─────────────────────────────────────────
     if not share:
         log_event(
             db,
@@ -302,18 +320,14 @@ def access_share(
             event_metadata={
                 "severity_key": "external_link",
                 "label": "Invalid share link accessed",
-                "detail": f"Attempted access with unknown token",
+                "detail": "Attempted access with unknown token",
                 "target": token[:12],
                 "attempts": 1,
             },
         )
         db.commit()
-        raise HTTPException(
-            status_code=404,
-            detail="Share link not found or revoked",
-        )
+        raise HTTPException(status_code=404, detail="Share link not found or revoked")
 
-    # ── Expired ─────────────────────────────────────────────────────────────
     if _is_expired(share.expires_at):
         log_event(
             db,
@@ -334,7 +348,6 @@ def access_share(
         db.commit()
         raise HTTPException(status_code=410, detail="Share link has expired")
 
-    # ── View limit reached ─────────────────────────────────────────────────
     if share.max_views is not None and share.access_count >= share.max_views:
         log_event(
             db,
@@ -353,12 +366,8 @@ def access_share(
             },
         )
         db.commit()
-        raise HTTPException(
-            status_code=410,
-            detail="Share link view limit reached",
-        )
+        raise HTTPException(status_code=410, detail="Share link view limit reached")
 
-    # ── Invalid password ───────────────────────────────────────────────────
     if share.password_hash:
         if not password or not verify_password(password, share.password_hash):
             log_event(
@@ -378,12 +387,8 @@ def access_share(
                 },
             )
             db.commit()
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid share password",
-            )
+            raise HTTPException(status_code=401, detail="Invalid share password")
 
-    # ── Successful access ──────────────────────────────────────────────────
     share.access_count += 1
     db.commit()
 
@@ -402,23 +407,5 @@ def access_share(
     )
     db.commit()
 
-    return _to_out(share)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# HELPERS
-# ═══════════════════════════════════════════════════════════════════════════
-
-def _to_out(share: ShareLink) -> ShareOut:
-    return ShareOut(
-        id=share.id,
-        file_id=share.file_id,
-        token=share.token,
-        permission=share.permission,
-        expires_at=share.expires_at,
-        access_count=share.access_count,
-        max_views=share.max_views,
-        is_active=share.is_active,
-        created_at=share.created_at,
-        link=_build_link(share.token),
-    )
+    file = db.query(File).filter(File.id == share.file_id).first()
+    return _to_out(share, file)

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import SharedWithMeError from './components/SharedWithMeError';
 import SharedWithMeLoading from './components/SharedWithMeLoading';
@@ -9,64 +9,60 @@ import './sharedWithMe.css';
 
 export default function SharedWithMeFeature() {
   const { data, error, isLoading, refetch } = useSharedFiles();
-  const [statusMessage, setStatusMessage] = useState(null);
+  const [toast, setToast] = useState(null);
 
-  const showNotification = useCallback((msg, isError = false) => {
-    setStatusMessage({ text: msg, isError });
-    setTimeout(() => setStatusMessage(null), 4000);
+  const showToast = useCallback((text, isError = false) => {
+    setToast({ text, isError });
+    setTimeout(() => setToast(null), 3500);
   }, []);
 
   const handleDownload = useCallback(async (file) => {
-    const fileName = file?.name || 'file';
-    showNotification(`🔒 Preparing "${fileName}"…`);
+    const fileName = file?.name || 'document';
+    showToast(`🔒 Decrypting "${fileName}"…`);
     try {
       await downloadSharedFile(file);
-      showNotification(`✅ "${fileName}" downloaded`);
+      showToast(`✅ "${fileName}" downloaded`);
     } catch (err) {
-      const errorMsg =
-        err?.response?.data?.detail ||
-        err?.message ||
-        'File download failed. Please try again.';
-      showNotification(errorMsg, true);
+      showToast(err?.response?.data?.detail || 'File download failed.', true);
       throw err;
     }
-  }, [showNotification]);
+  }, [showToast]);
 
   const handleView = useCallback(async (file) => {
-    const fileName = file?.name || 'file';
-    showNotification(`🔒 Opening "${fileName}"…`);
+    const fileName = file?.name || 'document';
+    showToast(`🔒 Opening "${fileName}"…`);
     try {
       await viewSharedFile(file);
-      showNotification(`✅ "${fileName}" opened in new tab`);
+      showToast(`✅ "${fileName}" opened in secure viewer`);
     } catch (err) {
-      const errorMsg =
-        err?.response?.data?.detail ||
-        err?.message ||
-        'Failed to open file. Please try again.';
-      showNotification(errorMsg, true);
+      showToast(err?.response?.data?.detail || 'Failed to open file.', true);
       throw err;
     }
-  }, [showNotification]);
+  }, [showToast]);
 
   if (isLoading) return <SharedWithMeLoading />;
   if (error) return <SharedWithMeError onRetry={refetch} />;
 
+  const normalizedData = {
+    ...data,
+    files: (data?.files || []).map((f) => ({
+      ...f,
+      id: f.file_id,
+      original_name: f.name,
+    })),
+  };
+
   return (
     <>
-      {/* Toast Notification */}
-      {statusMessage && (
-        <div className={`shared-toast ${statusMessage.isError ? 'is-error' : 'is-success'}`}>
-          {statusMessage.isError ? (
-            <XCircle size={16} strokeWidth={2.4} />
-          ) : (
-            <CheckCircle2 size={16} strokeWidth={2.4} />
-          )}
-          <span>{statusMessage.text}</span>
+      {toast && (
+        <div className={`my-files-toast ${toast.isError ? 'is-error' : 'is-success'}`}>
+          {toast.isError ? <XCircle size={16} /> : <CheckCircle2 size={16} />}
+          <span>{toast.text}</span>
         </div>
       )}
 
       <SharedFilesView
-        data={data}
+        data={normalizedData}
         onDownload={handleDownload}
         onView={handleView}
       />
