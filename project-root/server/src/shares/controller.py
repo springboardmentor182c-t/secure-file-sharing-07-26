@@ -11,6 +11,7 @@ from src.auth.dependencies import get_current_user
 from src.entities.user import User
 from src.shares.service import (
     ShareCreate,
+    ShareUpdateRequest,
     ShareOut,
     PublicShareOut,
     create_share,
@@ -19,6 +20,8 @@ from src.shares.service import (
     access_share,
     inspect_public_share,
     get_public_file_path,
+    update_share_permission,
+    check_user_expirations, # Added check
 )
 
 router = APIRouter()
@@ -39,6 +42,8 @@ def my_shares(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Proactively scan and update link lifecycles before returning list
+    check_user_expirations(db, current_user.id)
     return list_shares(db, current_user.id)
 
 
@@ -52,6 +57,17 @@ def create(
 ):
     ip = _get_client_ip(request)
     return create_share(db, data, current_user.id, ip_address=ip)
+
+
+@router.patch("/{share_id}", response_model=ShareOut)
+@router.patch("/{share_id}/", response_model=ShareOut, include_in_schema=False)
+def update_share(
+    share_id: int,
+    data: ShareUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return update_share_permission(db, share_id, data.permission, current_user.id)
 
 
 @router.delete("/{share_id}", status_code=204)
@@ -74,7 +90,6 @@ def public_access(
     password: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
-    """Public endpoint — no auth required. Validates token & optional password."""
     ip = _get_client_ip(request)
     return access_share(
         db,
@@ -92,7 +107,6 @@ def public_details(
     password: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
-    """Return safe file metadata without consuming a link view."""
     return inspect_public_share(db, token, password=password)
 
 
@@ -104,7 +118,6 @@ def public_content(
     password: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
-    """Stream decrypted file in-memory and consume one allowed view."""
     decrypted_bytes, original_name, mimetype, permission = get_public_file_path(
         db,
         token,

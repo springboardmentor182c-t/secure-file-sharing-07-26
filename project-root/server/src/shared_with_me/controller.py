@@ -1,3 +1,5 @@
+# server/src/shared_with_me/controller.py
+
 from datetime import datetime, timezone
 from io import BytesIO
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -10,25 +12,21 @@ from src.entities.user import User
 from src.entities.file import File
 from src.entities.file_permission import FilePermission
 from src.files.service import get_file_path
-from src.shared_with_me.models import (
-    DirectShareCreate,
-    DirectShareOut,
-    DirectSharesResponse,
-    SharedFilesResponse,
-)
+from src.notifications.service import create_notification
+from src.shared_with_me import models
 from src.shared_with_me.service import (
     get_downloadable_shared_file,
     grant_direct_share,
     list_direct_shares,
     list_shared_files,
     revoke_direct_share,
+    update_direct_share_permission,
 )
 
 router = APIRouter()
 
 
 def _should_increment_access(permission: FilePermission) -> bool:
-    """Debounce rapid double-requests (e.g. React StrictMode or browser range requests) within 3 seconds."""
     now = datetime.now(timezone.utc)
     if not permission.last_accessed_at:
         return True
@@ -38,7 +36,7 @@ def _should_increment_access(permission: FilePermission) -> bool:
     return (now - last).total_seconds() > 3.0
 
 
-@router.get("/direct", response_model=DirectSharesResponse)
+@router.get("/direct", response_model=models.DirectSharesResponse)
 def direct_shares(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -46,13 +44,23 @@ def direct_shares(
     return list_direct_shares(db, current_user.id)
 
 
-@router.post("/direct", response_model=DirectShareOut, status_code=status.HTTP_201_CREATED)
+@router.post("/direct", response_model=models.DirectShareOut, status_code=status.HTTP_201_CREATED)
 def create_direct_share(
-    data: DirectShareCreate,
+    data: models.DirectShareCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     return grant_direct_share(db, data, current_user.id)
+
+
+@router.patch("/direct/{permission_id}", response_model=models.DirectShareOut)
+def update_direct_share(
+    permission_id: int,
+    data: models.DirectShareUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return update_direct_share_permission(db, permission_id, data.permission, current_user.id)
 
 
 @router.delete("/direct/{permission_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -65,7 +73,7 @@ def delete_direct_share(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.get("/", response_model=SharedFilesResponse)
+@router.get("/", response_model=models.SharedFilesResponse)
 def shared_with_me(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -81,11 +89,24 @@ def download_shared_file(
 ):
     file, permission = get_downloadable_shared_file(db, file_id, current_user.id)
 
-    # Debounced view increment
+    # Collaborative alert generated securely in controller context
     if _should_increment_access(permission):
         permission.access_count = (permission.access_count or 0) + 1
         permission.last_accessed_at = datetime.now(timezone.utc)
         db.commit()
+
+        create_notification(
+            db,
+            user_id=file.owner_id,
+            type="download",
+            category="downloads",
+            title="Shared file downloaded",
+            message=f'{current_user.name} downloaded your shared file "{file.original_name}".',
+            icon="download",
+            resource_id=file.id,
+            resource_type="file",
+            commit=True,
+        )
 
     decrypted_bytes, original_name, mimetype = get_file_path(
         db,
@@ -133,6 +154,19 @@ def view_shared_file(
         permission.access_count = (permission.access_count or 0) + 1
         permission.last_accessed_at = datetime.now(timezone.utc)
         db.commit()
+
+        create_notification(
+            db,
+            user_id=file.owner_id,
+            type="access",
+            category="downloads",
+            title="Shared file viewed",
+            message=f'{current_user.name} viewed your shared file "{file.original_name}".',
+            icon="eye",
+            resource_id=file.id,
+            resource_type="file",
+            commit=True,
+        )
 
     decrypted_bytes, original_name, mimetype = get_file_path(
         db,

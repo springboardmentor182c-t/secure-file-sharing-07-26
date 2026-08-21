@@ -1,6 +1,8 @@
+# server/src/shares/service.py
+
 import os
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 from fastapi import HTTPException
 from pydantic import BaseModel
@@ -9,6 +11,7 @@ from sqlalchemy.orm import Session
 from src.entities.share_link import ShareLink
 from src.entities.file import File
 from src.entities.audit_log import AuditLog
+from src.entities.notification import Notification
 from src.auth.dependencies import hash_password, verify_password
 from src.notifications.service import create_notification
 from src.analytics.services import log_event
@@ -30,6 +33,10 @@ class ShareCreate(BaseModel):
     max_views: Optional[int] = None
 
 
+class ShareUpdateRequest(BaseModel):
+    permission: str
+
+
 class ShareOut(BaseModel):
     id: int
     file_id: int
@@ -44,6 +51,7 @@ class ShareOut(BaseModel):
     is_active: bool
     password_protected: bool
     created_at: datetime
+    last_accessed_at: Optional[datetime] = None
     link: str
 
     class Config:
@@ -90,10 +98,101 @@ def _to_out(share: ShareLink, file: Optional[File] = None) -> ShareOut:
         is_active=share.is_active,
         password_protected=bool(share.password_hash),
         created_at=share.created_at,
+        last_accessed_at=share.last_accessed_at,
         link=_build_link(share.token),
     )
 
+
+# ═══════════════════════════════════════════════════════════════════════════
+# FILE EXPIRATION AND LIMITS AUDITOR (PSD Module 6.vi Expiration Reminders)
+# Runs silently on user queries to auto-expire links and notify users.
+# ═══════════════════════════════════════════════════════════════════════════
+
+def check_user_expirations(db: Session, user_id: int) -> None:
+    """Scan and verify link life-cycles deterministic on user requests."""
+    now = datetime.now(timezone.utc)
+    active_shares = (
+        db.query(ShareLink)
+        .filter(ShareLink.created_by == user_id, ShareLink.is_active == True)
+        .all()
+    )
+
+    for share in active_shares:
+        file = db.query(File).filter(File.id == share.file_id).first()
+        if not file:
+            continue
+
+        expires_at = share.expires_at
+        if expires_at and expires_at.tzinfo is None:
+            expires_at = expires_at.replace(timezone.utc)
+
+        is_expired = expires_at and expires_at <= now
+        is_limit_reached = share.max_views is not None and share.access_count >= share.max_views
+
+        # 1. Process Deactivations (Expired / View Limits)
+        if is_expired or is_limit_reached:
+            share.is_active = False
+            db.commit()
+
+            # Deduplication: ensure we only send ONE deactivation alert
+            already_notified = db.query(Notification).filter(
+                Notification.user_id == user_id,
+                Notification.type == "expiration",
+                Notification.resource_id == share.id,
+                Notification.message.like("%has expired%") | Notification.message.like("%limit%")
+            ).first()
+
+            if not already_notified:
+                reason = "has expired" if is_expired else "has reached its view limit"
+                create_notification(
+                    db,
+                    user_id=user_id,
+                    type="expiration",
+                    category="expirations",
+                    title="Share Link Deactivated",
+                    message=f'Your secure share link for "{file.original_name}" {reason}.',
+                    icon="clock",
+                    resource_id=share.id,
+                    resource_type="file",
+                    commit=True
+                )
+            continue  # Skip warning check if deactivated
+
+        # 2. Process Proactive Warnings (Expiring soon, within less than 24h)
+        if expires_at and now < expires_at <= (now + timedelta(hours=24)):
+            # Deduplication: ensure we only send ONE warning alert
+            already_warned = db.query(Notification).filter(
+                Notification.user_id == user_id,
+                Notification.type == "expiration",
+                Notification.resource_id == share.id,
+                Notification.message.like("%expiring soon%")
+            ).first()
+
+            if not already_warned:
+                time_left = expires_at - now
+                hours_left = int(time_left.total_seconds() / 3600)
+                hours_str = f"{hours_left} hours" if hours_left > 1 else "1 hour"
+                if hours_left == 0:
+                    minutes_left = int(time_left.total_seconds() / 60)
+                    hours_str = f"{minutes_left} minutes"
+
+                create_notification(
+                    db,
+                    user_id=user_id,
+                    type="expiration",
+                    category="expirations",
+                    title="Share Link Expiring Soon",
+                    message=f'Your secure share link for "{file.original_name}" is expiring soon (in {hours_str}).',
+                    icon="clock",
+                    resource_id=share.id,
+                    resource_type="file",
+                    commit=True
+                )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # INSPECT & STREAM PUBLIC SHARES
+# ═══════════════════════════════════════════════════════════════════════════
 
 def inspect_public_share(db: Session, token: str, password: str | None = None) -> PublicShareOut:
     share = (
@@ -107,8 +206,6 @@ def inspect_public_share(db: Session, token: str, password: str | None = None) -
         raise HTTPException(status_code=410, detail="Share link has expired")
     if share.max_views is not None and share.access_count >= share.max_views:
         raise HTTPException(status_code=410, detail="Share link view limit reached")
-    if share.password_hash and (not password or not verify_password(password, share.password_hash)):
-        raise HTTPException(status_code=401, detail="A valid share password is required")
 
     file = (
         db.query(File)
@@ -117,6 +214,23 @@ def inspect_public_share(db: Session, token: str, password: str | None = None) -
     )
     if not file:
         raise HTTPException(status_code=404, detail="The shared file is no longer available")
+
+    if share.password_hash:
+        if not password or not verify_password(password, share.password_hash):
+            if password:
+                create_notification(
+                    db,
+                    user_id=share.created_by,
+                    type="security",
+                    category="security",
+                    title="Failed access attempt on public link",
+                    message=f'Someone entered an incorrect password trying to access your shared file "{file.original_name}".',
+                    icon="shield",
+                    resource_id=file.id,
+                    resource_type="file",
+                    commit=True,
+                )
+            raise HTTPException(status_code=401, detail="A valid share password is required")
 
     return PublicShareOut(
         token=share.token,
@@ -149,6 +263,7 @@ def get_public_file_path(
         file.id,
         file.owner_id,
         ip_address=ip_address,
+        notification_user_id=-1,
     )
     return decrypted_bytes, original_name, mimetype, share_out.permission
 
@@ -196,15 +311,6 @@ def create_share(
         level="info",
     )
     db.add(log)
-    create_notification(
-        db,
-        user_id=user_id,
-        type="share",
-        category="shares",
-        title="Share link created",
-        message=f'A secure share link was created for "{file.original_name}".',
-        icon="share",
-    )
     db.commit()
     db.refresh(share)
 
@@ -223,6 +329,27 @@ def create_share(
     )
     db.commit()
 
+    return _to_out(share, file)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# UPDATE LINK PERMISSION
+# ═══════════════════════════════════════════════════════════════════════════
+
+def update_share_permission(db: Session, share_id: int, permission: str, user_id: int) -> ShareOut:
+    share = (
+        db.query(ShareLink)
+        .filter(ShareLink.id == share_id, ShareLink.created_by == user_id)
+        .first()
+    )
+    if not share:
+        raise HTTPException(status_code=404, detail="Share link not found")
+    
+    share.permission = permission
+    db.commit()
+    db.refresh(share)
+    
+    file = db.query(File).filter(File.id == share.file_id).first()
     return _to_out(share, file)
 
 
@@ -328,6 +455,8 @@ def access_share(
         db.commit()
         raise HTTPException(status_code=404, detail="Share link not found or revoked")
 
+    file = db.query(File).filter(File.id == share.file_id).first()
+
     if _is_expired(share.expires_at):
         log_event(
             db,
@@ -370,26 +499,23 @@ def access_share(
 
     if share.password_hash:
         if not password or not verify_password(password, share.password_hash):
-            log_event(
-                db,
-                event_type=AnalyticsEventType.SECURITY,
-                user_id=user_id,
-                file_id=share.file_id,
-                share_link_id=share.id,
-                status=AnalyticsEventStatus.FAILED,
-                ip_address=ip_address,
-                event_metadata={
-                    "severity_key": "brute_force",
-                    "label": "Invalid share password",
-                    "detail": f"Wrong password for share link {share.id}",
-                    "target": f"share_link_{share.id}",
-                    "attempts": 1,
-                },
-            )
-            db.commit()
+            if password and file and share.created_by:
+                create_notification(
+                    db,
+                    user_id=share.created_by,
+                    type="security",
+                    category="security",
+                    title="Failed access attempt on public link",
+                    message=f'Someone entered an incorrect password trying to access your shared file "{file.original_name}".',
+                    icon="shield",
+                    resource_id=file.id,
+                    resource_type="file",
+                    commit=True,
+                )
             raise HTTPException(status_code=401, detail="Invalid share password")
 
     share.access_count += 1
+    share.last_accessed_at = datetime.now(timezone.utc)
     db.commit()
 
     log_event(
@@ -407,5 +533,20 @@ def access_share(
     )
     db.commit()
 
-    file = db.query(File).filter(File.id == share.file_id).first()
+    # Collaborative View/Download Notifications
+    if file and share.created_by:
+        action_label = "downloaded" if share.permission == "download" else "viewed"
+        create_notification(
+            db,
+            user_id=share.created_by,
+            type=share.permission,
+            category="downloads",
+            title=f"Shared file {action_label}",
+            message=f'Someone {action_label} your shared file "{file.original_name}" via public link.',
+            icon="download" if share.permission == "download" else "eye",
+            resource_id=file.id,
+            resource_type="file",
+            commit=True,
+        )
+
     return _to_out(share, file)

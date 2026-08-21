@@ -69,7 +69,9 @@ function AppShell() {
 
     load();
     const unsubscribe = events.on(EVENTS.NOTIFICATIONS_CHANGED, load);
-    const iv = setInterval(load, 30000);
+    
+    // ── REAL-TIME OPTIMIZATION: Poll every 3 seconds instead of 30 ──
+    const iv = setInterval(load, 3000);
 
     return () => {
       isMounted = false;

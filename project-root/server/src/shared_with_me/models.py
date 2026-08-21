@@ -1,3 +1,5 @@
+# server/src/shared_with_me/models.py
+
 from datetime import datetime
 from typing import Literal, Optional
 from pydantic import BaseModel, EmailStr
@@ -30,6 +32,10 @@ class SharedFilesResponse(BaseModel):
 class DirectShareCreate(BaseModel):
     file_id: int
     recipient_email: EmailStr
+    permission: Literal["view", "download"] = "view"
+
+
+class DirectShareUpdateRequest(BaseModel):
     permission: Literal["view", "download"] = "view"
 
 

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -13,8 +14,14 @@ class NotificationOut(BaseModel):
     message: str
     icon: str
     is_read: bool
+    resource_id: Optional[int] = None
+    resource_type: Optional[str] = None
     created_at: datetime
 
 
 class MarkAllReadResponse(BaseModel):
     updated: int
+
+
+class DeleteAllResponse(BaseModel):
+    deleted: int

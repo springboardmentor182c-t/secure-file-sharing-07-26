@@ -14,6 +14,7 @@ import MoveModal from './components/MoveModal';
 import VersionHistoryModal from './components/VersionHistoryModal';
 import FileSummaryPanel from '../fileSummary/components/FileSummaryPanel';
 import { useMyFilesData } from './hooks/useMyFilesData';
+import { useLocation } from 'react-router-dom';
 
 export default function MyFiles() {
   const {
@@ -41,6 +42,30 @@ export default function MyFiles() {
   const [folderModal, setFolderModal] = useState({ open: false, mode: 'create', folderId: null, initialName: '' });
   const [confirmModal, setConfirmModal] = useState({ open: false, type: null, target: null });
   const [showMoveModal, setShowMoveModal] = useState(false);
+
+  const location = useLocation();
+  const [highlightFileId, setHighlightFileId] = useState(null);
+
+  useEffect(() => {
+    const fileId = location.state?.highlightFileId;
+    if (fileId) {
+      setHighlightFileId(fileId);
+      const scrollTimer = setTimeout(() => {
+        const el = document.querySelector(`[data-file-id="${fileId}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 400);
+      const clearTimer = setTimeout(() => {
+        setHighlightFileId(null);
+        window.history.replaceState({}, document.title);
+      }, 5000);
+      return () => {
+        clearTimeout(scrollTimer);
+        clearTimeout(clearTimer);
+      };
+    }
+  }, [location.state?.highlightFileId]);
 
   const showNotification = (msg, isError = false) => {
     setStatusMessage({ text: msg, isError });
@@ -184,7 +209,7 @@ export default function MyFiles() {
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [folderPath.length]); 
+  }, [folderPath.length]);
 
   useEffect(() => {
     return () => {
@@ -269,36 +294,32 @@ export default function MyFiles() {
 
       <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileChange} />
 
-      {/* Header */}
-      <header className="my-files-header">
-        <div className="my-files-header-inner">
-          <div>
-            <p className="my-files-kicker">MY FILES</p>
-            <h1 className="my-files-page-title">Secure files & folders</h1>
-            <p className="my-files-page-subtitle">
-              Upload, organize, and manage your encrypted files with folder-level control.
-            </p>
-          </div>
-          <div className="my-files-header-actions">
-            <button type="button" onClick={openNewFolderModal} className="my-files-btn my-files-btn--secondary">
-              <FolderPlus size={15} strokeWidth={2.2} />
-              New Folder
-            </button>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="my-files-btn my-files-btn--primary"
-            >
-              <Upload size={15} strokeWidth={2.2} />
-              {uploading ? `Uploading ${uploadProgress}%` : 'Upload File'}
-            </button>
-          </div>
+      {/* Flat Typography Header */}
+      <div className="flat-page-header">
+        <div className="flat-header-left">
+          <h1 className="flat-page-title">My Files</h1>
+          <p className="flat-page-subtitle">Upload, organize, and manage your encrypted files with folder-level control.</p>
         </div>
-        <div className="my-files-header-search">
-          <SearchBar value={searchQuery} onChange={setSearchQuery} onClear={() => setSearchQuery('')} />
+        <div className="flat-header-actions">
+          <button type="button" onClick={openNewFolderModal} className="my-files-btn my-files-btn--secondary">
+            <FolderPlus size={15} strokeWidth={2.2} />
+            New Folder
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="my-files-btn my-files-btn--primary"
+          >
+            <Upload size={15} strokeWidth={2.2} />
+            {uploading ? `Uploading ${uploadProgress}%` : 'Upload File'}
+          </button>
         </div>
-      </header>
+      </div>
+
+      <div className="my-files-header-search" style={{ marginBottom: '18px' }}>
+        <SearchBar value={searchQuery} onChange={setSearchQuery} onClear={() => setSearchQuery('')} />
+      </div>
 
       {/* Selection bar */}
       {hasSelection && (
@@ -405,6 +426,7 @@ export default function MyFiles() {
               onPreview={handlePreview}
               onVersionHistory={handleVersionHistory}
               onPointerDragStart={setPointerDraggedFile}
+              isHighlighted={highlightFileId === file.id}
             />
           ))}
         </section>

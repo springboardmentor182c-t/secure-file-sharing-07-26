@@ -1,3 +1,5 @@
+# server/src/shared_with_me/service.py
+
 from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlalchemy import func
@@ -69,38 +71,107 @@ def grant_direct_share(db: Session, data: DirectShareCreate, owner_id: int) -> D
     if recipient.id == owner_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot share a file with yourself.")
 
-    existing_permission = (
+    owner = db.query(User).filter(User.id == owner_id).first()
+    owner_name = owner.name if owner else "A teammate"
+
+    permission = (
         db.query(FilePermission)
         .filter(FilePermission.file_id == file.id, FilePermission.user_id == recipient.id)
         .first()
     )
-    if existing_permission:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f'"{file.original_name}" is already shared with this teammate. Revoke their current access first if you want to modify permissions.',
+
+    if permission:
+        is_updated = permission.permission_level != data.permission
+        permission.permission_level = data.permission
+        permission.granted_by = owner_id
+        
+        if is_updated:
+            create_notification(
+                db,
+                user_id=recipient.id,
+                type="share",
+                category="shares",
+                title="Access permission updated",
+                message=f'{owner_name} updated your access for "{file.original_name}" to {data.permission}.',
+                icon="share",
+                resource_id=file.id,
+                resource_type="file",
+            )
+    else:
+        permission = FilePermission(
+            file_id=file.id,
+            user_id=recipient.id,
+            granted_by=owner_id,
+            permission_level=data.permission,
+            access_count=0,
+        )
+        db.add(permission)
+        
+        create_notification(
+            db,
+            user_id=recipient.id,
+            type="share",
+            category="shares",
+            title="A file was shared with you",
+            message=f'{owner_name} shared "{file.original_name}" with you.',
+            icon="share",
+            resource_id=file.id,
+            resource_type="file",
         )
 
-    permission = FilePermission(
-        file_id=file.id,
-        user_id=recipient.id,
-        granted_by=owner_id,
-        permission_level=data.permission,
-        access_count=0,
-    )
-    db.add(permission)
-
-    owner = db.query(User).filter(User.id == owner_id).first()
-    create_notification(
-        db,
-        user_id=recipient.id,
-        type="share",
-        category="shares",
-        title="A file was shared with you",
-        message=f'{owner.name if owner else "A teammate"} shared "{file.original_name}" with you.',
-        icon="share",
-    )
     db.commit()
     db.refresh(permission)
+    return DirectShareOut(
+        permission_id=permission.id,
+        file_id=file.id,
+        file_name=file.original_name,
+        recipient_id=recipient.id,
+        recipient_name=recipient.name,
+        recipient_email=recipient.email,
+        permission=permission.permission_level,
+        access_count=permission.access_count or 0,
+        last_accessed_at=permission.last_accessed_at,
+        shared_at=permission.created_at,
+    )
+
+
+# ── Update Teammate Permission Service Function (NEW) ──────────────────
+
+def update_direct_share_permission(db: Session, permission_id: int, permission_level: str, owner_id: int) -> DirectShareOut:
+    permission = (
+        db.query(FilePermission)
+        .join(File, FilePermission.file_id == File.id)
+        .filter(FilePermission.id == permission_id, File.owner_id == owner_id)
+        .first()
+    )
+    if not permission:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Direct share not found.")
+    
+    is_updated = permission.permission_level != permission_level
+    permission.permission_level = permission_level
+    db.commit()
+    db.refresh(permission)
+
+    # Notify recipient of permission change dynamically
+    if is_updated:
+        file = db.query(File).filter(File.id == permission.file_id).first()
+        owner = db.query(User).filter(User.id == owner_id).first()
+        owner_name = owner.name if owner else "A teammate"
+        create_notification(
+            db,
+            user_id=permission.user_id,
+            type="share",
+            category="shares",
+            title="Access permission updated",
+            message=f'{owner_name} updated your access for "{file.original_name}" to {permission_level}.',
+            icon="share",
+            resource_id=file.id,
+            resource_type="file",
+            commit=True
+        )
+
+    recipient = db.query(User).filter(User.id == permission.user_id).first()
+    file = db.query(File).filter(File.id == permission.file_id).first()
     return DirectShareOut(
         permission_id=permission.id,
         file_id=file.id,

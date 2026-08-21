@@ -10,6 +10,7 @@ import CreateLinkModal from './components/CreateLinkModal';
 import DirectShareModal from './components/DirectShareModal';
 import ConfirmModal from '../myFiles/components/ConfirmModal';
 import SharedFileIcon from '../sharedWithMe/components/SharedFileIcon';
+import { useLocation } from 'react-router-dom';
 import './sharing.css';
 
 export const getShareStatus = (share, now = new Date()) => {
@@ -18,6 +19,17 @@ export const getShareStatus = (share, now = new Date()) => {
   if (share.expires_at && new Date(share.expires_at) <= now) return 'expired';
   if (share.max_views != null && share.access_count >= share.max_views) return 'limit-reached';
   return 'active';
+};
+
+const formatAccessTime = (dateStr) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  return date.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 };
 
 export default function SharingHub() {
@@ -36,6 +48,9 @@ export default function SharingHub() {
   const [copiedId, setCopiedId] = useState(null);
   const [toast, setToast] = useState(null);
   const [revokeTarget, setRevokeTarget] = useState(null);
+
+  const location = useLocation();
+  const [highlightShareId, setHighlightShareId] = useState(null);
 
   const showToast = useCallback((msg, isError = false) => {
     setToast({ msg, isError });
@@ -82,6 +97,35 @@ export default function SharingHub() {
   }, [showToast]);
 
   useEffect(() => {
+    const targetId = location.state?.highlightShareId || location.state?.highlightFileId;
+    if (targetId) {
+      setHighlightShareId(targetId);
+      setActiveTab('links');
+      setFilterType('all');
+      setSearchQuery('');
+      const timer = setTimeout(() => {
+        setHighlightShareId(null);
+        window.history.replaceState({}, document.title);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state?.highlightShareId, location.state?.highlightFileId]);
+
+  useEffect(() => {
+    if (highlightShareId && (shares.length > 0 || directShares.length > 0)) {
+      const scrollTimer = setTimeout(() => {
+        const el =
+          document.querySelector(`[data-share-id="${highlightShareId}"]`) ||
+          document.querySelector(`[data-file-id="${highlightShareId}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+      return () => clearTimeout(scrollTimer);
+    }
+  }, [highlightShareId, shares.length, directShares.length]);
+
+  useEffect(() => {
     loadData(true);
 
     const unsubNotifs = events.on(EVENTS.NOTIFICATIONS_CHANGED, () => loadData(false));
@@ -90,7 +134,7 @@ export default function SharingHub() {
     const handleFocus = () => loadData(false);
     window.addEventListener('focus', handleFocus);
 
-    const interval = setInterval(() => loadData(false), 15000);
+    const interval = setInterval(() => loadData(false), 3000);
 
     return () => {
       unsubNotifs();
@@ -127,6 +171,28 @@ export default function SharingHub() {
       showToast(err.response?.data?.detail || 'Failed to grant teammate access', true);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSetLinkPermission = async (share, newPermission) => {
+    if (share.permission === newPermission) return;
+    try {
+      await sharesAPI.updatePermission(share.id, newPermission);
+      showToast(`Link permission updated to "${newPermission === 'download' ? 'Download' : 'View Only'}"`);
+      loadData(false);
+    } catch (err) {
+      showToast('Failed to update link permission.', true);
+    }
+  };
+
+  const handleSetDirectPermission = async (ds, newPermission) => {
+    if (ds.permission === newPermission) return;
+    try {
+      await sharedWithMeAPI.updateDirectPermission(ds.permission_id, newPermission);
+      showToast(`Teammate permission updated to "${newPermission === 'download' ? 'Download' : 'View Only'}"`);
+      loadData(false);
+    } catch (err) {
+      showToast('Failed to update teammate permission.', true);
     }
   };
 
@@ -221,38 +287,33 @@ export default function SharingHub() {
         </div>
       )}
 
-      {/* Header */}
-      <header className="my-files-header">
-        <div className="my-files-header-inner">
-          <div>
-            <p className="my-files-kicker">ZERO-TRUST SHARING</p>
-            <h1 className="my-files-page-title">Secure Sharing Hub</h1>
-            <p className="my-files-page-subtitle">
-              Distribute encrypted files via temporary access links or grant direct permissions to teammates.
-            </p>
-          </div>
-          <div className="my-files-header-actions">
-            <button
-              type="button"
-              className="my-files-btn my-files-btn--secondary"
-              onClick={() => setShowDirectModal(true)}
-            >
-              <Users size={15} strokeWidth={2.2} />
-              Share with Teammate
-            </button>
-            <button
-              type="button"
-              className="my-files-btn my-files-btn--primary"
-              onClick={() => setShowCreateModal(true)}
-            >
-              <Link2 size={15} strokeWidth={2.2} />
-              Create Share Link
-            </button>
-          </div>
+      {/* Flat Typography Header */}
+      <div className="flat-page-header">
+        <div className="flat-header-left">
+          <h1 className="flat-page-title">Sharing Center</h1>
+          <p className="flat-page-subtitle">Distribute encrypted files via temporary access links or grant direct permissions to teammates.</p>
         </div>
-      </header>
+        <div className="flat-header-actions">
+          <button
+            type="button"
+            className="my-files-btn my-files-btn--secondary"
+            onClick={() => setShowDirectModal(true)}
+          >
+            <Users size={15} strokeWidth={2.2} />
+            Share with Teammate
+          </button>
+          <button
+            type="button"
+            className="my-files-btn my-files-btn--primary"
+            onClick={() => setShowCreateModal(true)}
+          >
+            <Link2 size={15} strokeWidth={2.2} />
+            Create Share Link
+          </button>
+        </div>
+      </div>
 
-      {/* KPI Stats */}
+      {/* KPI Stats (Fixed Grid Layout) */}
       <section className="sharing-stats-grid">
         <div className="sharing-stat-card">
           <div className="sharing-stat-icon blue"><Link2 size={20} /></div>
@@ -376,8 +437,18 @@ export default function SharingHub() {
             {filteredShares.map((s) => {
               const status = getShareStatus(s);
               const isAlive = status === 'active';
+              const isHighlighted =
+                highlightShareId &&
+                (String(highlightShareId) === String(s.id) ||
+                 String(highlightShareId) === String(s.file_id));
+
               return (
-                <div key={s.id} className={`sharing-card ${!isAlive ? 'is-inactive' : ''}`}>
+                <div
+                  key={s.id}
+                  data-share-id={s.id}
+                  data-file-id={s.file_id}
+                  className={`sharing-card ${!isAlive ? 'is-inactive' : ''} ${isHighlighted ? 'is-highlighted' : ''}`}
+                >
                   <div>
                     <div className="sharing-card-top">
                       <div className="sharing-card-file">
@@ -421,10 +492,29 @@ export default function SharingHub() {
                     </div>
 
                     <div className="sharing-pill-row" style={{ marginTop: 12 }}>
-                      <span className={`badge ${s.permission === 'download' ? 'badge-purple' : 'badge-blue'}`}>
-                        {s.permission === 'download' ? <Download size={11} /> : <Eye size={11} />}
-                        {s.permission === 'download' ? 'Download' : 'View Only'}
-                      </span>
+                      {/* Segmented Sliding Permission Switch Control */}
+                      <div className="sharing-perm-toggle">
+                        <button
+                          type="button"
+                          className={`sharing-perm-toggle-btn ${s.permission === 'view' ? 'is-active view' : ''}`}
+                          onClick={() => handleSetLinkPermission(s, 'view')}
+                          disabled={!isAlive}
+                          style={{ cursor: isAlive ? 'pointer' : 'not-allowed' }}
+                        >
+                          <Eye size={12} />
+                          <span>View Only</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`sharing-perm-toggle-btn ${s.permission === 'download' ? 'is-active download' : ''}`}
+                          onClick={() => handleSetLinkPermission(s, 'download')}
+                          disabled={!isAlive}
+                          style={{ cursor: isAlive ? 'pointer' : 'not-allowed' }}
+                        >
+                          <Download size={12} />
+                          <span>Download</span>
+                        </button>
+                      </div>
 
                       {s.password_protected && (
                         <span className="sharing-security-chip has-password">
@@ -436,9 +526,15 @@ export default function SharingHub() {
                         <Eye size={11} /> {s.access_count}{s.max_views ? `/${s.max_views}` : ''} views
                       </span>
 
+                      {s.last_accessed_at && (
+                        <span className="sharing-security-chip">
+                          <Clock size={11} /> Last accessed {formatAccessTime(s.last_accessed_at)}
+                        </span>
+                      )}
+
                       {s.expires_at && (
                         <span className="sharing-security-chip">
-                          <Calendar size={11} /> {new Date(s.expires_at).toLocaleDateString()}
+                          <Calendar size={11} /> Expires {new Date(s.expires_at).toLocaleDateString()}
                         </span>
                       )}
                     </div>
@@ -488,77 +584,111 @@ export default function SharingHub() {
           </div>
         ) : (
           <div className="sharing-grid">
-            {filteredDirectShares.map((ds) => (
-              <div key={ds.permission_id} className="sharing-card">
-                <div>
-                  <div className="sharing-card-top">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {filteredDirectShares.map((ds) => {
+              const isHighlighted =
+                highlightShareId &&
+                (String(highlightShareId) === String(ds.permission_id) ||
+                 String(highlightShareId) === String(ds.file_id));
+
+              return (
+                <div
+                  key={ds.permission_id}
+                  data-share-id={ds.permission_id}
+                  data-file-id={ds.file_id}
+                  className={`sharing-card ${isHighlighted ? 'is-highlighted' : ''}`}
+                >
+                  <div>
+                    {/* Row 1: Recipient identity with Avatar */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
                       <div
                         className="avatar av-md"
                         style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff' }}
                       >
                         {ds.recipient_name?.slice(0, 2).toUpperCase() || 'TM'}
                       </div>
-                      <div>
-                        <strong style={{ fontSize: 14, color: 'var(--text-primary)' }}>{ds.recipient_name}</strong>
-                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{ds.recipient_email}</div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <strong style={{ fontSize: 14, color: 'var(--text-primary)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {ds.recipient_name}
+                        </strong>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {ds.recipient_email}
+                        </div>
                       </div>
                     </div>
 
-                    <span className={`badge ${ds.permission === 'download' ? 'badge-purple' : 'badge-blue'}`}>
-                      {ds.permission === 'download' ? 'Can Download' : 'View Only'}
-                    </span>
-                  </div>
+                    {/* Row 2: Shared File Info Block */}
+                    <div style={{
+                      padding: '10px 14px',
+                      borderRadius: 10,
+                      background: 'var(--bg-input)',
+                      border: '1px solid var(--border-subtle)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      marginBottom: 12,
+                    }}>
+                      <SharedFileIcon name={ds.file_name} />
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <strong style={{ fontSize: 13, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {ds.file_name}
+                        </strong>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                          Shared {new Date(ds.shared_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
 
-                  <div style={{
-                    marginTop: 14,
-                    padding: '10px 14px',
-                    borderRadius: 10,
-                    background: 'var(--bg-input)',
-                    border: '1px solid var(--border-subtle)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                  }}>
-                    <SharedFileIcon name={ds.file_name} />
-                    <div style={{ minWidth: 0 }}>
-                      <strong style={{ fontSize: 13, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {ds.file_name}
-                      </strong>
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                        Shared {new Date(ds.shared_at).toLocaleDateString()}
+                    {/* Row 3: Segmented Sliding Permission Switch Control */}
+                    <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'flex-start' }}>
+                      <div className="sharing-perm-toggle">
+                        <button
+                          type="button"
+                          className={`sharing-perm-toggle-btn ${ds.permission === 'view' ? 'is-active view' : ''}`}
+                          onClick={() => handleSetDirectPermission(ds, 'view')}
+                        >
+                          <Eye size={12} />
+                          <span>View Only</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`sharing-perm-toggle-btn ${ds.permission === 'download' ? 'is-active download' : ''}`}
+                          onClick={() => handleSetDirectPermission(ds, 'download')}
+                        >
+                          <Download size={12} />
+                          <span>Download</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Row 4: Recipient Activity Tracker */}
+                    <div className="sharing-pill-row">
+                      <span className="sharing-security-chip">
+                        <Eye size={11} /> {ds.access_count || 0} recipient views
                       </span>
+                      {ds.last_accessed_at && (
+                        <span className="sharing-security-chip">
+                          <Clock size={11} /> Last viewed {formatAccessTime(ds.last_accessed_at)}
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  {/* Recipient Activity Tracker */}
-                  <div className="sharing-pill-row" style={{ marginTop: 12 }}>
-                    <span className="sharing-security-chip">
-                      <Eye size={11} /> {ds.access_count || 0} recipient views
-                    </span>
-                    {ds.last_accessed_at && (
-                      <span className="sharing-security-chip">
-                        <Clock size={11} /> Last viewed {new Date(ds.last_accessed_at).toLocaleDateString()}
-                      </span>
-                    )}
+                  <div className="sharing-card-footer" style={{ justifyContent: 'flex-end' }}>
+                    <button
+                      className="my-files-btn my-files-btn--danger"
+                      style={{ fontSize: 12, padding: '5px 12px' }}
+                      onClick={() => setRevokeTarget({
+                        id: ds.permission_id,
+                        type: 'direct',
+                        name: `${ds.recipient_name}'s access to ${ds.file_name}`,
+                      })}
+                    >
+                      Remove Access
+                    </button>
                   </div>
                 </div>
-
-                <div className="sharing-card-footer" style={{ justifyContent: 'flex-end' }}>
-                  <button
-                    className="my-files-btn my-files-btn--danger"
-                    style={{ fontSize: 12, padding: '5px 12px' }}
-                    onClick={() => setRevokeTarget({
-                      id: ds.permission_id,
-                      type: 'direct',
-                      name: `${ds.recipient_name}'s access to ${ds.file_name}`,
-                    })}
-                  >
-                    Remove Access
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )
       )}

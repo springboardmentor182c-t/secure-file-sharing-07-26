@@ -5,11 +5,7 @@ from src.entities.audit_log import AuditLog
 
 
 def create_activity(db: Session, activity_data: ActivityCreate):
-    """Record an application activity in the project's shared audit trail.
-
-    This compatibility helper is used by background features such as file
-    summaries. Core file workflows already write to the same audit table.
-    """
+    """Record an application activity in the project's shared audit trail."""
     new_activity = AuditLog(
         user_id=activity_data.user_id,
         action=activity_data.action,
@@ -33,3 +29,18 @@ def get_user_activities(db: Session, user_id: int, limit: int = 100):
         .limit(limit)
         .all()
     )
+
+
+def get_user_login_sessions(db: Session, user_id: int):
+    """Retrieve all login sessions for the user from login_sessions table."""
+    try:
+        from src.entities.login_session import LoginSession
+        sessions = (
+            db.query(LoginSession)
+            .filter(LoginSession.user_id == user_id)
+            .order_by(LoginSession.is_current.desc(), LoginSession.id.desc())
+            .all()
+        )
+        return sessions
+    except Exception:
+        return []

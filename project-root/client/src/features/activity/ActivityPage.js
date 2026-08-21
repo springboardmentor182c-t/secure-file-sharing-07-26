@@ -1,138 +1,131 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Activity,
-  Clock3,
-  Download,
-  FileText,
-  Eye,
-  KeyRound,
-  LogIn,
-  RefreshCw,
-  Search,
-  Share2,
-  ShieldAlert,
-  Sparkles,
-  Trash2,
-  Upload,
+  Activity, Clock, Download, FileText, Eye, KeyRound,
+  LogIn, RefreshCw, Search, Share2, ShieldAlert,
+  Sparkles, Trash2, Upload, Monitor, Smartphone, Laptop,
+  Globe, CheckCircle2, AlertTriangle, ChevronDown, ChevronUp
 } from "lucide-react";
-
-import { getActivities } from "./activityService";
+import { getActivities, getLoginSessions } from "./activityService";
 import "./ActivityPage.css";
 
-const FILTERS = ["All", "Uploads", "Downloads", "Shares", "Viewed", "Login", "Failed"];
+const FILTERS = ["All", "Uploads", "Downloads", "Shares", "Logins", "Security"];
 
-const normalizeAction = (action = "") => action.toUpperCase();
-
-function getActionMeta(action, level = "info") {
-  const normalized = normalizeAction(action);
-
-  if (normalized.includes("UPLOAD")) return { Icon: Upload, tone: "success", label: "Upload" };
-  if (normalized.includes("DOWNLOAD")) return { Icon: Download, tone: "purple", label: "Download" };
-  if (normalized.includes("SHARE")) return { Icon: Share2, tone: "blue", label: "Share" };
-  if (normalized.includes("DELETE")) return { Icon: Trash2, tone: "danger", label: "Delete" };
-  if (normalized.includes("LOGIN")) return { Icon: LogIn, tone: level === "error" ? "danger" : "success", label: "Login" };
-  if (normalized.includes("VIEW") || normalized.includes("ACCESS")) return { Icon: Eye, tone: "blue", label: "Viewed" };
-  if (normalized.includes("KEY_ROTATION")) return { Icon: KeyRound, tone: "warning", label: "Security" };
-  if (normalized.includes("SUMMARY")) return { Icon: Sparkles, tone: "purple", label: "AI summary" };
-  if (["warn", "warning", "error", "critical"].includes(level)) {
-    return { Icon: ShieldAlert, tone: "danger", label: "Security" };
-  }
+function getActionMeta(action = "", level = "info") {
+  const n = action.toUpperCase();
+  if (n.includes("UPLOAD")) return { Icon: Upload, tone: "success", label: "Upload" };
+  if (n.includes("DOWNLOAD")) return { Icon: Download, tone: "purple", label: "Download" };
+  if (n.includes("SHARE") || n.includes("REVOKE")) return { Icon: Share2, tone: "blue", label: "Share" };
+  if (n.includes("DELETE")) return { Icon: Trash2, tone: "danger", label: "Delete" };
+  if (n.includes("LOGIN")) return { Icon: LogIn, tone: level === "error" ? "danger" : "success", label: "Login" };
+  if (n.includes("VIEW") || n.includes("ACCESS")) return { Icon: Eye, tone: "blue", label: "Access" };
+  if (n.includes("KEY_ROTATION")) return { Icon: KeyRound, tone: "warning", label: "Key Rotation" };
+  if (n.includes("SUMMARY")) return { Icon: Sparkles, tone: "purple", label: "AI Summary" };
+  if (n.includes("MFA") || n.includes("PASSWORD") || n.includes("RESET")) return { Icon: ShieldAlert, tone: "warning", label: "Security" };
+  if (["warn", "warning", "error", "critical"].includes(level)) return { Icon: ShieldAlert, tone: "danger", label: "Security" };
   return { Icon: FileText, tone: "neutral", label: "Activity" };
 }
 
 function formatAction(action = "Activity") {
-  return action
-    .toLowerCase()
-    .split("_")
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+  return action.toLowerCase().split("_").filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
-function formatTimestamp(value) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return { date: "Unknown date", time: "" };
-  return {
-    date: date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }),
-    time: date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
-  };
+function formatTime(dateStr) {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "Unknown";
+  const secs = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
+  if (secs < 60) return "Just now";
+  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
+  if (secs < 604800) return `${Math.floor(secs / 86400)}d ago`;
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
+
+function getDeviceIcon(deviceType) {
+  if (deviceType === "mobile") return Smartphone;
+  if (deviceType === "tablet") return Monitor;
+  return Laptop;
+}
+
+const isFlagged = (level) => ["warn", "warning", "error", "critical"].includes(level);
 
 export default function ActivityPage() {
   const [activities, setActivities] = useState([]);
+  const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
   const [days, setDays] = useState("all");
   const [suspiciousOnly, setSuspiciousOnly] = useState(false);
+  const [showSessions, setShowSessions] = useState(false);
 
-  const loadActivities = useCallback(async (showLoader = false) => {
-    if (showLoader) setRefreshing(true);
+  const loadData = useCallback(async (showLoader = true) => {
+    if (showLoader) setLoading(true);
+    setError("");
     try {
-      const data = await getActivities();
-      setActivities(Array.isArray(data) ? data : []);
-      setError("");
-    } catch (requestError) {
-      setError(requestError?.response?.data?.detail || "We couldn't load your activity. Please try again.");
+      const [acts, sess] = await Promise.all([
+        getActivities(200),
+        getLoginSessions().catch(() => []),
+      ]);
+      setActivities(Array.isArray(acts) ? acts : []);
+      setSessions(Array.isArray(sess) ? sess : []);
+    } catch (err) {
+      setError(err?.response?.data?.detail || "Could not load activity.");
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
-    loadActivities();
-    const interval = window.setInterval(() => loadActivities(), 30000);
-    return () => window.clearInterval(interval);
-  }, [loadActivities]);
+    loadData(true);
+    const interval = setInterval(() => loadData(false), 5000);
+    return () => clearInterval(interval);
+  }, [loadData]);
 
-  const visibleActivities = useMemo(() => {
+  // Single unified filter — no conflicting tab + chip systems
+  const filteredActivities = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    const cutoff = days === "all" ? null : Date.now() - Number(days) * 24 * 60 * 60 * 1000;
+    const cutoff = days === "all" ? null : Date.now() - Number(days) * 86400000;
 
     return activities.filter((item) => {
-      const action = normalizeAction(item.action);
-      const matchesFilter = filter === "All" || (
-        (filter === "Uploads" && action.includes("UPLOAD")) ||
-        (filter === "Downloads" && action.includes("DOWNLOAD")) ||
-        (filter === "Shares" && action.includes("SHARE")) ||
-        (filter === "Viewed" && (action.includes("VIEW") || action.includes("ACCESS"))) ||
-        (filter === "Login" && action.includes("LOGIN")) ||
-        (filter === "Failed" && ["warn", "warning", "error", "critical"].includes(item.level))
-      );
-      const matchesSuspicious = !suspiciousOnly || ["warn", "warning", "error", "critical"].includes(item.level);
+      const n = (item.action || "").toUpperCase();
+      const level = item.level || "info";
+
+      // Filter chip matching
+      const matchesFilter = filter === "All" ||
+        (filter === "Uploads" && n.includes("UPLOAD")) ||
+        (filter === "Downloads" && n.includes("DOWNLOAD")) ||
+        (filter === "Shares" && (n.includes("SHARE") || n.includes("REVOKE"))) ||
+        (filter === "Logins" && n.includes("LOGIN")) ||
+        (filter === "Security" && (isFlagged(level) || n.includes("MFA") || n.includes("PASSWORD") || n.includes("KEY") || n.includes("RESET")));
+
+      const matchesSuspicious = !suspiciousOnly || isFlagged(level);
       const matchesDate = !cutoff || new Date(item.created_at).getTime() >= cutoff;
       const searchable = `${item.action || ""} ${item.resource_name || ""} ${item.resource_type || ""}`.toLowerCase();
-      return matchesFilter && matchesSuspicious && matchesDate && (!needle || searchable.includes(needle));
+      const matchesSearch = !needle || searchable.includes(needle);
+
+      return matchesFilter && matchesSuspicious && matchesDate && matchesSearch;
     });
   }, [activities, days, filter, query, suspiciousOnly]);
 
   const stats = useMemo(() => ({
     total: activities.length,
-    users: activities.length ? 1 : 0,
-    flagged: activities.filter((item) => ["warn", "warning"].includes(item.level)).length,
-    blocked: activities.filter((item) => ["error", "critical"].includes(item.level)).length,
+    downloads: activities.filter((a) => (a.action || "").toUpperCase().includes("DOWNLOAD")).length,
+    logins: activities.filter((a) => (a.action || "").toUpperCase().includes("LOGIN")).length,
+    flagged: activities.filter((a) => isFlagged(a.level)).length,
   }), [activities]);
 
-  const exportReport = () => {
-    if (!visibleActivities.length) return;
-    const rows = visibleActivities.map((item) => [
-      item.created_at,
-      formatAction(item.action),
-      item.resource_type || "",
-      item.resource_name || "",
-      item.level || "info",
+  const exportCSV = () => {
+    if (!filteredActivities.length) return;
+    const rows = filteredActivities.map((item) => [
+      item.created_at, formatAction(item.action), item.resource_type || "", item.resource_name || "", item.level || "info",
     ]);
-    const escape = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
-    const csv = [["Timestamp", "Action", "Resource type", "Resource", "Level"], ...rows]
-      .map((row) => row.map(escape).join(","))
-      .join("\n");
+    const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const csv = [["Timestamp", "Action", "Type", "Resource", "Level"], ...rows].map((r) => r.map(esc).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = "my-activity-report.csv";
+    link.download = "activity-report.csv";
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -140,137 +133,170 @@ export default function ActivityPage() {
   };
 
   return (
-    <section className="activity-page fade-in" aria-labelledby="activity-title">
-      <header className="activity-header">
-        <div>
-          <span className="activity-eyebrow"><Activity size={14} /> Personal audit trail</span>
-          <h1 id="activity-title">Activity &amp; Audit Log</h1>
-          <p>Review the complete file and security audit trail for your account.</p>
+    <div className="activity-page fade-in">
+      {/* Flat Typography Header */}
+      <div className="flat-page-header">
+        <div className="flat-header-left">
+          <h1 className="flat-page-title">Activity & Access Monitoring</h1>
+          <p className="flat-page-subtitle">
+            Complete audit trail of file access, downloads, logins, and security events.
+          </p>
         </div>
-        <div className="activity-header-actions">
-          <span className="activity-live"><span aria-hidden="true" /> Updates every 30 seconds</span>
-          <button className="btn btn-secondary" onClick={exportReport} disabled={!visibleActivities.length}>
-            <Download size={16} /> Export CSV
+        <div className="flat-header-actions">
+          <button type="button" className="my-files-btn my-files-btn--secondary" onClick={exportCSV} disabled={!filteredActivities.length}>
+            <Download size={15} strokeWidth={2.2} /> Export CSV
+          </button>
+          <button type="button" className="my-files-btn my-files-btn--secondary" onClick={() => loadData(true)}>
+            <RefreshCw size={15} strokeWidth={2.2} /> Refresh
           </button>
         </div>
-      </header>
-
-      <div className="activity-stats" aria-label="Activity totals">
-        <StatCard icon={Clock3} label="Total events" value={stats.total} tone="blue" />
-        <StatCard icon={Activity} label="Unique users" value={stats.users} tone="success" />
-        <StatCard icon={ShieldAlert} label="Flagged events" value={stats.flagged} tone="warning" />
-        <StatCard icon={ShieldAlert} label="Blocked attempts" value={stats.blocked} tone="danger" />
       </div>
 
-      <div className="activity-toolbar card">
-        <label className="activity-search">
-          <Search size={17} aria-hidden="true" />
-          <span className="sr-only">Search activity</span>
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search actions or file names"
-          />
-        </label>
-        <label className="activity-date-filter">
-          <span className="sr-only">Filter by date</span>
-          <select value={days} onChange={(event) => setDays(event.target.value)} aria-label="Activity date range">
+      {/* KPI Stats */}
+      <section className="sharing-stats-grid">
+        <div className="sharing-stat-card">
+          <div className="sharing-stat-icon blue"><Activity size={20} /></div>
+          <div className="sharing-stat-info">
+            <span className="sharing-stat-value">{stats.total}</span>
+            <span className="sharing-stat-label">Total Events</span>
+          </div>
+        </div>
+        <div className="sharing-stat-card">
+          <div className="sharing-stat-icon purple"><Download size={20} /></div>
+          <div className="sharing-stat-info">
+            <span className="sharing-stat-value">{stats.downloads}</span>
+            <span className="sharing-stat-label">Downloads</span>
+          </div>
+        </div>
+        <div className="sharing-stat-card">
+          <div className="sharing-stat-icon emerald"><LogIn size={20} /></div>
+          <div className="sharing-stat-info">
+            <span className="sharing-stat-value">{stats.logins}</span>
+            <span className="sharing-stat-label">Login Events</span>
+          </div>
+        </div>
+        <div className="sharing-stat-card">
+          <div className="sharing-stat-icon" style={{ background: "rgba(244,63,94,.12)", color: "var(--rose-400)" }}><ShieldAlert size={20} /></div>
+          <div className="sharing-stat-info">
+            <span className="sharing-stat-value">{stats.flagged}</span>
+            <span className="sharing-stat-label">Security Flags</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Single Filter System (chips + search + date) */}
+      <section className="activity-toolbar">
+        <div className="activity-search-wrap">
+          <Search size={16} className="activity-search-icon" />
+          <input className="activity-search-input" placeholder="Search actions or file names…" value={query} onChange={(e) => setQuery(e.target.value)} />
+        </div>
+        <div className="activity-toolbar-right">
+          <select className="activity-date-select" value={days} onChange={(e) => setDays(e.target.value)}>
             <option value="all">All time</option>
             <option value="7">Last 7 days</option>
             <option value="30">Last 30 days</option>
             <option value="90">Last 90 days</option>
           </select>
-        </label>
-        <button
-          className="btn btn-secondary btn-icon"
-          onClick={() => loadActivities(true)}
-          disabled={refreshing}
-          aria-label="Refresh activity"
-          title="Refresh activity"
-        >
-          <RefreshCw size={17} className={refreshing ? "activity-spin" : ""} />
+        </div>
+      </section>
+
+      <div className="activity-filter-row">
+        {FILTERS.map((f) => (
+          <button key={f} className={`my-files-chip ${filter === f ? "is-active" : ""}`} onClick={() => setFilter(f)}>{f}</button>
+        ))}
+        <button className={`activity-suspicious-chip ${suspiciousOnly ? "is-active" : ""}`} onClick={() => setSuspiciousOnly(!suspiciousOnly)}>
+          <AlertTriangle size={13} /> Suspicious only
         </button>
       </div>
 
-      <div className="activity-filters" role="group" aria-label="Filter activity by type">
-        {FILTERS.map((item) => (
-          <button
-            key={item}
-            className={`btn btn-sm ${filter === item ? "btn-primary" : "btn-ghost"}`}
-            onClick={() => setFilter(item)}
-            aria-pressed={filter === item}
-          >
-            {item}
-          </button>
-        ))}
-        <label className="activity-suspicious-toggle">
-          <input type="checkbox" checked={suspiciousOnly} onChange={(event) => setSuspiciousOnly(event.target.checked)} />
-          <span>Suspicious only</span>
-        </label>
-      </div>
-
       {error && (
-        <div className="activity-error" role="alert">
-          <ShieldAlert size={18} />
-          <span>{error}</span>
-          <button className="btn btn-sm btn-secondary" onClick={() => loadActivities(true)}>Try again</button>
+        <div className="card" style={{ padding: 16, borderColor: "var(--rose-400)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ color: "var(--rose-400)", fontSize: 13 }}>{error}</span>
+          <button className="my-files-btn my-files-btn--secondary" style={{ padding: "6px 14px" }} onClick={() => loadData(true)}>Retry</button>
         </div>
       )}
 
-      <div className="activity-feed card" aria-busy={loading}>
-        <div className="activity-feed-heading">
-          <div>
-            <h2>Recent activity</h2>
-            <p>{visibleActivities.length} {visibleActivities.length === 1 ? "event" : "events"} shown</p>
-          </div>
+      {/* Activity Timeline */}
+      {loading ? (
+        <div className="my-files-loading"><div className="my-files-spinner" /><p>Loading activity trail…</p></div>
+      ) : filteredActivities.length === 0 ? (
+        <div className="my-files-empty">
+          <div className="my-files-empty-icon"><Activity size={40} /></div>
+          <h3 className="my-files-empty-title">{activities.length ? "No matching activity" : "No activity recorded yet"}</h3>
+          <p className="my-files-empty-subtitle">{activities.length ? "Try changing your search or filters." : "Uploads, downloads, shares, and security actions will appear here automatically."}</p>
         </div>
-
-        {loading ? (
-          <div className="activity-state"><div className="spinner" /><p>Loading your secure activity trail…</p></div>
-        ) : visibleActivities.length === 0 ? (
-          <div className="activity-state">
-            <div className="activity-empty-icon"><Activity size={28} /></div>
-            <h3>{activities.length ? "No matching activity" : "No activity recorded yet"}</h3>
-            <p>{activities.length ? "Try changing your search or filters." : "Uploads, downloads, shares and security actions will appear here automatically."}</p>
-          </div>
-        ) : (
-          <div className="activity-list">
-            {visibleActivities.map((item) => {
-              const meta = getActionMeta(item.action, item.level);
-              const timestamp = formatTimestamp(item.created_at);
-              return (
-                <article className="activity-row" key={item.id}>
-                  <div className={`activity-action-icon activity-tone-${meta.tone}`}><meta.Icon size={18} /></div>
-                  <div className="activity-row-main">
-                    <div className="activity-row-title">
-                      <strong>{formatAction(item.action)}</strong>
-                      <span className={`activity-badge activity-tone-${meta.tone}`}>{meta.label}</span>
-                    </div>
-                    <p>{item.resource_name || `${item.resource_type || "Account"} activity`}</p>
+      ) : (
+        <div className="activity-timeline">
+          {filteredActivities.map((item) => {
+            const meta = getActionMeta(item.action, item.level);
+            const flagged = isFlagged(item.level);
+            const toneClass = flagged ? (item.level === "critical" || item.level === "error" ? "is-danger" : "is-warning") : "is-success";
+            return (
+              <div key={item.id} className={`activity-timeline-item ${toneClass}`}>
+                <div className="activity-timeline-accent" />
+                <div className={`activity-timeline-icon tone-${meta.tone}`}><meta.Icon size={18} /></div>
+                <div className="activity-timeline-content">
+                  <div className="activity-timeline-title">
+                    {formatAction(item.action)}
+                    <span className="my-files-type-chip" style={{ fontSize: 10 }}>{meta.label}</span>
                   </div>
-                  <time className="activity-time" dateTime={item.created_at}>
-                    <strong>{timestamp.date}</strong>
-                    <span>{timestamp.time}</span>
-                  </time>
-                  <div className="activity-location">{item.ip_address || "Local session"}</div>
-                  <span className={`activity-status ${["warn", "warning", "error", "critical"].includes(item.level) ? "is-flagged" : "is-success"}`}>
-                    {["warn", "warning", "error", "critical"].includes(item.level) ? "Flagged" : "Success"}
+                  <p className="activity-timeline-desc">{item.resource_name || `${item.resource_type || "Account"} activity`}</p>
+                  <div className="activity-timeline-meta">
+                    <span className="activity-timeline-time"><Clock size={11} /> {formatTime(item.created_at)}</span>
+                    {item.ip_address && <span className="activity-timeline-ip"><Globe size={10} /> {item.ip_address}</span>}
+                  </div>
+                </div>
+                <div className="activity-timeline-right">
+                  <span className={`activity-risk-badge ${flagged ? "is-danger" : "is-success"}`}>
+                    {flagged ? <><AlertTriangle size={10} /> Flagged</> : <><CheckCircle2 size={10} /> OK</>}
                   </span>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-function StatCard({ icon: Icon, label, value, tone }) {
-  return (
-    <div className="card activity-stat-card">
-      <div className={`activity-stat-icon activity-tone-${tone}`}><Icon size={19} /></div>
-      <div><strong>{value}</strong><span>{label}</span></div>
+      {/* Active Sessions Section (PSD 5.iii) */}
+      <section className="activity-sessions-section">
+        <button className="activity-sessions-toggle" onClick={() => setShowSessions(!showSessions)}>
+          <Monitor size={18} />
+          <span>Active Login Sessions</span>
+          <span className="activity-tab-badge">{sessions.length}</span>
+          {showSessions ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+
+        {showSessions && (
+          sessions.length === 0 ? (
+            <div className="my-files-empty" style={{ padding: "32px 24px" }}>
+              <h3 className="my-files-empty-title">No active sessions</h3>
+              <p className="my-files-empty-subtitle">Your login sessions will appear here.</p>
+            </div>
+          ) : (
+            <div className="activity-sessions-list">
+              {sessions.map((s) => {
+                const DeviceIcon = getDeviceIcon(s.device_type);
+                return (
+                  <div key={s.id} className={`activity-session-card ${s.is_current ? "is-current" : ""}`}>
+                    <div className="activity-session-icon"><DeviceIcon size={20} /></div>
+                    <div className="activity-session-info">
+                      <p className="activity-session-device">{s.device_name || "Unknown Device"}</p>
+                      <p className="activity-session-details">
+                        {s.browser_name || "Unknown Browser"} · {s.ip_address || "Unknown IP"} · {s.location || "Unknown Location"}
+                      </p>
+                    </div>
+                    <div className="activity-session-right">
+                      {s.is_current && (
+                        <span className="activity-current-badge"><CheckCircle2 size={11} /> Current</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
+        )}
+      </section>
     </div>
   );
 }

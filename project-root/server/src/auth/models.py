@@ -1,5 +1,6 @@
-from pydantic import BaseModel, EmailStr
+from datetime import datetime
 from typing import Optional
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class LoginRequest(BaseModel):
@@ -24,10 +25,14 @@ class UserOut(BaseModel):
     email: str
     role: str
     plan: str
+    is_active: bool
     mfa_enabled: bool
-    storage_used: int
-    storage_quota: int
-    avatar_color: str
+    storage_used: Optional[int] = 0
+    storage_quota: Optional[int] = 5368709120
+    avatar_color: Optional[str] = "linear-gradient(135deg,#3b82f6,#8b5cf6)"
+    organization: Optional[str] = None
+    avatar_url: Optional[str] = None
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -63,15 +68,19 @@ class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
 
+
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
 
+
 class VerifyMFASetupRequest(BaseModel):
     code: str
 
+
 class DisableMFARequest(BaseModel):
     password: str
+
 
 class OAuthExchangeRequest(BaseModel):
     code: str

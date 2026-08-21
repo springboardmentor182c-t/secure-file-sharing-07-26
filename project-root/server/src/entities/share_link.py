@@ -9,7 +9,7 @@ class ShareLink(Base):
     id = Column(Integer, primary_key=True, index=True)
     file_id = Column(Integer, ForeignKey("files.id"), nullable=False)
     token = Column(String, unique=True, index=True, nullable=False)
-    permission = Column(String, default="view")        # view | download | edit
+    permission = Column(String, default="view")
     expires_at = Column(DateTime(timezone=True), nullable=True)
     password_hash = Column(String, nullable=True)
     max_views = Column(Integer, nullable=True)
@@ -17,3 +17,4 @@ class ShareLink(Base):
     is_active = Column(Boolean, default=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_accessed_at = Column(DateTime(timezone=True), nullable=True)

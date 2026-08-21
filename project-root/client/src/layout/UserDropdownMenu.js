@@ -1,13 +1,6 @@
 // client/src/layout/UserDropdownMenu.js
-/**
- * Premium user dropdown — with:
- * - Real-time storage from DB
- * - Auto-refresh on file upload/delete events
- * - Storage warning at 80%+ capacity
- * - Storage breakdown by file type
- */
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -27,7 +20,6 @@ import { authAPI } from "../utils/api";
 import { events, EVENTS } from "../utils/events";
 import "./UserDropdownMenu.css";
 
-// Category icon mapping
 const CATEGORY_ICONS = {
   Documents: FileText,
   Media: ImageIcon,
@@ -49,7 +41,6 @@ export default function UserDropdownMenu({
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  /* ── Fetch fresh user + storage breakdown ─────────────────────────── */
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -66,22 +57,18 @@ export default function UserDropdownMenu({
     }
   }, []);
 
-  /* ── Fetch on open ──────────────────────────────────────────────── */
   useEffect(() => {
     if (open) fetchData();
   }, [open, fetchData]);
 
-  /* ── Listen for storage change events (auto-refresh) ──────────────── */
   useEffect(() => {
     const unsubscribe = events.on(EVENTS.STORAGE_CHANGED, () => {
-      // Refresh if dropdown is open, otherwise mark for next open
       if (open) fetchData();
-      else setFreshUser(null); // Force refetch next time
+      else setFreshUser(null);
     });
     return unsubscribe;
   }, [open, fetchData]);
 
-  /* ── Position dropdown ──────────────────────────────────────────── */
   useEffect(() => {
     if (!open || !triggerRef?.current) return;
     const updatePos = () => {
@@ -97,7 +84,6 @@ export default function UserDropdownMenu({
     };
   }, [open, triggerRef]);
 
-  /* ── Close on outside click ─────────────────────────────────────── */
   useEffect(() => {
     if (!open) return;
     const handleClick = (e) => {
@@ -114,7 +100,6 @@ export default function UserDropdownMenu({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open, onClose, triggerRef]);
 
-  /* ── Close on Escape ────────────────────────────────────────────── */
   useEffect(() => {
     if (!open) return;
     const handleKey = (e) => {
@@ -124,17 +109,26 @@ export default function UserDropdownMenu({
     return () => document.removeEventListener("keydown", handleKey);
   }, [open, onClose]);
 
-  const displayUser = freshUser || user;
+  // Combine fresh user data while preserving avatar_url from context if not in response
+  const displayUser = useMemo(() => {
+    const base = freshUser || user;
+    if (!base) return user;
+    return {
+      ...base,
+      avatar_url: base.avatar_url || user?.avatar_url || null,
+    };
+  }, [freshUser, user]);
 
-  const initials =
-    displayUser?.name
-      ?.split(" ")
+  const initials = useMemo(() => {
+    if (!displayUser?.name) return "TS";
+    return displayUser.name
+      .split(" ")
       .map((n) => n[0])
       .join("")
       .substring(0, 2)
-      .toUpperCase() || "TS";
+      .toUpperCase();
+  }, [displayUser?.name]);
 
-  /* ── Storage calculation ──────────────────────────────────────────── */
   const storageUsed = displayUser?.storage_used || 0;
   const storageQuota = displayUser?.storage_quota || 5368709120;
   const storagePct = Math.min(
@@ -142,23 +136,15 @@ export default function UserDropdownMenu({
     100
   );
 
-  /* ── Storage status (color + warning) ────────────────────────────── */
   const getStorageStatus = () => {
-    if (storagePct >= 95) {
-      return { level: "critical", color: "#ef4444", label: "Critical" };
-    }
-    if (storagePct >= 80) {
-      return { level: "warning", color: "#f59e0b", label: "Warning" };
-    }
-    if (storagePct >= 60) {
-      return { level: "caution", color: "#eab308", label: "Caution" };
-    }
+    if (storagePct >= 95) return { level: "critical", color: "#ef4444", label: "Critical" };
+    if (storagePct >= 80) return { level: "warning", color: "#f59e0b", label: "Warning" };
+    if (storagePct >= 60) return { level: "caution", color: "#eab308", label: "Caution" };
     return { level: "healthy", color: "#10b981", label: "Healthy" };
   };
   const storageStatus = getStorageStatus();
   const showWarning = storagePct >= 80;
 
-  /* ── Smart size formatting ────────────────────────────────────────── */
   const formatSize = (bytes) => {
     const gb = bytes / (1024 ** 3);
     if (gb >= 1) return `${gb.toFixed(2)} GB`;
@@ -172,7 +158,6 @@ export default function UserDropdownMenu({
   const usedDisplay = formatSize(storageUsed);
   const totalDisplay = formatSize(storageQuota);
 
-  /* ── Role display ────────────────────────────────────────────────── */
   const roleLabel = {
     admin: "Admin",
     member: "Member",
@@ -191,14 +176,13 @@ export default function UserDropdownMenu({
   };
 
   const menuItems = [
-  { icon: User, label: "View Profile", onClick: () => handleNavigate("/settings?tab=profile") },
-  { icon: KeyRound, label: "Change Password", onClick: () => handleNavigate("/settings?tab=security") },
-  { icon: ShieldCheck, label: "Security & MFA", onClick: () => handleNavigate("/settings?tab=security#mfa") },
-];
+    { icon: User, label: "View Profile", onClick: () => handleNavigate("/settings?tab=profile") },
+    { icon: KeyRound, label: "Change Password", onClick: () => handleNavigate("/settings?tab=security") },
+    { icon: ShieldCheck, label: "Security & MFA", onClick: () => handleNavigate("/settings?tab=security#mfa") },
+  ];
 
   if (!open) return null;
 
-  // Filter categories with data
   const activeCategories = breakdown?.categories?.filter((c) => c.size_bytes > 0) || [];
 
   return createPortal(
@@ -225,12 +209,24 @@ export default function UserDropdownMenu({
             <div
               className="user-dropdown-avatar"
               style={{
-                background:
-                  displayUser?.avatar_color ||
-                  "linear-gradient(135deg, #3b82f6, #6366f1)",
+                background: displayUser?.avatar_url
+                  ? "transparent"
+                  : (displayUser?.avatar_color || "linear-gradient(135deg, #3b82f6, #6366f1)"),
+                overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              {initials}
+              {displayUser?.avatar_url ? (
+                <img
+                  src={displayUser.avatar_url}
+                  alt={displayUser.name || "Profile"}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
+                initials
+              )}
             </div>
             <div className="user-dropdown-identity">
               <div className="user-dropdown-name-row">
@@ -262,7 +258,6 @@ export default function UserDropdownMenu({
               </span>
             </div>
 
-            {/* Progress bar with color-coded status */}
             <div className="user-dropdown-storage-track">
               <motion.div
                 className="user-dropdown-storage-fill"
@@ -297,7 +292,6 @@ export default function UserDropdownMenu({
               </span>
             </div>
 
-            {/* Warning banner at 80%+ */}
             {showWarning && (
               <motion.div
                 className={`user-dropdown-warning user-dropdown-warning--${storageStatus.level}`}
@@ -314,7 +308,6 @@ export default function UserDropdownMenu({
               </motion.div>
             )}
 
-            {/* Storage breakdown by file type */}
             {activeCategories.length > 0 && (
               <motion.div
                 className="user-dropdown-breakdown"
@@ -324,7 +317,6 @@ export default function UserDropdownMenu({
               >
                 <div className="user-dropdown-breakdown-label">Breakdown</div>
 
-                {/* Segmented bar */}
                 <div className="user-dropdown-breakdown-bar">
                   {activeCategories.map((cat, i) => (
                     <motion.div
@@ -346,7 +338,6 @@ export default function UserDropdownMenu({
                   ))}
                 </div>
 
-                {/* Category list */}
                 <div className="user-dropdown-breakdown-list">
                   {activeCategories.map((cat, i) => {
                     const Icon = CATEGORY_ICONS[cat.name] || FileIcon;
@@ -409,7 +400,6 @@ export default function UserDropdownMenu({
             })}
           </div>
 
-          {/* Divider */}
           <div className="user-dropdown-divider" />
 
           {/* Sign out */}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, Moon, Sun, CheckCheck, Sparkles } from "lucide-react";
+import { Bell, Moon, Sun, CheckCheck, Sparkles, Shield } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -48,7 +48,7 @@ function getSearchFileIcon(filename) {
 }
 
 function getNotificationIcon(notification) {
-  const text = `${notification.title} ${notification.message}`.toLowerCase();
+  const text = `${notification?.title || ''} ${notification?.message || ''}`.toLowerCase();
   if (text.includes("share"))
     return <RiShareForwardLine className="notification-type-icon" />;
   if (text.includes("folder"))
@@ -60,9 +60,10 @@ function getNotificationIcon(notification) {
   return <RiNotification3Line className="notification-type-icon" />;
 }
 
-// ── KEPT from origin/main-group-D — useful unread preview helper ──
+// ── DEFENSIVE CRASH-PROOF HELPER ───────────────────────────────────────────
 export function getUnreadNotificationPreview(items) {
-  return items.filter((notification) => !notification.is_read).slice(0, 5);
+  if (!Array.isArray(items)) return [];
+  return items.filter((notification) => notification && !notification.is_read).slice(0, 5);
 }
 
 export default function Navbar({
@@ -97,7 +98,6 @@ export default function Navbar({
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
 
-  // ── get user role ──
   const isAdmin = user?.role === "admin";
 
   useEffect(() => {
@@ -223,25 +223,34 @@ export default function Navbar({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // ── KEPT from origin/main-group-D — notification loader with unread filter ──
+  // ── SAFE NOTIFICATION LOADER (Prevents crashes) ───────────────────────────
   const loadNotifications = useCallback(async () => {
+    if (!user) return;
     try {
       const res = await notificationsAPI.list();
-      setNotifications(getUnreadNotificationPreview(res.data));
-    } catch (err) {
-      console.error(err);
+      const list = Array.isArray(res?.data) ? res.data : [];
+      setNotifications(getUnreadNotificationPreview(list));
+    } catch {
+      // Silently ignore during login/logout transitions
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (showNotifications) loadNotifications();
   }, [showNotifications, loadNotifications]);
 
-  useEffect(() => events.on(EVENTS.NOTIFICATIONS_CHANGED, () => {
-    if (showNotifications) loadNotifications();
-  }), [showNotifications, loadNotifications]);
+  useEffect(() => {
+    const unsub = events.on(EVENTS.NOTIFICATIONS_CHANGED, loadNotifications);
+    const handleFocus = () => loadNotifications();
+    window.addEventListener("focus", handleFocus);
+    const interval = setInterval(loadNotifications, 5000);
+    return () => {
+      unsub();
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(interval);
+    };
+  }, [loadNotifications]);
 
-  // Flatten search results for keyboard navigation
   const flatResults = useMemo(() => {
     if (!results) return [];
     const list = [];
@@ -350,7 +359,6 @@ export default function Navbar({
     !results.users?.length &&
     !results.people_files?.length;
 
-  // Render helpers
   const renderSearchItem = (item, globalIndex) => {
     const isActive = activeIndex === globalIndex;
 
@@ -466,7 +474,8 @@ export default function Navbar({
           onClick={() => setShowContentModal(true)}
           title="Open Deep Content Search"
         >
-          <RiFileSearchLine size={14} /> Deep Search
+          <RiFileSearchLine size={14} />
+          <span className="ai-search-text">Deep Search</span>
         </button>
 
         <AnimatePresence>
@@ -536,6 +545,24 @@ export default function Navbar({
       </div>
 
       <div className="navbar-actions" ref={notificationRef}>
+        {isAdmin && (
+          <motion.button
+            type="button"
+            className="nav-admin-badge"
+            onClick={() => navigate("/admin")}
+            title="Open Administrator Console"
+            whileHover={{ y: -1 }}
+            whileTap={{ scale: 0.96 }}
+            transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+          >
+            <div className="nav-admin-icon-wrap">
+              <Shield size={11} strokeWidth={2.5} />
+            </div>
+            <span className="nav-admin-text">ADMIN CONSOLE</span>
+            <span className="nav-admin-beacon" />
+          </motion.button>
+        )}
+
         {showAssistantBtn && (
           <div className="navbar-assistant-wrapper" ref={assistantRef}>
             <motion.button
@@ -660,28 +687,30 @@ export default function Navbar({
                   <p>No notifications</p>
                 </div>
               ) : (
-                notifications.map((notification, i) => (
-                  <motion.div
-                    key={notification.id}
-                    className="notification-item"
-                    onClick={() => handleNotificationClick(notification)}
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{
-                      delay: 0.04 * i,
-                      duration: 0.28,
-                      ease: [0.32, 0.72, 0, 1],
-                    }}
-                  >
-                    <div className="notification-icon">
-                      {getNotificationIcon(notification)}
-                    </div>
-                    <div className="notification-content">
-                      <div className="notification-title">{notification.title}</div>
-                      <div className="notification-message">{notification.message}</div>
-                    </div>
-                  </motion.div>
-                ))
+                <div className="notification-dropdown-list">
+                  {notifications.map((notification, i) => (
+                    <motion.div
+                      key={notification.id}
+                      className="notification-item"
+                      onClick={() => handleNotificationClick(notification)}
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{
+                        delay: 0.04 * i,
+                        duration: 0.28,
+                        ease: [0.32, 0.72, 0, 1],
+                      }}
+                    >
+                      <div className="notification-icon">
+                        {getNotificationIcon(notification)}
+                      </div>
+                      <div className="notification-content">
+                        <div className="notification-title">{notification.title}</div>
+                        <div className="notification-message">{notification.message}</div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               )}
 
               <motion.button

@@ -5,17 +5,18 @@ import uuid
 import hashlib
 import mimetypes
 from pathlib import Path
+from typing import Optional
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
-from datetime import datetime, timezone
 from fastapi import HTTPException, UploadFile, status
 
 from src.entities.file import File
 from src.entities.folder import Folder
 from src.entities.user import User
 from src.entities.audit_log import AuditLog
-from src.security.exceptions import KeyManagementError
 from src.entities.file_version import FileVersion
+from src.security.exceptions import KeyManagementError
 
 from src.security.validation.validators import validate_upload
 from src.security.key_manager import (
@@ -30,10 +31,7 @@ from src.security.secure_storage import (
     load_encrypted_file,
     delete_encrypted_file,
 )
-from src.security.hashing import calculate_sha256
 from src.notifications.service import create_notification
-
-# ── Analytics event logger ────────────────────────────────────────────────
 from src.analytics.services import log_event
 from src.analytics.constants import (
     AnalyticsEventType,
@@ -48,9 +46,7 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 # HELPERS
 # ═══════════════════════════════════════════════════════════════════════════
 
-
 def sanitize_filename(filename: str) -> str:
-    """Remove unsafe characters from uploaded filenames."""
     filename = Path(filename).name
     filename = re.sub(r'[<>:"/\\|?*\x00-\x1F]', "_", filename)
     filename = filename.strip()
@@ -67,17 +63,8 @@ DANGEROUS_SIGNATURES = [
 ]
 
 DANGEROUS_EXTENSIONS = {
-    ".exe",
-    ".bat",
-    ".cmd",
-    ".sh",
-    ".ps1",
-    ".vbs",
-    ".jar",
-    ".msi",
-    ".dll",
-    ".com",
-    ".scr",
+    ".exe", ".bat", ".cmd", ".sh", ".ps1", ".vbs",
+    ".jar", ".msi", ".dll", ".com", ".scr",
 }
 
 
@@ -121,20 +108,14 @@ def _detect_suspicious_activity(
     user_id: int,
     ip_address: str | None = None,
 ):
-    """
-    Detect repeated unauthorized access attempts.
-    Logs SECURITY analytics event if threshold crossed.
-    """
     failed_attempts = (
         db.query(AuditLog)
         .filter(
             AuditLog.user_id == user_id,
-            AuditLog.action.in_(
-                [
-                    "UNAUTHORIZED_ACCESS",
-                    "UNAUTHORIZED_DOWNLOAD",
-                ]
-            ),
+            AuditLog.action.in_([
+                "UNAUTHORIZED_ACCESS",
+                "UNAUTHORIZED_DOWNLOAD",
+            ]),
         )
         .count()
     )
@@ -168,7 +149,6 @@ def _detect_suspicious_activity(
 # LIST FILES
 # ═══════════════════════════════════════════════════════════════════════════
 
-
 def get_user_files(
     db: Session,
     owner_id: int,
@@ -188,7 +168,6 @@ def get_user_files(
 # ═══════════════════════════════════════════════════════════════════════════
 # GET FILE (with ownership check)
 # ═══════════════════════════════════════════════════════════════════════════
-
 
 def get_file(
     db: Session,
@@ -242,7 +221,6 @@ def get_file(
 # ═══════════════════════════════════════════════════════════════════════════
 # UPLOAD
 # ═══════════════════════════════════════════════════════════════════════════
-
 
 def upload_file(
     db: Session,
@@ -310,6 +288,7 @@ def upload_file(
         hash_sha256=hash_sha256,
         owner_id=owner_id,
         folder_id=folder_id,
+        version=1,
     )
 
     db.add(file)
@@ -343,22 +322,11 @@ def upload_file(
         },
     )
 
-    create_notification(
-        db,
-        user_id=owner_id,
-        type="upload",
-        category="uploads",
-        title="File uploaded",
-        message=f'"{safe_filename}" was uploaded successfully.',
-        icon="upload",
-    )
-
     db.commit()
     db.refresh(file)
 
     try:
         from src.search.service import get_or_index_file_content
-
         get_or_index_file_content(db, file)
     except Exception:
         pass
@@ -403,7 +371,6 @@ def move_file(
 # DELETE
 # ═══════════════════════════════════════════════════════════════════════════
 
-
 def delete_file(
     db: Session,
     file_id: int,
@@ -431,39 +398,35 @@ def delete_file(
 
     try:
         from src.entities.file_content import FileContent
-
         db.query(FileContent).filter(FileContent.file_id == file.id).delete(
             synchronize_session=False
         )
-    except Exception as _e:
-        print(f"[DELETE CLEANUP] FileContent: {_e}", flush=True)
+    except Exception:
+        pass
 
     try:
         from src.entities.file_summary import FileSummary
-
         db.query(FileSummary).filter(FileSummary.file_id == file.id).delete(
             synchronize_session=False
         )
-    except Exception as _e:
-        print(f"[DELETE CLEANUP] FileSummary: {_e}", flush=True)
+    except Exception:
+        pass
 
     try:
         from src.entities.file_permission import FilePermission
-
         db.query(FilePermission).filter(FilePermission.file_id == file.id).delete(
             synchronize_session=False
         )
-    except Exception as _e:
-        print(f"[DELETE CLEANUP] FilePermission: {_e}", flush=True)
+    except Exception:
+        pass
 
     try:
         from src.entities.share_link import ShareLink
-
         db.query(ShareLink).filter(ShareLink.file_id == file.id).update(
             {"is_active": False}, synchronize_session=False
         )
-    except Exception as _e:
-        print(f"[DELETE CLEANUP] ShareLink: {_e}", flush=True)
+    except Exception:
+        pass
 
     file.is_deleted = True
 
@@ -497,9 +460,8 @@ def delete_file(
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# OPTIMIZED DOWNLOAD (Zero redundant hashing + silent view bypass)
+# GET FILE PATH (Decrypted Bytes)
 # ═══════════════════════════════════════════════════════════════════════════
-
 
 def get_file_path(
     db: Session,
@@ -515,11 +477,10 @@ def get_file_path(
 
     if file.owner_id != owner_id:
         raise HTTPException(
-            status_code=403, detail="You are not authorized to download this file."
+            status_code=403, detail="You are not authorized to access this file."
         )
 
     try:
-        # Direct chunk loading (Fast I/O)
         encrypted_bytes = load_encrypted_file(file.stored_name)
     except Exception:
         raise HTTPException(status_code=500, detail="Encrypted file not found.")
@@ -531,8 +492,6 @@ def get_file_path(
             raise HTTPException(status_code=500, detail="Encryption key not found.")
 
         try:
-            # GCM decryption implicitly verifies integrity via AEAD tag validation.
-            # Wrong key, wrong data, or tampering throws InvalidTag immediately here.
             decrypted_bytes = decrypt_bytes(encrypted_bytes, aes_key)
         except Exception:
             raise HTTPException(
@@ -541,10 +500,13 @@ def get_file_path(
     else:
         decrypted_bytes = encrypted_bytes
 
-    # ── Write updates bypass for silent chunk preview reads ────────────────
-    # Prevents ranges/previews from slowing down on redundant database transactions
-    is_preview = notification_user_id is not None
-    if not is_preview:
+    # ── DECOUPLED TRACKING ────────────────────────────────────────────────
+    # Logs DB audits, increments stats, and records analytics on access,
+    # but strictly delegates in-app notification triggers to the routers
+    # (shares, shared_with_me) to prevent double/triple delivery bugs.
+    is_teammate_access = notification_user_id is not None and notification_user_id != owner_id
+
+    if is_teammate_access:
         file.download_count += 1
         file.last_downloaded_at = datetime.now(timezone.utc)
 
@@ -565,15 +527,6 @@ def get_file_path(
             ip_address=ip_address,
             event_metadata={"target": file.original_name, "size_bytes": file.size},
         )
-        create_notification(
-            db,
-            user_id=owner_id,
-            type="download",
-            category="downloads",
-            title="File downloaded",
-            message=f'"{file.original_name}" was downloaded.',
-            icon="download",
-        )
         db.commit()
 
     return (
@@ -586,7 +539,6 @@ def get_file_path(
 # ═══════════════════════════════════════════════════════════════════════════
 # ROTATE ENCRYPTION KEY
 # ═══════════════════════════════════════════════════════════════════════════
-
 
 def rotate_file_key(
     db: Session,
@@ -621,8 +573,7 @@ def rotate_file_key(
             )
             db.commit()
             raise KeyManagementError(
-                f"Key rotation failed and rollback failed. "
-                f"File {file.id} may be corrupted: {e}"
+                f"Key rotation failed and rollback failed. File {file.id} may be corrupted: {e}"
             )
 
         _audit(
@@ -648,6 +599,11 @@ def rotate_file_key(
     )
     db.commit()
 
+
+# ═══════════════════════════════════════════════════════════════════════════
+# FILE VERSION MANAGEMENT (PSD Module 2.v) — Immutable History
+# ═══════════════════════════════════════════════════════════════════════════
+
 def list_file_versions(db: Session, file_id: int, user_id: int) -> dict:
     file = get_file(db, file_id, user_id)
     history = (
@@ -659,6 +615,7 @@ def list_file_versions(db: Session, file_id: int, user_id: int) -> dict:
 
     all_versions = []
 
+    # 1. Current active version
     all_versions.append({
         "id": 0,
         "file_id": file.id,
@@ -671,6 +628,7 @@ def list_file_versions(db: Session, file_id: int, user_id: int) -> dict:
         "created_by": file.owner_id,
     })
 
+    # 2. Historical versions
     current_ver = file.version or 1
     for v in history:
         if v.version_number != current_ver:
@@ -713,6 +671,7 @@ def upload_new_version(
     _basic_malware_check(upload.filename, file_bytes)
     validate_upload(db, upload, file_size)
 
+    # 1. Archive current active version
     current_ver = file.version or 1
     archived_version = FileVersion(
         file_id=file.id,
@@ -727,12 +686,14 @@ def upload_new_version(
     )
     db.add(archived_version)
 
+    # 2. Encrypt and store new version
     new_stored_name = f"{uuid.uuid4().hex}{Path(file.original_name).suffix.lower()}"
     new_key = generate_key()
     save_key(new_stored_name, new_key)
     stored_bytes = encrypt_bytes(file_bytes, new_key)
     save_encrypted_file(new_stored_name, stored_bytes)
 
+    # 3. Update active file record
     old_size = file.size
     file.stored_name = new_stored_name
     file.size = file_size
@@ -792,6 +753,7 @@ def restore_file_version(
 
     current_ver = file.version or 1
 
+    # Archive current active version
     current_archived = FileVersion(
         file_id=file.id,
         version_number=current_ver,
@@ -805,6 +767,7 @@ def restore_file_version(
     )
     db.add(current_archived)
 
+    # Swap to restored version
     file.stored_name = target_version.stored_name
     file.size = target_version.size
     file.mimetype = target_version.mimetype

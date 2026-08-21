@@ -83,6 +83,7 @@ export default function FileCard({
   selected = false,
   onToggleSelect,
   hasSelection = false,
+  isHighlighted = false,
 }) {
   const fileName = file?.name || file?.original_name || 'Untitled File';
   const category = getCleanCategory(file);
@@ -137,7 +138,8 @@ export default function FileCard({
   if (viewMode === 'list') {
     return (
       <article
-        className={`my-files-list-row ${isDragging ? 'is-dragging' : ''} ${selected ? 'is-selected' : ''}`}
+        data-file-id={file.id}
+        className={`my-files-list-row ${isDragging ? 'is-dragging' : ''} ${selected ? 'is-selected' : ''} ${isHighlighted ? 'is-highlighted' : ''}`}
         draggable={!hasSelection || selected}
         onDragStart={handleDragStart}
         onDragEnd={() => setIsDragging(false)}
@@ -242,7 +244,8 @@ export default function FileCard({
   // ══ GRID VIEW ══════════════════════════════════════════════════════════
   return (
     <article
-      className={`my-files-card my-files-file-card group ${isDragging ? 'is-dragging' : ''} ${selected ? 'is-selected' : ''}`}
+      data-file-id={file.id}
+      className={`my-files-card my-files-file-card group ${isDragging ? 'is-dragging' : ''} ${selected ? 'is-selected' : ''} ${isHighlighted ? 'is-highlighted' : ''}`}
       draggable={!hasSelection || selected}
       onDragStart={handleDragStart}
       onDragEnd={() => setIsDragging(false)}

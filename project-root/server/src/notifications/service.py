@@ -12,6 +12,8 @@ def create_notification(
     title: str,
     message: str,
     icon: str | None = None,
+    resource_id: int | None = None,
+    resource_type: str | None = None,
     commit: bool = False,
 ) -> Notification:
     """Create a persisted notification within the caller's transaction."""
@@ -24,6 +26,10 @@ def create_notification(
     }
     if icon is not None:
         values["icon"] = icon
+    if resource_id is not None:
+        values["resource_id"] = resource_id
+    if resource_type is not None:
+        values["resource_type"] = resource_type
 
     notification = Notification(**values)
     db.add(notification)
@@ -57,7 +63,7 @@ def mark_all_notifications_read(db: Session, user_id: int) -> int:
     updated = (
         db.query(Notification)
         .filter(Notification.user_id == user_id, Notification.is_read == False)
-        .update({Notification.is_read: True}, synchronize_session=False)
+        .update({"is_read": True}, synchronize_session=False)
     )
     db.commit()
     return updated
@@ -67,6 +73,16 @@ def delete_notification(db: Session, notification_id: int, user_id: int) -> None
     notification = _user_notification(db, notification_id, user_id)
     db.delete(notification)
     db.commit()
+
+
+def delete_all_notifications(db: Session, user_id: int) -> int:
+    deleted = (
+        db.query(Notification)
+        .filter(Notification.user_id == user_id)
+        .delete(synchronize_session=False)
+    )
+    db.commit()
+    return deleted
 
 
 def _user_notification(db: Session, notification_id: int, user_id: int) -> Notification:

@@ -2382,11 +2382,11 @@ body.dark .upload-modal {
 }
 
 .upload-stat--success { color: var(--emerald-500); }
-.upload-stat--error   { color: var(--rose-500); }
-.upload-stat--muted   { color: var(--text-muted); }
+.upload-stat--error { color: var(--rose-500); }
+.upload-stat--muted { color: var(--text-muted); }
 
 body.dark .upload-stat--success { color: var(--emerald-400); }
-body.dark .upload-stat--error   { color: var(--rose-400); }
+body.dark .upload-stat--error { color: var(--rose-400); }
 
 .upload-stat-sep {
   opacity: 0.4;
@@ -2710,4 +2710,165 @@ body.dark .upload-spin { color: var(--blue-400); }
   .upload-modal-title { font-size: 15px; }
   .upload-modal-subtitle { font-size: 11px; }
   .upload-error-msg { max-width: 120px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   NOTIFICATION FILE & SHARE HIGHLIGHT (5-second glow pulse)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.my-files-card.is-highlighted,
+.my-files-list-row.is-highlighted,
+.sharing-card.is-highlighted {
+  animation: notifHighlight 5s ease-out forwards;
+  z-index: 10;
+}
+
+@keyframes notifHighlight {
+  0% {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.6), 0 0 24px rgba(59, 130, 246, 0.35);
+    border-color: var(--blue-500) !important;
+  }
+  15% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.7), 0 0 34px rgba(59, 130, 246, 0.45);
+    border-color: var(--blue-400) !important;
+  }
+  30% {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.45), 0 0 20px rgba(59, 130, 246, 0.25);
+  }
+  60% {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25), 0 0 12px rgba(59, 130, 246, 0.15);
+  }
+  85% {
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+  }
+  100% {
+    box-shadow: none;
+    border-color: var(--border-subtle) !important;
+  }
+}
+
+body.dark .my-files-card.is-highlighted,
+body.dark .my-files-list-row.is-highlighted,
+body.dark .sharing-card.is-highlighted {
+  animation: notifHighlightDark 5s ease-out forwards;
+}
+
+@keyframes notifHighlightDark {
+  0% {
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.6), 0 0 26px rgba(96, 165, 250, 0.35);
+    border-color: var(--blue-400) !important;
+  }
+  15% {
+    box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.75), 0 0 38px rgba(96, 165, 250, 0.45);
+    border-color: var(--blue-300) !important;
+  }
+  30% {
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.45), 0 0 20px rgba(96, 165, 250, 0.25);
+  }
+  60% {
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.25), 0 0 12px rgba(96, 165, 250, 0.12);
+  }
+  85% {
+    box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.08);
+  }
+  100% {
+    box-shadow: none;
+    border-color: var(--border-subtle) !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   UNIFIED PAGE HEADERS — Flat Typography Aesthetic (Apple/Stripe Style)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.flat-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.flat-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.flat-page-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+  letter-spacing: -0.8px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.flat-page-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+  letter-spacing: -0.1px;
+}
+
+.flat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .flat-page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .flat-page-title {
+    font-size: 26px;
+  }
+  .flat-header-actions {
+    width: 100%;
+  }
+  .flat-header-actions .btn,
+  .flat-header-actions .my-files-btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SHARING HUB GRID & CARD FIX (FORCES NON-SHRINKING VIEW)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.sharing-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)) !important;
+  gap: 20px !important;
+  width: 100% !important;
+}
+
+.sharing-card {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 480px) {
+  .sharing-grid {
+    grid-template-columns: 1fr !important;
+  }
 }

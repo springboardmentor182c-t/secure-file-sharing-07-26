@@ -23,3 +23,17 @@ class ActivityResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class LoginSessionOut(BaseModel):
+    id: int
+    device_name: Optional[str] = None
+    browser_name: Optional[str] = None
+    device_type: Optional[str] = None
+    ip_address: Optional[str] = None
+    location: Optional[str] = None
+    is_current: bool
+    last_active: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)

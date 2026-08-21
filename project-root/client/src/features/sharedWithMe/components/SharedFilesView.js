@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Search, Eye, Download, Sparkles, ShieldCheck,
   LayoutGrid, List, UsersRound, Play
@@ -7,6 +7,7 @@ import { formatDate } from '../../../utils/formatDate';
 import SharedFileIcon from './SharedFileIcon';
 import FileSummaryPanel from '../../fileSummary/components/FileSummaryPanel';
 import FilePreviewModal from '../../myFiles/components/FilePreviewModal';
+import { useLocation } from 'react-router-dom';
 
 const SUMMARY_SUPPORTED_EXTENSIONS = new Set([
   'pdf', 'doc', 'docx', 'pptx', 'ppt', 'csv', 'xlsx', 'xls', 'txt', 'md'
@@ -49,6 +50,9 @@ export default function SharedFilesView({ data, onDownload }) {
 
   const files = data?.files || [];
 
+  const location = useLocation();
+  const [highlightFileId, setHighlightFileId] = useState(null);
+
   const filteredFiles = useMemo(() => {
     return files.filter((file) => {
       const matchesSearch =
@@ -64,6 +68,28 @@ export default function SharedFilesView({ data, onDownload }) {
     });
   }, [files, searchQuery, permissionFilter]);
 
+  useEffect(() => {
+    const fileId = location.state?.highlightFileId;
+    if (fileId) {
+      setHighlightFileId(fileId);
+      const timer = setTimeout(() => {
+        setHighlightFileId(null);
+        window.history.replaceState({}, document.title);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state?.highlightFileId]);
+
+  useEffect(() => {
+    if (highlightFileId && filteredFiles.length > 0) {
+      const scrollTimer = setTimeout(() => {
+        const el = document.querySelector(`[data-file-id="${highlightFileId}"]`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 400);
+      return () => clearTimeout(scrollTimer);
+    }
+  }, [highlightFileId, filteredFiles.length]);
+
   const handleDownloadClick = async (file, e) => {
     if (e) e.stopPropagation();
     setDownloadingId(file.file_id);
@@ -76,25 +102,18 @@ export default function SharedFilesView({ data, onDownload }) {
 
   return (
     <div className="my-files-page fade-in">
-      {/* Header */}
-      <header className="my-files-header">
-        <div className="my-files-header-inner">
-          <div>
-            <p className="my-files-kicker">COLLABORATION INBOX</p>
-            <h1 className="my-files-page-title">Shared with Me</h1>
-            <p className="my-files-page-subtitle">
-              Access and preview encrypted documents, audio streams, and videos shared with you.
-            </p>
-          </div>
-          <div className="my-files-header-actions">
-            <div className="my-files-chips">
-              <span className="badge badge-blue" style={{ padding: '6px 14px', fontSize: 13 }}>
-                {data?.total || 0} Shared Files
-              </span>
-            </div>
-          </div>
+      {/* Flat Typography Header */}
+      <div className="flat-page-header">
+        <div className="flat-header-left">
+          <h1 className="flat-page-title">Shared with Me</h1>
+          <p className="flat-page-subtitle">Access and preview encrypted documents, audio streams, and videos shared with you.</p>
         </div>
-      </header>
+        <div className="flat-header-actions">
+          <span className="badge badge-blue" style={{ padding: '6px 14px', fontSize: 13 }}>
+            {data?.total || 0} Shared Files
+          </span>
+        </div>
+      </div>
 
       {/* Toolbar */}
       <section className="my-files-toolbar">
@@ -176,7 +195,8 @@ export default function SharedFilesView({ data, onDownload }) {
             return (
               <div
                 key={file.permission_id}
-                className="my-files-card"
+                data-file-id={file.file_id}
+                className={`my-files-card ${highlightFileId === file.file_id ? 'is-highlighted' : ''}`}
                 onClick={() => setPreviewFile(file)}
                 style={{ cursor: 'pointer' }}
               >
@@ -271,7 +291,7 @@ export default function SharedFilesView({ data, onDownload }) {
           })}
         </div>
       ) : (
-        /* List Mode */
+        /* List View */
         <div className="my-files-list">
           <div className="my-files-list-header">
             <div />
@@ -292,7 +312,8 @@ export default function SharedFilesView({ data, onDownload }) {
             return (
               <div
                 key={file.permission_id}
-                className="my-files-list-row"
+                data-file-id={file.file_id}
+                className={`my-files-list-row ${highlightFileId === file.file_id ? 'is-highlighted' : ''}`}
                 onClick={() => setPreviewFile(file)}
               >
                 <div />

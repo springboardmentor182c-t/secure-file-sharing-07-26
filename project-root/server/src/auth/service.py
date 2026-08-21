@@ -1,5 +1,14 @@
+# server/src/auth/service.py
+
+import os
+import random
+import secrets
+from datetime import datetime, timedelta, timezone
+from collections import defaultdict
+from threading import Lock
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status, Request
+
 from src.entities.user import User
 from src.auth.models import SignupRequest, TokenResponse, UserOut
 from src.auth.dependencies import (
@@ -9,12 +18,7 @@ from src.auth.dependencies import (
     create_refresh_token,
 )
 from src.auth import email_service
-import os
-import random
-import secrets
-from collections import defaultdict
-from threading import Lock
-from datetime import datetime, timedelta, timezone
+from src.notifications.service import create_notification
 
 from src.analytics.services import log_event
 from src.analytics.constants import (
@@ -24,13 +28,9 @@ from src.analytics.constants import (
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
-# ── FIX: Admin bootstrap via environment variable ──────────────────────────
 BOOTSTRAP_ADMIN_EMAIL = os.getenv("BOOTSTRAP_ADMIN_EMAIL", "").strip().lower()
 
-# In-memory store for OTPs
 otp_store = {}
-
-# ── FIX: Track used password reset tokens — single use enforcement ──────────
 _used_reset_tokens: set[str] = set()
 
 DEFAULT_DEV_DUMMY_EMAIL_DOMAINS = "example.com,test.com,invalid,localhost"
@@ -44,37 +44,25 @@ _login_attempts_email: dict[str, list[float]] = defaultdict(list)
 _login_attempts_ip: dict[str, list[float]] = defaultdict(list)
 _login_attempts_lock = Lock()
 
-LOGIN_WINDOW_SECONDS = 15 * 60  # 15 minutes
-LOGIN_MAX_PER_EMAIL = 5         # 5 attempts per email
-LOGIN_MAX_PER_IP = 20           # 20 attempts per IP
+LOGIN_WINDOW_SECONDS = 15 * 60
+LOGIN_MAX_PER_EMAIL = 5
+LOGIN_MAX_PER_IP = 20
 
 
 def _check_login_rate_limit(email: str, ip_address: str | None) -> tuple[bool, int]:
-    """
-    Check if login attempt is allowed.
-
-    Returns:
-        (allowed, retry_after_seconds)
-        - allowed = True → login can proceed
-        - allowed = False → return retry_after seconds to wait
-    """
     now = datetime.now(timezone.utc).timestamp()
     cutoff = now - LOGIN_WINDOW_SECONDS
     email_lower = (email or "").lower().strip()
 
     with _login_attempts_lock:
-        # Prune expired entries
         _login_attempts_email[email_lower] = [
             t for t in _login_attempts_email[email_lower] if t > cutoff
         ]
-
-        # Check email limit
         if len(_login_attempts_email[email_lower]) >= LOGIN_MAX_PER_EMAIL:
             oldest = _login_attempts_email[email_lower][0]
             retry_after = int(oldest + LOGIN_WINDOW_SECONDS - now)
             return False, max(1, retry_after)
 
-        # Check IP limit
         if ip_address:
             _login_attempts_ip[ip_address] = [
                 t for t in _login_attempts_ip[ip_address] if t > cutoff
@@ -88,7 +76,6 @@ def _check_login_rate_limit(email: str, ip_address: str | None) -> tuple[bool, i
 
 
 def _record_failed_login(email: str, ip_address: str | None) -> None:
-    """Track a failed login attempt."""
     now = datetime.now(timezone.utc).timestamp()
     email_lower = (email or "").lower().strip()
     with _login_attempts_lock:
@@ -98,7 +85,6 @@ def _record_failed_login(email: str, ip_address: str | None) -> None:
 
 
 def _clear_login_attempts(email: str, ip_address: str | None) -> None:
-    """Clear all login attempts for email (called on successful login)."""
     email_lower = (email or "").lower().strip()
     with _login_attempts_lock:
         _login_attempts_email.pop(email_lower, None)
@@ -115,10 +101,7 @@ def _environment() -> str:
 
 
 def _development_dummy_email_domains() -> set[str]:
-    configured = os.getenv(
-        "DEV_DUMMY_EMAIL_DOMAINS",
-        DEFAULT_DEV_DUMMY_EMAIL_DOMAINS,
-    )
+    configured = os.getenv("DEV_DUMMY_EMAIL_DOMAINS", DEFAULT_DEV_DUMMY_EMAIL_DOMAINS)
     return {
         domain.strip().lower().lstrip("@")
         for domain in configured.split(",")
@@ -143,17 +126,8 @@ def authenticate_user(
     password: str,
     ip_address: str | None = None,
 ) -> User | None:
-    """
-    Authenticate user with brute force protection.
-
-    Raises HTTPException 429 if rate limit exceeded.
-    Returns None on invalid credentials.
-    Returns User on success.
-    """
-    # ── Check rate limit BEFORE processing credentials ────────────────
     allowed, retry_after = _check_login_rate_limit(email, ip_address)
     if not allowed:
-        # Log the rate limit event for security monitoring
         log_event(
             db,
             event_type=AnalyticsEventType.SECURITY,
@@ -169,7 +143,6 @@ def authenticate_user(
             },
         )
         db.commit()
-
         minutes = max(1, retry_after // 60)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -180,7 +153,6 @@ def authenticate_user(
     user = db.query(User).filter(User.email == email).first()
 
     if not user or not verify_password(password, user.hashed_password):
-        # ── Record failed attempt for rate limiting ─────────────────
         _record_failed_login(email, ip_address)
 
         log_event(
@@ -195,10 +167,22 @@ def authenticate_user(
                 "severity_key": "login_failed",
             },
         )
+
+        # ── SECURITY NOTIFICATION: Alert user about failed login attempt ──
+        if user:
+            create_notification(
+                db,
+                user_id=user.id,
+                type="security",
+                category="security",
+                title="Failed login attempt",
+                message=f"Someone tried to sign in to your account from {ip_address or 'an unknown location'}. If this wasn't you, change your password immediately.",
+                icon="shield",
+            )
+
         db.commit()
         return None
 
-    # ── Successful login — clear rate limit counters ────────────────
     _clear_login_attempts(email, ip_address)
 
     log_event(
@@ -226,7 +210,6 @@ def register_user(
             detail="Email already registered",
         )
 
-    # ── FIX: Admin bootstrap via environment variable ──────────────────────
     is_first = db.query(User).count() == 0
     email_lower = data.email.strip().lower()
 
@@ -236,11 +219,6 @@ def register_user(
     elif is_first and not BOOTSTRAP_ADMIN_EMAIL and _environment() in {"development", "dev"}:
         role = "admin"
         plan = "enterprise"
-        print(
-            "[BOOTSTRAP WARNING] BOOTSTRAP_ADMIN_EMAIL not set. "
-            "First user gets admin in development only.",
-            flush=True,
-        )
     else:
         role = "member"
         plan = "free"
@@ -279,15 +257,16 @@ def _build_token_response(user: User, db: Session = None, request=None) -> Token
         try:
             from src.entities.login_session import LoginSession
             ua_string = request.headers.get("user-agent", "")
+            ua = None
             try:
                 from user_agents import parse as parse_ua
                 ua = parse_ua(ua_string) if ua_string else None
+            except ImportError:
+                pass
             except Exception:
-                ua = None
+                pass
 
-            browser_name = ua.browser.family if ua else (ua_string.split("/")[0] if ua_string else "Unknown")
-            os_name = ua.os.family if ua else None
-            device_name = None
+            # ── 1. Determine Device Type (Desktop, Mobile, or Tablet) ──
             if ua:
                 if ua.is_pc:
                     device_type = "desktop"
@@ -296,10 +275,81 @@ def _build_token_response(user: User, db: Session = None, request=None) -> Token
                 elif ua.is_mobile:
                     device_type = "mobile"
                 else:
-                    device_type = "unknown"
-                device_name = f"{os_name} {ua.device.family}" if os_name else ua.device.family
+                    device_type = "desktop" if "windows" in ua_string.lower() or "macintosh" in ua_string.lower() else "unknown"
             else:
-                device_type = "unknown"
+                device_type = "desktop" if "windows" in ua_string.lower() or "macintosh" in ua_string.lower() else "unknown"
+
+            # ── 2. Extract OS Name & Brand ──
+            os_name = ua.os.family if (ua and ua.os) else ""
+            if "mac os x" in os_name.lower() or "macos" in os_name.lower():
+                os_name = "macOS"
+            elif "windows" in os_name.lower():
+                os_name = "Windows"
+
+            # ── 3. Format Accurate Browser Name with Version ──
+            if ua and ua.browser and ua.browser.family:
+                browser_name = ua.browser.family
+                if ua.browser.version_string:
+                    browser_name = f"{browser_name} {ua.browser.version_string.split('.')[0]}"
+            elif ua_string:
+                ua_lower = ua_string.lower()
+                if 'edg/' in ua_lower or 'edge/' in ua_lower:
+                    browser_name = 'Microsoft Edge'
+                elif 'opr/' in ua_lower or 'opera' in ua_lower:
+                    browser_name = 'Opera'
+                elif 'brave' in ua_lower:
+                    browser_name = 'Brave'
+                elif 'vivaldi' in ua_lower:
+                    browser_name = 'Vivaldi'
+                elif 'firefox/' in ua_lower:
+                    browser_name = 'Firefox'
+                elif 'safari/' in ua_lower and 'chrome/' not in ua_lower:
+                    browser_name = 'Safari'
+                elif 'chrome/' in ua_lower:
+                    browser_name = 'Chrome'
+                else:
+                    browser_name = ua_string.split('/')[0] if '/' in ua_string else 'Unknown'
+            else:
+                browser_name = "Unknown"
+
+            # ── 4. Generate Figma-Grade Device Names (E.g. MacBook Pro, iPhone, Windows PC) ──
+            device_name = None
+            if ua:
+                if ua.is_pc:
+                    if os_name == "macOS":
+                        device_name = "MacBook Pro"
+                    elif os_name == "Windows":
+                        device_name = "Windows PC"
+                    elif os_name:
+                        device_name = f"{os_name} PC"
+                    else:
+                        device_name = "Desktop Computer"
+                else:
+                    brand = ua.device.brand or ""
+                    family = ua.device.family or ""
+                    
+                    if "iphone" in family.lower() or "iphone" in ua_string.lower():
+                        device_name = "iPhone"
+                    elif "ipad" in family.lower() or "ipad" in ua_string.lower():
+                        device_name = "iPad"
+                    elif family and family != "Other":
+                        device_name = f"{brand} {family}".strip()
+                    else:
+                        device_name = f"{os_name} Mobile" if os_name else "Mobile Device"
+            else:
+                ua_lower = ua_string.lower()
+                if "iphone" in ua_lower:
+                    device_name = "iPhone"
+                elif "ipad" in ua_lower:
+                    device_name = "iPad"
+                elif "macintosh" in ua_lower or "mac os x" in ua_lower:
+                    device_name = "MacBook Pro"
+                elif "windows" in ua_lower:
+                    device_name = "Windows PC"
+                elif "android" in ua_lower:
+                    device_name = "Android Device"
+                else:
+                    device_name = "Unknown Device"
 
             ip_address = None
             try:
@@ -332,10 +382,7 @@ def _build_token_response(user: User, db: Session = None, request=None) -> Token
             db.commit()
         except Exception as _session_err:
             try:
-                print(
-                    f"[SESSION SAVE ERROR] {type(_session_err).__name__}: {_session_err}",
-                    flush=True,
-                )
+                print(f"[SESSION SAVE ERROR] {type(_session_err).__name__}: {_session_err}", flush=True)
             except Exception:
                 pass
             db.rollback()
@@ -358,27 +405,17 @@ def generate_otp(user_id: int, to_email: str = "", user_name: str = "") -> str:
     otp_store[user_id] = {"otp": code, "expires_at": expires_at}
 
     if _environment() in {"development", "dev"}:
-        print(
-            f"[OTP DEV] User {user_id} -> {code} "
-            f"(expires {expires_at.strftime('%H:%M:%S')} UTC)",
-            flush=True,
-        )
+        print(f"[OTP DEV] User {user_id} -> {code} (expires {expires_at.strftime('%H:%M:%S')} UTC)", flush=True)
 
     if to_email:
         if _is_development_dummy_email(to_email):
             domain = to_email.strip().lower().rpartition("@")[2]
-            print(
-                f"[EMAIL DEV] Skipping SMTP for configured dummy/test domain: {domain}",
-                flush=True,
-            )
+            print(f"[EMAIL DEV] Skipping SMTP for configured dummy/test domain: {domain}", flush=True)
         else:
             try:
                 email_service.send_otp_email(to_email, code, user_name)
             except Exception as exc:
-                print(
-                    f"[EMAIL ERROR] Failed to send MFA email: {type(exc).__name__}",
-                    flush=True,
-                )
+                print(f"[EMAIL ERROR] Failed to send MFA email: {type(exc).__name__}", flush=True)
 
     return code
 
@@ -393,59 +430,23 @@ def verify_otp_code(
 
     if not entry:
         if db:
-            log_event(
-                db,
-                event_type=AnalyticsEventType.SECURITY,
-                user_id=user_id,
-                status=AnalyticsEventStatus.FAILED,
-                ip_address=ip_address,
-                event_metadata={
-                    "severity_key": "login_failed",
-                    "label": "OTP verification failed",
-                    "detail": "No active OTP session found",
-                    "target": "otp",
-                    "attempts": 1,
-                },
-            )
+            log_event(db, event_type=AnalyticsEventType.SECURITY, user_id=user_id, status=AnalyticsEventStatus.FAILED, ip_address=ip_address,
+                event_metadata={"severity_key": "login_failed", "label": "OTP verification failed", "detail": "No active OTP session found", "target": "otp", "attempts": 1})
             db.commit()
         return False
 
     if entry["otp"] != code:
         if db:
-            log_event(
-                db,
-                event_type=AnalyticsEventType.SECURITY,
-                user_id=user_id,
-                status=AnalyticsEventStatus.FAILED,
-                ip_address=ip_address,
-                event_metadata={
-                    "severity_key": "login_failed",
-                    "label": "OTP verification failed",
-                    "detail": "Incorrect OTP code entered",
-                    "target": "otp",
-                    "attempts": 1,
-                },
-            )
+            log_event(db, event_type=AnalyticsEventType.SECURITY, user_id=user_id, status=AnalyticsEventStatus.FAILED, ip_address=ip_address,
+                event_metadata={"severity_key": "login_failed", "label": "OTP verification failed", "detail": "Incorrect OTP code entered", "target": "otp", "attempts": 1})
             db.commit()
         return False
 
     if datetime.now(timezone.utc) > entry["expires_at"]:
         otp_store.pop(user_id, None)
         if db:
-            log_event(
-                db,
-                event_type=AnalyticsEventType.SECURITY,
-                user_id=user_id,
-                status=AnalyticsEventStatus.FAILED,
-                ip_address=ip_address,
-                event_metadata={
-                    "severity_key": "login_failed",
-                    "label": "OTP expired",
-                    "detail": "OTP entered after expiry window",
-                    "target": "otp",
-                    "attempts": 1,
-                },
-            )
+            log_event(db, event_type=AnalyticsEventType.SECURITY, user_id=user_id, status=AnalyticsEventStatus.FAILED, ip_address=ip_address,
+                event_metadata={"severity_key": "login_failed", "label": "OTP expired", "detail": "OTP entered after expiry window", "target": "otp", "attempts": 1})
             db.commit()
         return False
 
@@ -455,9 +456,7 @@ def verify_otp_code(
 
 def build_mfa_pending_response(user: User) -> TokenResponse:
     token_data = {"sub": str(user.id), "type": "mfa_pending"}
-    mfa_token = create_access_token(
-        token_data, expires_delta=timedelta(minutes=10)
-    )
+    mfa_token = create_access_token(token_data, expires_delta=timedelta(minutes=10))
     generate_otp(user.id, to_email=user.email, user_name=user.name)
     return TokenResponse(mfa_required=True, mfa_token=mfa_token)
 
@@ -472,9 +471,7 @@ def request_password_reset(db: Session, email: str):
         return
 
     token_data = {"sub": str(user.id), "type": "password_recovery"}
-    reset_token = create_access_token(
-        token_data, expires_delta=timedelta(minutes=15)
-    )
+    reset_token = create_access_token(token_data, expires_delta=timedelta(minutes=15))
 
     reset_link = f"{FRONTEND_URL}/reset-password?token={reset_token}"
     email_service.send_reset_email(user.email, reset_link, user.name)
@@ -491,20 +488,13 @@ def reset_password_in_db(
     try:
         payload = decode_token(token)
     except Exception:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid or expired reset token",
-        )
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
 
     if payload.get("type") != "password_recovery":
         raise HTTPException(status_code=400, detail="Invalid token type")
 
-    # ── FIX: Reject tokens that have already been used ─────────────────────
     if token in _used_reset_tokens:
-        raise HTTPException(
-            status_code=400,
-            detail="This password reset link has already been used. Please request a new one.",
-        )
+        raise HTTPException(status_code=400, detail="This password reset link has already been used.")
 
     user_id = payload.get("sub")
     user = db.query(User).filter(User.id == int(user_id)).first()
@@ -512,30 +502,26 @@ def reset_password_in_db(
         raise HTTPException(status_code=404, detail="User not found")
 
     user.hashed_password = hash_password(new_password)
-
-    # ── FIX: Mark token as used immediately after successful reset ──────────
     _used_reset_tokens.add(token)
 
-    # Auto-cleanup if set grows too large
     if len(_used_reset_tokens) > 10000:
         _used_reset_tokens.clear()
 
+    # ── SECURITY NOTIFICATION: Password reset completed ──────────────────
+    create_notification(
+        db,
+        user_id=user.id,
+        type="security",
+        category="security",
+        title="Password reset completed",
+        message="Your account password was successfully reset. If you did not request this, contact support immediately.",
+        icon="shield",
+    )
+
     db.commit()
 
-    log_event(
-        db,
-        event_type=AnalyticsEventType.SECURITY,
-        user_id=user.id,
-        status=AnalyticsEventStatus.SUCCESS,
-        ip_address=ip_address,
-        event_metadata={
-            "severity_key": "admin_role",
-            "label": "Password reset completed",
-            "detail": f"Password reset for {user.email}",
-            "target": user.email,
-            "attempts": 1,
-        },
-    )
+    log_event(db, event_type=AnalyticsEventType.SECURITY, user_id=user.id, status=AnalyticsEventStatus.SUCCESS, ip_address=ip_address,
+        event_metadata={"severity_key": "admin_role", "label": "Password reset completed", "detail": f"Password reset for {user.email}", "target": user.email, "attempts": 1})
     db.commit()
 
     return True
@@ -556,8 +542,6 @@ def get_or_create_oauth_user(
 
     if not user:
         random_password = secrets.token_urlsafe(16)
-
-        # ── FIX: Same bootstrap logic for OAuth ───────────────────────────
         is_first = db.query(User).count() == 0
         email_lower = email.strip().lower()
 
@@ -571,50 +555,24 @@ def get_or_create_oauth_user(
             role = "member"
             plan = "free"
 
-        user = User(
-            name=name,
-            email=email,
-            hashed_password=hash_password(random_password),
-            role=role,
-            plan=plan,
-        )
+        user = User(name=name, email=email, hashed_password=hash_password(random_password), role=role, plan=plan)
         db.add(user)
         db.commit()
         db.refresh(user)
 
-        log_event(
-            db,
-            event_type=AnalyticsEventType.LOGIN,
-            user_id=user.id,
-            status=AnalyticsEventStatus.SUCCESS,
-            ip_address=ip_address,
-            event_metadata={
-                "action": "oauth_register",
-                "provider": provider,
-                "target": email,
-            },
-        )
+        log_event(db, event_type=AnalyticsEventType.LOGIN, user_id=user.id, status=AnalyticsEventStatus.SUCCESS, ip_address=ip_address,
+            event_metadata={"action": "oauth_register", "provider": provider, "target": email})
         db.commit()
     else:
-        log_event(
-            db,
-            event_type=AnalyticsEventType.LOGIN,
-            user_id=user.id,
-            status=AnalyticsEventStatus.SUCCESS,
-            ip_address=ip_address,
-            event_metadata={
-                "action": "oauth_login",
-                "provider": provider,
-                "target": email,
-            },
-        )
+        log_event(db, event_type=AnalyticsEventType.LOGIN, user_id=user.id, status=AnalyticsEventStatus.SUCCESS, ip_address=ip_address,
+            event_metadata={"action": "oauth_login", "provider": provider, "target": email})
         db.commit()
 
     return user
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# MFA TOGGLE
+# MFA TOGGLE (with security notifications)
 # ═══════════════════════════════════════════════════════════════════════════
 
 def enable_mfa(db: Session, user: User) -> User:
@@ -622,19 +580,19 @@ def enable_mfa(db: Session, user: User) -> User:
     db.commit()
     db.refresh(user)
 
-    log_event(
+    # ── SECURITY NOTIFICATION: MFA Enabled ───────────────────────────────
+    create_notification(
         db,
-        event_type=AnalyticsEventType.SECURITY,
         user_id=user.id,
-        status=AnalyticsEventStatus.SUCCESS,
-        event_metadata={
-            "severity_key": "admin_role",
-            "label": "MFA enabled",
-            "detail": f"Multi-factor authentication enabled for {user.email}",
-            "target": user.email,
-            "attempts": 1,
-        },
+        type="security",
+        category="security",
+        title="Multi-factor authentication enabled",
+        message="MFA has been successfully activated on your account. All future logins will require a verification code.",
+        icon="shield",
     )
+
+    log_event(db, event_type=AnalyticsEventType.SECURITY, user_id=user.id, status=AnalyticsEventStatus.SUCCESS,
+        event_metadata={"severity_key": "admin_role", "label": "MFA enabled", "detail": f"Multi-factor authentication enabled for {user.email}", "target": user.email, "attempts": 1})
     db.commit()
 
     return user
@@ -645,19 +603,19 @@ def disable_mfa(db: Session, user: User) -> User:
     db.commit()
     db.refresh(user)
 
-    log_event(
+    # ── SECURITY NOTIFICATION: MFA Disabled ──────────────────────────────
+    create_notification(
         db,
-        event_type=AnalyticsEventType.SECURITY,
         user_id=user.id,
-        status=AnalyticsEventStatus.WARNING,
-        event_metadata={
-            "severity_key": "unusual_access",
-            "label": "MFA disabled",
-            "detail": f"Multi-factor authentication disabled for {user.email}",
-            "target": user.email,
-            "attempts": 1,
-        },
+        type="security",
+        category="security",
+        title="Multi-factor authentication disabled",
+        message="MFA has been removed from your account. Your account is now less secure. Consider re-enabling MFA.",
+        icon="shield",
     )
+
+    log_event(db, event_type=AnalyticsEventType.SECURITY, user_id=user.id, status=AnalyticsEventStatus.WARNING,
+        event_metadata={"severity_key": "unusual_access", "label": "MFA disabled", "detail": f"Multi-factor authentication disabled for {user.email}", "target": user.email, "attempts": 1})
     db.commit()
 
     return user
@@ -670,10 +628,7 @@ def change_password(
     new_password: str,
 ) -> bool:
     if not verify_password(current_password, user.hashed_password):
-        raise HTTPException(
-            status_code=400,
-            detail="Current password is incorrect",
-        )
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
 
     user.hashed_password = hash_password(new_password)
     try:
@@ -683,6 +638,16 @@ def change_password(
         ).update({"is_current": False}, synchronize_session=False)
     except Exception as _sess_err:
         print(f"[SESSION CLEANUP WARN] {type(_sess_err).__name__}: {_sess_err}", flush=True)
+
+    # ── SECURITY NOTIFICATION: Password Changed ──────────────────────────
+    create_notification(
+        db,
+        user_id=user.id,
+        type="security",
+        category="security",
+        title="Password changed successfully",
+        message="Your account password was updated. All other active sessions have been logged out.",
+ )
 
     db.commit()
     return True

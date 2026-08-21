@@ -38,7 +38,6 @@ api.interceptors.response.use(
     if (err.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      // FIX ISS-D10: detect original storage so refresh writes back to same one
       const usedLocalStorage = !!localStorage.getItem('refresh_token');
       const refreshToken =
         localStorage.getItem('refresh_token') ||
@@ -55,11 +54,11 @@ api.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
           return api(originalRequest);
         } catch {
-          clearAuthStorage();       // FIX ISS-D9
+          clearAuthStorage();
           window.location.href = '/login';
         }
       } else {
-        clearAuthStorage();         // FIX ISS-D9
+        clearAuthStorage();
         window.location.href = '/login';
       }
     }
@@ -72,10 +71,7 @@ export const authAPI = {
   login: (email, password) => api.post('/api/auth/login', { email, password }),
   signup: (name, email, password) => api.post('/api/auth/signup', { name, email, password }),
   me: () => api.get('/api/auth/me'),
-  
-   // NEW: Storage breakdown
   storageBreakdown: () => api.get('/api/auth/me/storage-breakdown'),
-  
   logout: () => api.post('/api/auth/logout'),
   verifyOTP: (mfa_token, code) => api.post('/api/auth/verify-otp', { mfa_token, code }),
   resendOTP: (mfa_token) => api.post('/api/auth/resend-otp', { mfa_token }),
@@ -83,8 +79,6 @@ export const authAPI = {
   resetPassword: (token, new_password) => api.post('/api/auth/reset-password', { token, new_password }),
   oauthToken: (provider, code) => api.post('/api/auth/oauth/token', { provider, code }),
   updateProfile: (data) => api.patch('/api/users/me', data),
-
-  // NEW: MFA Setup Flow (proper OTP-verified enable/disable)
   mfaSetup: () => api.post('/api/auth/mfa/setup'),
   mfaVerifySetup: (code) => api.post('/api/auth/mfa/verify-setup', { code }),
   mfaDisableWithPassword: (password) => api.post('/api/auth/mfa/disable-with-password', { password }),
@@ -104,7 +98,6 @@ export const filesAPI = {
     api.get(`/api/files/${id}/download`, { responseType: 'blob' }),
   move: (id, folderId) => api.patch(`/api/files/${id}/move`, { folder_id: folderId }),
   delete: (id) => api.delete(`/api/files/${id}`),
-
   listVersions: (fileId) => api.get(`/api/files/${fileId}/versions`),
   uploadVersion: (fileId, formData) =>
     api.post(`/api/files/${fileId}/versions`, formData, {
@@ -136,16 +129,17 @@ export const foldersAPI = {
 
 // ── Shares ────────────────────────────────────────────────────────────────
 export const sharesAPI = {
-    list: () => api.get('/api/shares/'),
-    create: (data) => api.post('/api/shares/', data),
-    revoke: (id) => api.delete(`/api/shares/${id}`),
-    access: (token, password) => api.get(`/api/shares/access/${token}`, { params: { password } }),
-    publicDetails: (token, password) => axios.get(`${API_BASE_URL}/api/shares/public/${token}`, { params: { password } }),
-    publicContent: (token, password) => axios.get(`${API_BASE_URL}/api/shares/public/${token}/content`, {
-      params: { password },
-      responseType: 'blob',
-    }),
-  };
+  list: () => api.get('/api/shares/'),
+  create: (data) => api.post('/api/shares/', data),
+  revoke: (id) => api.delete(`/api/shares/${id}`),
+  updatePermission: (id, permission) => api.patch(`/api/shares/${id}`, { permission }), // NEW: update link permission
+  access: (token, password) => api.get(`/api/shares/access/${token}`, { params: { password } }),
+  publicDetails: (token, password) => axios.get(`${API_BASE_URL}/api/shares/public/${token}`, { params: { password } }),
+  publicContent: (token, password) => axios.get(`${API_BASE_URL}/api/shares/public/${token}/content`, {
+    params: { password },
+    responseType: 'blob',
+  }),
+};
 
 // ── Notifications ─────────────────────────────────────────────────────────
 export const notificationsAPI = {
@@ -153,6 +147,7 @@ export const notificationsAPI = {
   markRead: (id) => api.patch(`/api/notifications/${id}/read`),
   markAllRead: () => api.patch('/api/notifications/read-all'),
   delete: (id) => api.delete(`/api/notifications/${id}`),
+  deleteAll: () => api.delete('/api/notifications/'),
 };
 
 // ── Analytics ─────────────────────────────────────────────────────────────
@@ -165,8 +160,6 @@ export const analyticsAPI = {
   users: () => api.get('/api/analytics/users'),
   systemStats: () => api.get('/api/analytics/system-stats'),
   trends: () => api.get('/api/analytics/trends'),
-
-  // ═══ Custom date range ═══
   exportFileAnalytics: (days = 30, startDate = null, endDate = null) => {
     const params = { days };
     if (startDate) params.start_date = startDate;
@@ -207,13 +200,20 @@ export const sharedWithMeAPI = {
   view: (fileId) => api.get(`/api/shared-with-me/${fileId}/view`, { responseType: 'blob' }),
   listDirect: () => api.get('/api/shared-with-me/direct'),
   shareDirect: (data) => api.post('/api/shared-with-me/direct', data),
+  updateDirectPermission: (permissionId, permission) => api.patch(`/api/shared-with-me/direct/${permissionId}`, { permission }), // NEW: update direct share
   revokeDirect: (permissionId) => api.delete(`/api/shared-with-me/direct/${permissionId}`),
 };
 
 // ── Admin ─────────────────────────────────────────────────────────────────
 export const adminAPI = {
-  listUsers: () => api.get('/api/admin/users'),
+  listUsers: (search = null, role = null) => {
+    const params = {};
+    if (search) params.search = search;
+    if (role) params.role = role;
+    return api.get('/api/admin/users', { params });
+  },
   updateUser: (id, data) => api.patch(`/api/admin/users/${id}`, data),
+  getStats: () => api.get('/api/admin/stats'),
 };
 
 // ── Audit ─────────────────────────────────────────────────────────────────
@@ -221,10 +221,10 @@ export const auditAPI = {
   list: (limit = 50) => api.get('/api/audit/', { params: { limit } }),
 };
 
-// Current user's activity feed. The shared Axios client supplies the JWT and
-// environment-based API URL, so this feature never hardcodes a host.
+// Current user's activity feed.
 export const activityAPI = {
   list: (limit = 100) => api.get('/api/activity/', { params: { limit } }),
+  sessions: () => api.get('/api/activity/sessions'),
 };
 
 // ── Search ───────────────────────────────────────────────────────────────
@@ -242,27 +242,13 @@ export const searchAPI = {
 // ── Settings (API Placeholders) ──────────────────────────────────────────
 export const settingsAPI = {
   getProfile: () => api.get("/api/settings/profile"),
-
-  updateProfile: (data) =>
-    api.put("/api/settings/profile", data),
-
-  changePassword: (data) =>
-    api.post("/api/settings/change-password", data),
-
-  getSessions: () =>
-    api.get("/api/settings/sessions"),
-
-  logoutSession: (id) =>
-    api.delete(`/api/settings/sessions/${id}`),
-
-  logoutAllSessions: () =>
-    api.delete("/api/settings/sessions"),
-
-  getNotificationPreferences: () =>
-    api.get("/api/settings/notifications"),
-
-  updateNotificationPreferences: (data) =>
-    api.put("/api/settings/notifications", data),
+  updateProfile: (data) => api.put("/api/settings/profile", data),
+  changePassword: (data) => api.post("/api/settings/change-password", data),
+  getSessions: () => api.get("/api/settings/sessions"),
+  logoutSession: (id) => api.delete(`/api/settings/sessions/${id}`),
+  logoutAllSessions: () => api.delete("/api/settings/sessions"),
+  getNotificationPreferences: () => api.get("/api/settings/notifications"),
+  updateNotificationPreferences: (data) => api.put("/api/settings/notifications", data),
 };
 
 export default api;

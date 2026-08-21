@@ -4,8 +4,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Download, Check, RefreshCw, ChevronDown,
-  FileText, FileSpreadsheet, Zap, ZapOff,
+  FileText, FileSpreadsheet, Zap, ZapOff, Shield
 } from "lucide-react";
+import { useAuth } from "../../../../context/AuthContext";
 import { exportAnalyticsPDF } from "../../services/analyticsService";
 import DateRangeDropdown from "./DateRangeDropdown";
 
@@ -22,12 +23,14 @@ export default function Header({
   lastRefreshedAt,
   nextRefreshIn = 30,
 }) {
+  const { user } = useAuth();
   const [exporting, setExporting] = useState(false);
   const [exported, setExported] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const exportMenuRef = useRef(null);
 
+  const isAdmin = user?.role === "admin" || data?.current_user_role === "admin";
   const tabs = uiConfig?.tabs || [];
   const dateRanges = uiConfig?.date_ranges || [];
 
@@ -41,13 +44,11 @@ export default function Header({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-    const handleExport = async (format = "pdf") => {
+  const handleExport = async (format = "pdf") => {
     if (exporting || !data) return;
 
     setShowExportMenu(false);
 
-    // FIX ISS-6: Added "all": 365 to match Analytics.js DATE_RANGE_TO_DAYS
-    // Previously "all" was undefined → fell back to 30 days incorrectly
     const daysMap = { "7days": 7, "30days": 30, "90days": 90, "all": 365 };
     let days       = daysMap[dateRange] || 30;
     let customStart = null;
@@ -60,7 +61,6 @@ export default function Header({
         customEnd        = parts[1];
         const start      = new Date(customStart);
         const end        = new Date(customEnd);
-        // FIX: guard against invalid dates (mirrors Analytics.js fix)
         if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
           days = Math.max(
             1,
@@ -113,7 +113,14 @@ export default function Header({
   return (
     <div className="an-header">
       <div className="an-header-left">
-        <h1 className="an-header-title">Analytics</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <h1 className="an-header-title">Analytics</h1>
+          {isAdmin && (
+            <span className="badge badge-purple" style={{ padding: "4px 10px", fontSize: 11, display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <Shield size={12} /> Admin Access
+            </span>
+          )}
+        </div>
         <p className="an-header-sub">
           Workspace performance and security insights.
         </p>

@@ -2,11 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { settingsAPI } from '../utils/api';
-import { Eye, EyeOff, Laptop, Smartphone, Monitor } from 'lucide-react';
+import { 
+  Eye, EyeOff, Laptop, Smartphone, Monitor, Shield, Lock, 
+  Clock, Trash2, CheckCircle2, ShieldAlert
+} from 'lucide-react';
 import MFACard from './MFACard';
 import './Settings.css';
 
-// FIX ISS-S2: extract backend error message helper
 const getApiErrorMessage = (err, fallback) => {
   return (
     err?.response?.data?.detail ||
@@ -16,7 +18,6 @@ const getApiErrorMessage = (err, fallback) => {
   );
 };
 
-// FIX ISS-S6: format ISO date to human-readable "time ago"
 const formatLastActive = (isoString) => {
   if (!isoString) return 'Unknown';
   try {
@@ -29,9 +30,9 @@ const formatLastActive = (isoString) => {
     const diffDay = Math.floor(diffHr / 24);
 
     if (diffSec < 60) return 'Just now';
-    if (diffMin < 60) return `${diffMin} minute${diffMin !== 1 ? 's' : ''} ago`;
-    if (diffHr < 24) return `${diffHr} hour${diffHr !== 1 ? 's' : ''} ago`;
-    if (diffDay < 30) return `${diffDay} day${diffDay !== 1 ? 's' : ''} ago`;
+    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffHr < 24) return `${diffHr}h ago`;
+    if (diffDay < 30) return `${diffDay}d ago`;
     return then.toLocaleDateString(undefined, {
       year: 'numeric', month: 'short', day: 'numeric',
     });
@@ -40,17 +41,91 @@ const formatLastActive = (isoString) => {
   }
 };
 
+// ── Interactive Segmented Sliding Toggle Switch ──────────────────────
+function Toggle({ on, onToggle, disabled = false }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      disabled={disabled}
+      className={`relative rounded-full transition-colors duration-250 shrink-0 ${on ? "bg-gradient-to-r from-blue-600 to-indigo-600" : "bg-slate-200"}`}
+      style={{ 
+        height: "22px", 
+        width: "40px",
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.6 : 1,
+        border: 'none',
+        outline: 'none',
+        background: on ? 'linear-gradient(135deg, #3B82F6, #6366F1)' : 'var(--bg-hover)',
+        boxShadow: on ? '0 2px 6px rgba(59, 130, 246, 0.3)' : 'inset 0 1px 3px rgba(0,0,0,0.15)',
+        transition: 'all 0.25s cubic-bezier(0.32, 0.72, 0, 1)',
+        flexShrink: 0,
+      }}
+    >
+      <div 
+        style={{
+          position: 'absolute',
+          top: '3px',
+          width: '16px',
+          height: '16px',
+          borderRadius: '50%',
+          background: '#fff',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+          transition: 'left 0.2s cubic-bezier(0.32, 0.72, 0, 1)',
+          left: on ? '21px' : '3px',
+        }}
+      />
+    </button>
+  );
+}
+
+// ── Real-Time Password Strength Meter Component ──────────────────────
+function PasswordStrengthMeter({ password }) {
+  const evaluateStrength = (pwd) => {
+    if (!pwd) return { score: 0, label: '', color: 'transparent', textClass: '' };
+    let score = 0;
+    if (pwd.length >= 8) score++;
+    if (pwd.length >= 12) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+
+    if (score <= 2) return { score, label: 'Weak', color: '#EF4444', textClass: 'text-danger' };
+    if (score <= 4) return { score, label: 'Medium', color: '#F59E0B', textClass: 'text-warning' };
+    return { score, label: 'Strong security', color: '#10B981', textClass: 'text-success' };
+  };
+
+  const strength = evaluateStrength(password);
+  if (!password) return null;
+
+  return (
+    <div style={{ marginTop: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+        <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>Password strength:</span>
+        <span className={strength.textClass} style={{ fontSize: '11.5px', fontWeight: 700, textTransform: 'capitalize' }}>
+          {strength.label}
+        </span>
+      </div>
+      <div style={{ height: '4px', background: 'var(--bg-hover)', borderRadius: '999px', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+        <div style={{ 
+          height: '100%', 
+          background: strength.color, 
+          width: `${(strength.score / 5) * 100}%`,
+          transition: 'width 0.3s ease'
+        }} />
+      </div>
+    </div>
+  );
+}
+
 const Settings = () => {
   const { user, setUser } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Active Tab state
-  // ── KEPT YOUR HEAD version — has hash scrolling + URL sync ──
   const validTabs = ['profile', 'security', 'sessions', 'notifications'];
   const initialTab = validTabs.includes(searchParams.get('tab')) ? searchParams.get('tab') : 'profile';
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  // ── KEPT YOUR HEAD version — scrolls to #mfa on security tab ──
   useEffect(() => {
     const hash = window.location.hash;
     if (hash && activeTab === 'security') {
@@ -61,7 +136,6 @@ const Settings = () => {
     }
   }, [activeTab]);
 
-  // ── KEPT YOUR HEAD version — syncs tab from URL changes ──
   useEffect(() => {
     const urlTab = searchParams.get('tab');
     if (urlTab && validTabs.includes(urlTab) && urlTab !== activeTab) {
@@ -71,18 +145,17 @@ const Settings = () => {
     }
   }, [searchParams]);
 
-  // Feedback states
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // ── Profile Tab State ──────────────────────────────────────
+  // Profile Tab State
   const [fullName, setFullName] = useState('');
   const [emailAddress, setEmailAddress] = useState('');
   const [organization, setOrganization] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(null);
   const fileInputRef = useRef(null);
 
-  // ── Security Tab State ─────────────────────────────────────
+  // Security Tab State
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -90,11 +163,12 @@ const Settings = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // ── Sessions Tab State ─────────────────────────────────────
+  // Sessions Tab State
   const [sessions, setSessions] = useState([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
+  const [revokingId, setRevokingId] = useState(null);
 
-  // ── Notification Prefs Tab State ───────────────────────────
+  // Notification Preferences Tab State
   const [notifPrefs, setNotifPrefs] = useState({
     file_shares: { in_app: true, email: true },
     downloads: { in_app: true, email: false },
@@ -105,7 +179,6 @@ const Settings = () => {
   });
   const [digestFrequency, setDigestFrequency] = useState('daily');
 
-  // FIX ISS-S4: separate one-time loads from user-dependent hydration
   useEffect(() => {
     settingsAPI.getProfile().then(({ data }) => {
       setFullName(data.name || '');
@@ -131,10 +204,8 @@ const Settings = () => {
     }).catch((err) => {
       setErrorMsg(getApiErrorMessage(err, 'Failed to load notification preferences.'));
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // FIX ISS-S4: sync form fields when user context changes
   useEffect(() => {
     if (user) {
       setFullName((prev) => prev || user.name || '');
@@ -143,10 +214,8 @@ const Settings = () => {
     }
   }, [user]);
 
-  // Clear feedback messages on tab change
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    // ── KEPT origin/main-group-D version — cleaner URL for profile tab ──
     if (tab === 'profile') {
       setSearchParams({}, { replace: true });
     } else {
@@ -155,8 +224,6 @@ const Settings = () => {
     setSuccessMsg('');
     setErrorMsg('');
   };
-
-  // ── Handlers ───────────────────────────────────────────────
 
   const triggerFileInput = () => {
     fileInputRef.current.click();
@@ -180,6 +247,12 @@ const Settings = () => {
     }
   };
 
+  const handleRemoveAvatar = () => {
+    setAvatarUrl(null);
+    setErrorMsg('');
+    setSuccessMsg('Photo removed! Click "Save Changes" to apply.');
+  };
+
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     setSuccessMsg('');
@@ -199,14 +272,15 @@ const Settings = () => {
       };
       const { data } = await settingsAPI.updateProfile(updateData);
 
-      if (setUser) {
-        setUser((prev) => ({
-          ...prev,
+      if (setUser && user) {
+        const updatedUser = {
+          ...user,
           name: data.name || fullName,
           email: data.email || emailAddress,
           organization: data.organization !== undefined ? data.organization : organization,
           avatar_url: data.avatar_url !== undefined ? data.avatar_url : avatarUrl,
-        }));
+        };
+        setUser(updatedUser);
       }
 
       setSuccessMsg('Profile updated successfully!');
@@ -259,12 +333,15 @@ const Settings = () => {
     if (!window.confirm('Sign out this device? It will need to authenticate again.')) return;
     setSuccessMsg('');
     setErrorMsg('');
+    setRevokingId(id);
     try {
       await settingsAPI.logoutSession(id);
       setSessions((prev) => prev.filter((s) => s.id !== id));
       setSuccessMsg('Signed out of session successfully.');
     } catch (err) {
       setErrorMsg(getApiErrorMessage(err, 'Failed to sign out session.'));
+    } finally {
+      setRevokingId(null);
     }
   };
 
@@ -320,17 +397,10 @@ const Settings = () => {
   };
 
   const getDeviceIcon = (deviceType) => {
-    switch (deviceType?.toLowerCase()) {
-      case 'mobile':
-      case 'phone':
-        return <Smartphone size={18} />;
-      case 'tablet':
-        return <Laptop size={18} />;
-      case 'desktop':
-        return <Monitor size={18} />;
-      default:
-        return <Laptop size={18} />;
-    }
+    const type = String(deviceType || '').toLowerCase();
+    if (type === 'mobile' || type === 'phone') return <Smartphone size={18} />;
+    if (type === 'tablet') return <Laptop size={18} />;
+    return <Monitor size={18} />;
   };
 
   return (
@@ -343,36 +413,32 @@ const Settings = () => {
       {/* Tabs list */}
       <div className="settings-tabs-wrapper">
         <div className="settings-tabs">
-          <button
-            className={`settings-tab ${activeTab === 'profile' ? 'active' : ''}`}
-            onClick={() => handleTabChange('profile')}
-          >
-            Profile
-          </button>
-          <button
-            className={`settings-tab ${activeTab === 'security' ? 'active' : ''}`}
-            onClick={() => handleTabChange('security')}
-          >
-            Security
-          </button>
-          <button
-            className={`settings-tab ${activeTab === 'sessions' ? 'active' : ''}`}
-            onClick={() => handleTabChange('sessions')}
-          >
-            Sessions
-          </button>
-          <button
-            className={`settings-tab ${activeTab === 'notifications' ? 'active' : ''}`}
-            onClick={() => handleTabChange('notifications')}
-          >
-            Notification Preferences
-          </button>
+          {['profile', 'security', 'sessions', 'notifications'].map((t) => (
+            <button
+              key={t}
+              className={`settings-tab ${activeTab === t ? 'active' : ''}`}
+              onClick={() => handleTabChange(t)}
+              style={{ textTransform: 'capitalize' }}
+            >
+              {t === 'notifications' ? 'Preferences' : t}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Dynamic Feedback Messaging */}
-      {successMsg && <div className="alert-feedback alert-success">✓ {successMsg}</div>}
-      {errorMsg && <div className="alert-feedback alert-error">⚠️ {errorMsg}</div>}
+      {successMsg && (
+        <div className="alert-feedback alert-success" style={{ marginBottom: 16 }}>
+          <CheckCircle2 size={16} />
+          <span>{successMsg}</span>
+        </div>
+      )}
+      {errorMsg && (
+        <div className="alert-feedback alert-error" style={{ marginBottom: 16 }}>
+          <ShieldAlert size={16} />
+          <span>{errorMsg}</span>
+        </div>
+      )}
 
       {/* ── PROFILE TAB ────────────────────────────────────────── */}
       {activeTab === 'profile' && (
@@ -386,7 +452,7 @@ const Settings = () => {
               <div
                 className="avatar-preview-container"
                 style={{
-                  background: !avatarUrl ? 'linear-gradient(135deg, #2563eb, #4f46e5)' : 'var(--bg-input)',
+                  background: !avatarUrl ? 'linear-gradient(135deg, #3B82F6, #6366F1)' : 'var(--bg-input)',
                 }}
               >
                 {avatarUrl ? (
@@ -404,13 +470,24 @@ const Settings = () => {
                   accept="image/png, image/jpeg, image/jpg"
                   style={{ display: 'none' }}
                 />
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={triggerFileInput}
-                >
-                  Change Photo
-                </button>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={triggerFileInput}
+                  >
+                    Change Photo
+                  </button>
+                  {avatarUrl && (
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      onClick={handleRemoveAvatar}
+                    >
+                      Remove Photo
+                    </button>
+                  )}
+                </div>
                 <span className="avatar-helper-text">JPG, PNG up to 2 MB</span>
               </div>
             </div>
@@ -453,7 +530,7 @@ const Settings = () => {
               />
             </div>
 
-            <div className="mt-4">
+            <div style={{ marginTop: 24 }}>
               <button type="submit" className="btn btn-primary">
                 Save Changes
               </button>
@@ -468,7 +545,9 @@ const Settings = () => {
           <div className="settings-card">
             <div className="settings-card-header">
               <h2 className="settings-card-title">Change Password</h2>
-              <p className="settings-card-subtitle">Use a strong password you don't use elsewhere. Changing your password will sign you out on other devices.</p>
+              <p className="settings-card-subtitle">
+                Use a strong, unique password. Changing your password will log out other devices.
+              </p>
             </div>
 
             <form onSubmit={handleUpdatePassword}>
@@ -490,7 +569,7 @@ const Settings = () => {
                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                     aria-label={showCurrentPassword ? "Hide password" : "Show password"}
                   >
-                    {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
@@ -513,12 +592,13 @@ const Settings = () => {
                     onClick={() => setShowNewPassword(!showNewPassword)}
                     aria-label={showNewPassword ? "Hide password" : "Show password"}
                   >
-                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+                <PasswordStrengthMeter password={newPassword} />
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{ marginTop: 12 }}>
                 <label className="form-label" htmlFor="confirmPassword">Confirm Password</label>
                 <div className="password-input-wrapper">
                   <input
@@ -536,12 +616,12 @@ const Settings = () => {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                   >
-                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
 
-              <div className="mt-4">
+              <div style={{ marginTop: 24 }}>
                 <button type="submit" className="btn btn-primary">
                   Update Password
                 </button>
@@ -549,7 +629,6 @@ const Settings = () => {
             </form>
           </div>
 
-          {/* MFA Setup Card */}
           <div id="mfa">
             <MFACard
               onSuccess={(msg) => { setSuccessMsg(msg); setErrorMsg(''); }}
@@ -570,7 +649,7 @@ const Settings = () => {
             {sessions.filter((s) => !s.is_current).length > 0 && (
               <button
                 type="button"
-                className="btn btn-secondary btn-sm"
+                className="btn btn-danger btn-sm"
                 onClick={handleSignOutAllOthers}
               >
                 Sign out all others
@@ -580,7 +659,7 @@ const Settings = () => {
 
           {loadingSessions ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 100 }}>
-              <div className="spinner" />
+              <div className="my-files-spinner" />
             </div>
           ) : (
             <div className="sessions-list">
@@ -590,20 +669,23 @@ const Settings = () => {
                 </div>
               )}
               {sessions.map((s) => (
-                <div key={s.id} className="session-item">
+                <div key={s.id} className={`session-item ${s.is_current ? 'is-current' : ''}`}>
                   <div className="session-info-left">
                     <div className="session-icon-box">
                       {getDeviceIcon(s.device_type)}
                     </div>
                     <div className="session-text">
                       <div className="session-device-meta">
-                        <span className="session-device-name">{s.device_name}</span>
+                        <span className="session-device-name">{s.device_name || 'Unknown Device'}</span>
                         {s.is_current && <span className="session-badge-current">Current</span>}
                       </div>
                       <span className="session-details">
-                        {[s.browser_name, s.location, s.ip_address, formatLastActive(s.last_active)]
+                        {[s.browser_name, s.location, s.ip_address]
                           .filter(Boolean)
-                          .join(' • ')}
+                          .join(' · ')}
+                      </span>
+                      <span className="session-time-label">
+                        {s.is_current ? 'Active now' : formatLastActive(s.last_active)}
                       </span>
                     </div>
                   </div>
@@ -613,8 +695,9 @@ const Settings = () => {
                       type="button"
                       className="btn btn-danger btn-sm"
                       onClick={() => handleSignOutSession(s.id)}
+                      disabled={revokingId === s.id}
                     >
-                      Sign Out
+                      {revokingId === s.id ? '...' : 'Sign Out'}
                     </button>
                   )}
                 </div>
@@ -654,27 +737,17 @@ const Settings = () => {
                 </div>
 
                 <div className="notification-toggle-cell">
-                  <label className="toggle">
-                    <input
-                      type="checkbox"
-                      checked={notifPrefs[row.key]?.in_app || false}
-                      onChange={() => handleTogglePref(row.key, 'in_app')}
-                    />
-                    <span className="toggle-track"></span>
-                    <span className="toggle-thumb"></span>
-                  </label>
+                  <Toggle
+                    on={notifPrefs[row.key]?.in_app || false}
+                    onToggle={() => handleTogglePref(row.key, 'in_app')}
+                  />
                 </div>
 
                 <div className="notification-toggle-cell">
-                  <label className="toggle">
-                    <input
-                      type="checkbox"
-                      checked={notifPrefs[row.key]?.email || false}
-                      onChange={() => handleTogglePref(row.key, 'email')}
-                    />
-                    <span className="toggle-track"></span>
-                    <span className="toggle-thumb"></span>
-                  </label>
+                  <Toggle
+                    on={notifPrefs[row.key]?.email || false}
+                    onToggle={() => handleTogglePref(row.key, 'email')}
+                  />
                 </div>
               </div>
             ))}
@@ -684,14 +757,15 @@ const Settings = () => {
             <h3 className="digest-title">Email Digest Frequency</h3>
             <p className="digest-subtitle">Select how often you would like to receive general notification digests.</p>
 
-            <div className="digest-options">
+            {/* Sliding Segmented Controls */}
+            <div className="sharing-perm-toggle" style={{ width: '100%', padding: '3px' }}>
               {['instant', 'daily', 'weekly', 'never'].map((freq) => (
                 <button
                   key={freq}
                   type="button"
-                  className={`digest-btn ${digestFrequency === freq ? 'active' : ''}`}
+                  className={`sharing-perm-toggle-btn ${digestFrequency === freq ? 'is-active download' : ''}`}
                   onClick={() => setDigestFrequency(freq)}
-                  style={{ textTransform: 'capitalize' }}
+                  style={{ textTransform: 'capitalize', flex: 1, justifyContent: 'center' }}
                 >
                   {freq}
                 </button>
@@ -699,7 +773,7 @@ const Settings = () => {
             </div>
           </div>
 
-          <div className="mt-4">
+          <div style={{ marginTop: 24 }}>
             <button
               type="button"
               className="btn btn-primary"

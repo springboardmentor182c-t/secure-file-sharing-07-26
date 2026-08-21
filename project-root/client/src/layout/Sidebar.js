@@ -23,7 +23,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-// FIX ISS-L2: Added adminOnly flag to Admin item
 const NAV_ITEMS = [
   { to: "/dashboard",      label: "Dashboard",      icon: LayoutDashboard },
   { to: "/my-files",       label: "My Files",       icon: FolderOpen },
@@ -48,21 +47,20 @@ export default function Sidebar({
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userTriggerRef = useRef(null);
 
-  // FIX ISS-L2: Filter navigation based on user role
-  // Admin link only visible to admin users — UI improvement
-  // Backend still enforces authorization via require_admin dependency
   const visibleNavItems = useMemo(
     () => NAV_ITEMS.filter(item => !item.adminOnly || user?.role === "admin"),
     [user]
   );
 
-  const initials =
-    user?.name
-      ?.split(" ")
+  const initials = useMemo(() => {
+    if (!user?.name) return "TS";
+    return user.name
+      .split(" ")
       .map((n) => n[0])
       .join("")
       .substring(0, 2)
-      .toUpperCase() || "TS";
+      .toUpperCase();
+  }, [user?.name]);
 
   const handleLogout = async () => {
     await logout();
@@ -155,7 +153,7 @@ export default function Sidebar({
           )}
         </div>
 
-        {/* Navigation — uses filtered visibleNavItems */}
+        {/* Navigation */}
         <nav className="sidebar-nav">
           {visibleNavItems.map((item) => {
             const Icon = item.icon;
@@ -202,15 +200,28 @@ export default function Sidebar({
             aria-expanded={userMenuOpen}
             aria-haspopup="menu"
           >
+            {/* ENHANCED AVATAR CONTAINER: Supports dynamic profile photos */}
             <div
               className="sidebar-avatar"
               style={{
-                background:
-                  user?.avatar_color ||
-                  "linear-gradient(135deg, #3b82f6, #6366f1)",
+                background: user?.avatar_url
+                  ? "transparent"
+                  : (user?.avatar_color || "linear-gradient(135deg, #3b82f6, #6366f1)"),
+                overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              {initials}
+              {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={user.name || "Profile"}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
+                initials
+              )}
             </div>
 
             {!sidebarCollapsed && (

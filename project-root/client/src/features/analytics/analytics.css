@@ -1,12 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   TrustShare Analytics — Premium Apple-Grade Design
-   ─────────────────────────────────────────────────────────────────────────
-   • Larger rounded corners (20-24px) — feels premium
-   • Layered soft shadows for depth (not harsh)
-   • Glassmorphism accents in dark mode
-   • Refined color palette (SF-inspired)
-   • Buttery-smooth spring animations
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* TrustShare Analytics  */
 
 /* ── Font stack ───────────────────────────────────────────────────────────── */
 .an-page,
@@ -19,9 +11,6 @@
   box-sizing: border-box;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   LIGHT MODE — Refined Apple-inspired palette
-   ═══════════════════════════════════════════════════════════════════════════ */
 body.light .an-page,
 body:not(.dark) .an-page {
   /* Inherit from PageLayout */

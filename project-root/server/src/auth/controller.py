@@ -9,11 +9,11 @@ from src.auth.dependencies import (
     create_refresh_token,
 )
 from src.entities.user import User
+from src.entities.audit_log import AuditLog
 from src.notifications.service import create_notification
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
-# ── FIX: OAuth token temporary store ───────────────────────────────────────
 import secrets
 import threading
 from datetime import datetime, timedelta, timezone
@@ -23,7 +23,6 @@ _oauth_store_lock = threading.Lock()
 
 
 def _store_oauth_tokens(access_token: str, refresh_token: str) -> str:
-    """Store tokens server-side and return a short-lived exchange code."""
     code = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + timedelta(seconds=60)
     with _oauth_store_lock:
@@ -47,6 +46,19 @@ def _get_client_ip(request: Request) -> str | None:
     return None
 
 
+def _log_audit(db: Session, user_id: int | None, action: str, resource_name: str, ip_address: str | None, level: str = "info"):
+    """Write to audit_logs table so events appear in the Activity page."""
+    log = AuditLog(
+        user_id=user_id,
+        action=action,
+        resource_type="user",
+        resource_name=resource_name,
+        ip_address=ip_address,
+        level=level,
+    )
+    db.add(log)
+
+
 @router.post("/login", response_model=models.TokenResponse)
 def login(
     credentials: models.LoginRequest,
@@ -62,27 +74,38 @@ def login(
         ip_address=ip,
     )
     if not user:
+        # Log failed login to audit_logs
+        _log_audit(db, None, "LOGIN_FAILED", credentials.email, ip, "warn")
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
     if not user.is_active:
+        _log_audit(db, user.id, "LOGIN_BLOCKED", user.email, ip, "error")
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account suspended",
         )
 
     if user.mfa_enabled:
+        _log_audit(db, user.id, "LOGIN_MFA_PENDING", user.email, ip, "info")
+        db.commit()
         return service.build_mfa_pending_response(user)
 
     response = service._build_token_response(user, db=db, request=request)
+
+    # Log successful login to audit_logs
+    _log_audit(db, user.id, "LOGIN_SUCCESS", user.email, ip, "info")
+
     create_notification(
         db,
         user_id=user.id,
         type="security",
         category="security",
         title="New login to your account",
-        message="A successful sign-in to TrustShare was completed.",
+        message=f"A successful sign-in from {ip or 'unknown location'}.",
         icon="security",
         commit=True,
     )
@@ -105,18 +128,25 @@ def swagger_login(
     )
 
     if not user:
+        _log_audit(db, None, "LOGIN_FAILED", form_data.username, ip, "warn")
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
 
     if not user.is_active:
+        _log_audit(db, user.id, "LOGIN_BLOCKED", user.email, ip, "error")
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account suspended",
         )
 
     response = service._build_token_response(user, db=db, request=request)
+
+    _log_audit(db, user.id, "LOGIN_SUCCESS", user.email, ip, "info")
+
     create_notification(
         db,
         user_id=user.id,
@@ -169,7 +199,6 @@ def refresh(
             detail="User not found",
         )
 
-    # ── FIX: Check token exists in active session and rotate it ────────────
     try:
         from src.entities.login_session import LoginSession
         active_session = db.query(LoginSession).filter(
@@ -184,7 +213,6 @@ def refresh(
                 detail="Session expired or logged out. Please login again.",
             )
 
-        # ── FIX: Invalidate old session before creating new one ────────────
         active_session.is_current = False
         db.commit()
 
@@ -236,12 +264,17 @@ def verify_otp(
         )
 
     if not service.verify_otp_code(user.id, body.code, db=db, ip_address=ip):
+        _log_audit(db, user.id, "LOGIN_MFA_FAILED", user.email, ip, "warn")
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired OTP code",
         )
 
     response = service._build_token_response(user, db=db, request=request)
+
+    _log_audit(db, user.id, "LOGIN_SUCCESS", f"{user.email} (MFA)", ip, "info")
+
     create_notification(
         db,
         user_id=user.id,
@@ -370,7 +403,6 @@ async def google_callback(
 
     token_resp = service._build_token_response(user, db=db, request=request)
 
-    # ── FIX: Store tokens server-side, pass only a short-lived code in URL ──
     exchange_code = _store_oauth_tokens(
         token_resp.access_token,
         token_resp.refresh_token,
@@ -425,7 +457,6 @@ async def microsoft_callback(
 
     token_resp = service._build_token_response(user, db=db, request=request)
 
-    # ── FIX: Store tokens server-side, pass only a short-lived code in URL ──
     exchange_code = _store_oauth_tokens(
         token_resp.access_token,
         token_resp.refresh_token,
@@ -434,14 +465,8 @@ async def microsoft_callback(
     return RedirectResponse(url=redirect_url)
 
 
-# ── FIX: New endpoint to exchange OAuth code for actual tokens ──────────────
 @router.post("/oauth/exchange")
 def oauth_exchange(body: models.OAuthExchangeRequest):
-    """
-    Exchange a short-lived OAuth code for actual tokens.
-    Tokens are never put in URLs — only exchanged via POST body.
-    Code expires in 60 seconds and is single-use.
-    """
     with _oauth_store_lock:
         entry = _oauth_token_store.pop(body.code, None)
 
@@ -462,6 +487,7 @@ def oauth_exchange(body: models.OAuthExchangeRequest):
         "refresh_token": entry["refresh_token"],
         "token_type": "bearer",
     }
+
 
 @router.post("/mfa/setup")
 def mfa_setup(
