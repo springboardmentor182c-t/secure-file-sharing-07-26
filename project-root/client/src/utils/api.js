@@ -13,7 +13,7 @@ const ASSISTANT_SESSION_KEYS = [
   'trustshare_bubble_open',
 ];
 
-const clearAuthStorage = () => {
+export const clearAuthStorage = () => {
   AUTH_STORAGE_KEYS.forEach((k) => {
     localStorage.removeItem(k);
     sessionStorage.removeItem(k);
@@ -23,9 +23,16 @@ const clearAuthStorage = () => {
   });
 };
 
-// ── Request interceptor: attach JWT ────────────────────────────────────────
+export const setAuthTokens = (accessToken, refreshToken, rememberMe) => {
+  clearAuthStorage();
+  const storage = rememberMe ? localStorage : sessionStorage;
+  storage.setItem('access_token', accessToken);
+  storage.setItem('refresh_token', refreshToken);
+};
+
+// ── Request interceptor: attach JWT ───────────────────────────────
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+  const token = sessionStorage.getItem('access_token') || localStorage.getItem('access_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -38,17 +45,17 @@ api.interceptors.response.use(
     if (err.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const usedLocalStorage = !!localStorage.getItem('refresh_token');
+      const usedSessionStorage = !!sessionStorage.getItem('refresh_token');
       const refreshToken =
-        localStorage.getItem('refresh_token') ||
-        sessionStorage.getItem('refresh_token');
+        sessionStorage.getItem('refresh_token') ||
+        localStorage.getItem('refresh_token');
 
       if (refreshToken) {
         try {
           const { data } = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
             refresh_token: refreshToken,
           });
-          const storage = usedLocalStorage ? localStorage : sessionStorage;
+          const storage = usedSessionStorage ? sessionStorage : localStorage;
           storage.setItem('access_token', data.access_token);
           storage.setItem('refresh_token', data.refresh_token);
           originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
@@ -132,7 +139,7 @@ export const sharesAPI = {
   list: () => api.get('/api/shares/'),
   create: (data) => api.post('/api/shares/', data),
   revoke: (id) => api.delete(`/api/shares/${id}`),
-  updatePermission: (id, permission) => api.patch(`/api/shares/${id}`, { permission }), // NEW: update link permission
+  updatePermission: (id, permission) => api.patch(`/api/shares/${id}`, { permission }),
   access: (token, password) => api.get(`/api/shares/access/${token}`, { params: { password } }),
   publicDetails: (token, password) => axios.get(`${API_BASE_URL}/api/shares/public/${token}`, { params: { password } }),
   publicContent: (token, password) => axios.get(`${API_BASE_URL}/api/shares/public/${token}/content`, {
@@ -200,7 +207,7 @@ export const sharedWithMeAPI = {
   view: (fileId) => api.get(`/api/shared-with-me/${fileId}/view`, { responseType: 'blob' }),
   listDirect: () => api.get('/api/shared-with-me/direct'),
   shareDirect: (data) => api.post('/api/shared-with-me/direct', data),
-  updateDirectPermission: (permissionId, permission) => api.patch(`/api/shared-with-me/direct/${permissionId}`, { permission }), // NEW: update direct share
+  updateDirectPermission: (permissionId, permission) => api.patch(`/api/shared-with-me/direct/${permissionId}`, { permission }),
   revokeDirect: (permissionId) => api.delete(`/api/shared-with-me/direct/${permissionId}`),
 };
 

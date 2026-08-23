@@ -8,6 +8,7 @@ from collections import defaultdict
 from threading import Lock
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status, Request
+from dotenv import load_dotenv
 
 from src.entities.user import User
 from src.auth.models import SignupRequest, TokenResponse, UserOut
@@ -27,8 +28,6 @@ from src.analytics.constants import (
 )
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
-
-BOOTSTRAP_ADMIN_EMAIL = os.getenv("BOOTSTRAP_ADMIN_EMAIL", "").strip().lower()
 
 otp_store = {}
 _used_reset_tokens: set[str] = set()
@@ -114,6 +113,24 @@ def _is_development_dummy_email(email: str) -> bool:
         return False
     _, separator, domain = email.strip().lower().rpartition("@")
     return bool(separator and domain in _development_dummy_email_domains())
+
+
+#  Explicit Bootstrap Admin Creation (Loaded Dynamically)
+
+def _determine_role_and_plan(db: Session, email: str) -> tuple[str, str]:
+    load_dotenv()
+    if not os.path.exists(".env") and os.path.exists("../.env"):
+        load_dotenv("../.env")
+
+    bootstrap_email = os.getenv("BOOTSTRAP_ADMIN_EMAIL", "").strip().lower()
+    email_lower = email.strip().lower()
+
+    if bootstrap_email and email_lower == bootstrap_email:
+        existing_admin = db.query(User).filter(User.role == "admin").first()
+        if not existing_admin:
+            return "admin", "enterprise"
+
+    return "member", "free"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -210,18 +227,7 @@ def register_user(
             detail="Email already registered",
         )
 
-    is_first = db.query(User).count() == 0
-    email_lower = data.email.strip().lower()
-
-    if is_first and BOOTSTRAP_ADMIN_EMAIL and email_lower == BOOTSTRAP_ADMIN_EMAIL:
-        role = "admin"
-        plan = "enterprise"
-    elif is_first and not BOOTSTRAP_ADMIN_EMAIL and _environment() in {"development", "dev"}:
-        role = "admin"
-        plan = "enterprise"
-    else:
-        role = "member"
-        plan = "free"
+    role, plan = _determine_role_and_plan(db, data.email)
 
     user = User(
         name=data.name,
@@ -266,7 +272,7 @@ def _build_token_response(user: User, db: Session = None, request=None) -> Token
             except Exception:
                 pass
 
-            # ── 1. Determine Device Type (Desktop, Mobile, or Tablet) ──
+            # ── 1. Determine Device Type ──
             if ua:
                 if ua.is_pc:
                     device_type = "desktop"
@@ -312,7 +318,7 @@ def _build_token_response(user: User, db: Session = None, request=None) -> Token
             else:
                 browser_name = "Unknown"
 
-            # ── 4. Generate Figma-Grade Device Names (E.g. MacBook Pro, iPhone, Windows PC) ──
+            # ── 4. Generate Figma-Grade Device Names ──
             device_name = None
             if ua:
                 if ua.is_pc:
@@ -327,7 +333,7 @@ def _build_token_response(user: User, db: Session = None, request=None) -> Token
                 else:
                     brand = ua.device.brand or ""
                     family = ua.device.family or ""
-                    
+
                     if "iphone" in family.lower() or "iphone" in ua_string.lower():
                         device_name = "iPhone"
                     elif "ipad" in family.lower() or "ipad" in ua_string.lower():
@@ -507,7 +513,6 @@ def reset_password_in_db(
     if len(_used_reset_tokens) > 10000:
         _used_reset_tokens.clear()
 
-    # ── SECURITY NOTIFICATION: Password reset completed ──────────────────
     create_notification(
         db,
         user_id=user.id,
@@ -542,18 +547,7 @@ def get_or_create_oauth_user(
 
     if not user:
         random_password = secrets.token_urlsafe(16)
-        is_first = db.query(User).count() == 0
-        email_lower = email.strip().lower()
-
-        if is_first and BOOTSTRAP_ADMIN_EMAIL and email_lower == BOOTSTRAP_ADMIN_EMAIL:
-            role = "admin"
-            plan = "enterprise"
-        elif is_first and not BOOTSTRAP_ADMIN_EMAIL and _environment() in {"development", "dev"}:
-            role = "admin"
-            plan = "enterprise"
-        else:
-            role = "member"
-            plan = "free"
+        role, plan = _determine_role_and_plan(db, email)
 
         user = User(name=name, email=email, hashed_password=hash_password(random_password), role=role, plan=plan)
         db.add(user)
@@ -572,7 +566,7 @@ def get_or_create_oauth_user(
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# MFA TOGGLE (with security notifications)
+# MFA TOGGLE
 # ═══════════════════════════════════════════════════════════════════════════
 
 def enable_mfa(db: Session, user: User) -> User:
@@ -580,7 +574,6 @@ def enable_mfa(db: Session, user: User) -> User:
     db.commit()
     db.refresh(user)
 
-    # ── SECURITY NOTIFICATION: MFA Enabled ───────────────────────────────
     create_notification(
         db,
         user_id=user.id,
@@ -603,7 +596,6 @@ def disable_mfa(db: Session, user: User) -> User:
     db.commit()
     db.refresh(user)
 
-    # ── SECURITY NOTIFICATION: MFA Disabled ──────────────────────────────
     create_notification(
         db,
         user_id=user.id,
@@ -639,7 +631,6 @@ def change_password(
     except Exception as _sess_err:
         print(f"[SESSION CLEANUP WARN] {type(_sess_err).__name__}: {_sess_err}", flush=True)
 
-    # ── SECURITY NOTIFICATION: Password Changed ──────────────────────────
     create_notification(
         db,
         user_id=user.id,
@@ -647,7 +638,7 @@ def change_password(
         category="security",
         title="Password changed successfully",
         message="Your account password was updated. All other active sessions have been logged out.",
- )
+    )
 
     db.commit()
     return True

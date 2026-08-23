@@ -25,15 +25,32 @@ from src.shared_with_me.service import (
 
 router = APIRouter()
 
+# ── Independent dedup tracking structures ──────────────────────
+_view_timestamps: dict[tuple[int, int], datetime] = {}
+_download_timestamps: dict[tuple[int, int], datetime] = {}
+_DEDUP_SECONDS = 3.0
 
-def _should_increment_access(permission: FilePermission) -> bool:
+
+def _should_record_view(user_id: int, file_id: int) -> bool:
+    """Return True if this preview is outside the view dedup window."""
+    key = (user_id, file_id)
     now = datetime.now(timezone.utc)
-    if not permission.last_accessed_at:
-        return True
-    last = permission.last_accessed_at
-    if last.tzinfo is None:
-        last = last.replace(tzinfo=timezone.utc)
-    return (now - last).total_seconds() > 3.0
+    last = _view_timestamps.get(key)
+    if last and (now - last).total_seconds() <= _DEDUP_SECONDS:
+        return False
+    _view_timestamps[key] = now
+    return True
+
+
+def _should_record_download(user_id: int, file_id: int) -> bool:
+    """Return True if this download is outside the download dedup window."""
+    key = (user_id, file_id)
+    now = datetime.now(timezone.utc)
+    last = _download_timestamps.get(key)
+    if last and (now - last).total_seconds() <= _DEDUP_SECONDS:
+        return False
+    _download_timestamps[key] = now
+    return True
 
 
 @router.get("/direct", response_model=models.DirectSharesResponse)
@@ -89,8 +106,7 @@ def download_shared_file(
 ):
     file, permission = get_downloadable_shared_file(db, file_id, current_user.id)
 
-    # Collaborative alert generated securely in controller context
-    if _should_increment_access(permission):
+    if _should_record_download(current_user.id, file_id):
         permission.access_count = (permission.access_count or 0) + 1
         permission.last_accessed_at = datetime.now(timezone.utc)
         db.commit()
@@ -150,7 +166,7 @@ def view_shared_file(
 
     permission, file = row
 
-    if _should_increment_access(permission):
+    if _should_record_view(current_user.id, file_id):
         permission.access_count = (permission.access_count or 0) + 1
         permission.last_accessed_at = datetime.now(timezone.utc)
         db.commit()

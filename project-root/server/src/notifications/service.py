@@ -1,7 +1,63 @@
+# server/src/notifications/service.py
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from src.entities.notification import Notification
+from src.entities.user import User
+from src.entities.notification_channel_pref import NotificationChannelPreference
+
+SECURITY_BYPASS_CATEGORIES = {"security"}
+
+CATEGORY_TO_ACTIVITY = {
+    "shares": "file_shares",
+    "share": "file_shares",
+    "downloads": "downloads",
+    "download": "downloads",
+    "security": "security_alerts",
+    "expirations": "link_expirations",
+    "expiration": "link_expirations",
+    "access": "access_changes",
+    "system": "system_updates",
+}
+
+# Match settings defaults
+DEFAULTS = {
+    "file_shares": {"in_app": True, "email": True},
+    "downloads": {"in_app": True, "email": False},
+    "security_alerts": {"in_app": True, "email": True},
+    "link_expirations": {"in_app": False, "email": True},
+    "access_changes": {"in_app": True, "email": False},
+    "system_updates": {"in_app": False, "email": False},
+}
+
+
+def should_notify(
+    db: Session,
+    user_id: int,
+    category: str,
+    channel: str = "in_app"
+) -> bool:
+    """
+    Check if user has disabled notifications for this category/channel in
+    the NotificationChannelPreference database table.
+    """
+    if category in SECURITY_BYPASS_CATEGORIES:
+        return True
+
+    activity = CATEGORY_TO_ACTIVITY.get(category, category)
+
+    pref = db.query(NotificationChannelPreference).filter(
+        NotificationChannelPreference.user_id == user_id,
+        NotificationChannelPreference.activity == activity
+    ).first()
+
+    if pref is not None:
+
+        return bool(getattr(pref, channel, True))
+
+    default_chan = DEFAULTS.get(activity, {})
+    return bool(default_chan.get(channel, True))
 
 
 def create_notification(
@@ -15,8 +71,11 @@ def create_notification(
     resource_id: int | None = None,
     resource_type: str | None = None,
     commit: bool = False,
-) -> Notification:
-    """Create a persisted notification within the caller's transaction."""
+) -> Notification | None:
+    
+    if not should_notify(db, user_id, category, "in_app"):
+        return None
+
     values = {
         "user_id": user_id,
         "type": type,

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bell, CheckCheck, ChevronRight, Download, Eye, Share2,
-  ShieldAlert, Upload, X, Shield, Clock, HardDrive, Sparkles, Trash2
+  ShieldAlert, Upload, X, Shield, Clock, HardDrive, Sparkles, Trash2, AlertTriangle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { notificationsAPI } from '../utils/api';
@@ -69,6 +69,8 @@ export default function Notifications() {
   const [filter, setFilter] = useState('all');
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteFeedback, setDeleteFeedback] = useState(null);
 
   const load = useCallback(async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -168,14 +170,26 @@ export default function Notifications() {
   };
 
   const deleteAll = async () => {
-    if (!window.confirm('Delete all notifications? This cannot be undone.')) return;
     setDeleting(true);
+    setDeleteFeedback(null);
     try {
+      const beforeCount = items.length;
       await notificationsAPI.deleteAll();
-      setItems([]);
+
+      await load(false);
       events.emit(EVENTS.NOTIFICATIONS_CHANGED);
+
+      setShowDeleteConfirm(false);
+      setDeleteFeedback({
+        success: true,
+        message: `${beforeCount} notification${beforeCount === 1 ? '' : 's'} deleted.`
+      });
+      setTimeout(() => setDeleteFeedback(null), 4000);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Could not delete notifications.');
+      setDeleteFeedback({
+        success: false,
+        message: err.response?.data?.detail || 'Could not delete notifications.'
+      });
     } finally {
       setDeleting(false);
     }
@@ -212,7 +226,13 @@ export default function Notifications() {
         <div className="flat-header-actions">
           {items.length > 0 && (
             <>
-              <button type="button" className="my-files-btn my-files-btn--danger" onClick={deleteAll} disabled={deleting} style={{ padding: '8px 14px', fontSize: 12 }}>
+              <button
+                type="button"
+                className="my-files-btn my-files-btn--danger"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={deleting}
+                style={{ padding: '8px 14px', fontSize: 12 }}
+              >
                 <Trash2 size={14} strokeWidth={2.2} />
                 {deleting ? 'Deleting…' : 'Delete All'}
               </button>
@@ -226,6 +246,36 @@ export default function Notifications() {
           )}
         </div>
       </div>
+
+      {deleteFeedback && (
+        <div
+          role="alert"
+          aria-live="polite"
+          style={{
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontSize: '13px',
+            fontWeight: 500,
+            background: deleteFeedback.success ? 'rgba(16,185,129,.12)' : 'rgba(244,63,94,.12)',
+            color: deleteFeedback.success ? 'var(--emerald-400)' : 'var(--rose-400)',
+            border: `1px solid ${deleteFeedback.success ? 'rgba(16,185,129,.3)' : 'rgba(244,63,94,.3)'}`,
+          }}
+        >
+          {deleteFeedback.success ? <CheckCheck size={16} /> : <AlertTriangle size={16} />}
+          <span style={{ flex: 1 }}>{deleteFeedback.message}</span>
+          <button
+            onClick={() => setDeleteFeedback(null)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0 }}
+            aria-label="Dismiss feedback banner"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       <section className="sharing-stats-grid">
         <div className="sharing-stat-card">
@@ -337,6 +387,120 @@ export default function Notifications() {
           </AnimatePresence>
         </div>
       )}
+
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(0,0,0,0.55)',
+              backdropFilter: 'blur(4px)',
+              padding: '20px',
+            }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-confirm-title"
+            aria-describedby="delete-confirm-desc"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => !deleting && setShowDeleteConfirm(false)}
+          >
+            <motion.div
+              className="card"
+              style={{ maxWidth: 440, width: '100%', padding: '28px' }}
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              transition={{ duration: 0.18 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '18px' }}>
+                <div style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: '50%',
+                  background: 'rgba(244,63,94,.12)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--rose-400)',
+                  flexShrink: 0,
+                }}>
+                  <AlertTriangle size={22} strokeWidth={2.2} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3
+                    id="delete-confirm-title"
+                    style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}
+                  >
+                    Delete All Notifications?
+                  </h3>
+                  <p
+                    id="delete-confirm-desc"
+                    style={{ margin: '6px 0 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.55 }}
+                  >
+                    This will permanently remove all {items.length} notification{items.length === 1 ? '' : 's'} from every category. This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+
+              {deleteFeedback && !deleteFeedback.success && (
+                <div
+                  role="alert"
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: '6px',
+                    marginBottom: '16px',
+                    fontSize: '12px',
+                    background: 'rgba(244,63,94,.12)',
+                    color: 'var(--rose-400)',
+                    border: '1px solid rgba(244,63,94,.3)',
+                  }}
+                >
+                  {deleteFeedback.message}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="my-files-btn my-files-btn--secondary"
+                  onClick={() => { setShowDeleteConfirm(false); setDeleteFeedback(null); }}
+                  disabled={deleting}
+                  style={{ padding: '8px 18px', fontSize: '13px' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="my-files-btn my-files-btn--danger"
+                  onClick={deleteAll}
+                  disabled={deleting}
+                  style={{ padding: '8px 18px', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  {deleting ? (
+                    <>
+                      <span className="spinner spinner-sm animate-spin" style={{ width: 14, height: 14 }} />
+                      Deleting…
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={14} />
+                      Delete All
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

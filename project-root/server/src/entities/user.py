@@ -1,3 +1,5 @@
+# server/src/entities/user.py
+
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, BigInteger, Text
 from sqlalchemy.sql import func
 from src.database.core import Base
@@ -20,5 +22,6 @@ class User(Base):
     organization = Column(String, nullable=True)
     avatar_url = Column(Text, nullable=True)         # Text holds full base64 images
     is_active = Column(Boolean, default=True)
+    notification_preferences = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

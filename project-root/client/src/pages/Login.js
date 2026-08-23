@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../data/constants';
+import { clearAuthStorage } from '../utils/api';
 
 export default function Login() {
   const { login } = useAuth();
@@ -35,6 +36,8 @@ export default function Login() {
     
     setLoading(true);
     try {
+      clearAuthStorage();
+
       const data = await login(form.email, form.password, rememberMe);
       if (data.mfa_required) {
         navigate(`/verify-otp?email=${encodeURIComponent(form.email)}&mfa_token=${encodeURIComponent(data.mfa_token)}&rememberMe=${rememberMe}`);
@@ -47,7 +50,7 @@ export default function Login() {
   };
 
   const handleOAuthLogin = (provider) => {
-    // Redirect the browser to the backend, which will redirect to Google/Microsoft
+    clearAuthStorage();
     window.location.href = `${API_BASE_URL}/api/auth/oauth/${provider}`;
   };
 
