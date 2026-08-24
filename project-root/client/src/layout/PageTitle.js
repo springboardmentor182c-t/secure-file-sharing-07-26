@@ -1,5 +1,3 @@
-// client/src/layout/PageTitle.js
-
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -20,6 +18,7 @@ const ROUTE_TITLES = {
   "/verify-otp":      "Verify OTP",
   "/forgot-password": "Forgot Password",
   "/reset-password":  "Reset Password",
+  "/s":               "Public Vault",
 };
 
 const APP_NAME = "TrustShare";
@@ -28,14 +27,11 @@ export default function PageTitle() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    // FIX ISS-L5: Exact match first
     if (ROUTE_TITLES[pathname]) {
       document.title = `${ROUTE_TITLES[pathname]} — ${APP_NAME}`;
       return;
     }
 
-    // Partial match — longest key wins to prevent collision
-    // e.g. /files/shared → matches /files correctly
     const matchedKey = Object.keys(ROUTE_TITLES)
       .sort((a, b) => b.length - a.length)
       .find((key) => pathname.startsWith(key));

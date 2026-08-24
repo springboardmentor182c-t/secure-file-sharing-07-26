@@ -215,29 +215,71 @@ export default function SharingHub() {
     }
   };
 
-  const copyToClipboard = (text, id) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    showToast('Secure link copied to clipboard!');
-    setTimeout(() => setCopiedId(null), 2000);
+  // ── FIX: BULLETPROOF CLIPBOARD COPY FOR NON-HTTPS (HTTP) DEPLOYMENTS ──
+  const copyToClipboard = async (text, id) => {
+    let success = false;
+    
+    // 1. Try modern clipboard API first (Localhost or HTTPS only)
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        success = true;
+      } catch (err) {
+        console.warn('Modern clipboard API failed, attempting fallback...', err);
+      }
+    }
+
+    // 2. Fallback: Invisible Textarea DOM injection (Works everywhere, including plain HTTP)
+    if (!success) {
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        textArea.setAttribute('readonly', '');
+        document.body.appendChild(textArea);
+        
+        textArea.focus();
+        textArea.select();
+        
+        success = document.execCommand('copy');
+        document.body.removeChild(textArea);
+      } catch (err) {
+        console.error('Fallback copy process failed entirely:', err);
+      }
+    }
+
+    if (success) {
+      setCopiedId(id);
+      showToast('Secure link copied to clipboard!');
+      setTimeout(() => setCopiedId(null), 2000);
+    } else {
+      showToast('Failed to copy link automatically.', true);
+    }
   };
 
+  // ── FIX: BULLETPROOF WEB SHARE API FOR DESKTOP & NON-HTTPS (HTTP) ──
   const handleNativeShare = async (share) => {
-    if (navigator.share) {
+    // navigator.share strictly requires HTTPS and user engagement
+    if (navigator.share && window.isSecureContext) {
       try {
         await navigator.share({
           title: `TrustShare Secure Link: ${share.file_name || 'Document'}`,
           text: `Here is a secure zero-knowledge encrypted file link via TrustShare:`,
           url: share.link,
         });
+        return;
       } catch (err) {
-        if (err.name !== 'AbortError') {
-          copyToClipboard(share.link, share.id);
+        if (err.name === 'AbortError') {
+          return; // User canceled the native share sheet
         }
+        console.warn('Native Web Share failed, falling back to copy...', err);
       }
-    } else {
-      copyToClipboard(share.link, share.id);
     }
+
+    // If HTTP deployment or Unsupported Desktop Browser, fall back to copy
+    await copyToClipboard(share.link, share.id);
   };
 
   const safeShares = useMemo(() => (Array.isArray(shares) ? shares : []), [shares]);

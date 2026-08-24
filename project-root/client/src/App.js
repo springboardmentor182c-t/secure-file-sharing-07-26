@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './layout/ProtectedRoute';
 import Layout from './layout/Layout';
 import ScrollToTop from './layout/ScrollToTop';
-import ThemeToggle from './components/ThemeToggle';
 import PageTitle from './layout/PageTitle';
 import { ToastProvider } from './layout/ToastProvider';
 
-// Public pages
+// Public Auth pages
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import VerifyOtp from './pages/VerifyOtp';
@@ -36,15 +35,6 @@ import { notificationsAPI } from './utils/api';
 import { events, EVENTS } from './utils/events';
 import './assets/global.css';
 
-// Show floating ThemeToggle only on public/auth pages
-const PUBLIC_PATHS = ['/login', '/signup', '/verify-otp', '/forgot-password', '/reset-password', '/oauth-callback', '/s/'];
-
-function ConditionalThemeToggle() {
-  const location = useLocation();
-  const isPublicPage = PUBLIC_PATHS.some((path) => location.pathname.startsWith(path));
-  return isPublicPage ? <ThemeToggle /> : null;
-}
-
 function AppShell() {
   const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -69,8 +59,6 @@ function AppShell() {
 
     load();
     const unsubscribe = events.on(EVENTS.NOTIFICATIONS_CHANGED, load);
-    
-    // ── REAL-TIME OPTIMIZATION: Poll every 3 seconds instead of 30 ──
     const iv = setInterval(load, 3000);
 
     return () => {
@@ -83,7 +71,7 @@ function AppShell() {
   return (
     <Layout unreadCount={unreadCount}>
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/"               element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard"      element={<Dashboard />} />
         <Route path="/files"          element={<Files />} />
         <Route path="/my-files"       element={<MyFiles />} />
@@ -119,9 +107,8 @@ export default function App() {
           <Router>
             <ScrollToTop />
             <PageTitle />
-            <ConditionalThemeToggle />
             <Routes>
-              {/* Public routes */}
+              {/* Public auth routes */}
               <Route path="/login"           element={<Login />} />
               <Route path="/signup"          element={<Signup />} />
               <Route path="/verify-otp"      element={<VerifyOtp />} />
@@ -130,7 +117,7 @@ export default function App() {
               <Route path="/oauth-callback"  element={<OAuthCallback />} />
               <Route path="/s/:token"        element={<PublicShare />} />
 
-              {/* Protected app shell */}
+              {/* Protected routes — root "/" redirects to /dashboard if logged in, or /login if not */}
               <Route
                 path="/*"
                 element={
