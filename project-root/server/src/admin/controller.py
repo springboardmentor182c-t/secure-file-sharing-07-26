@@ -5,7 +5,12 @@ from typing import Optional
 from src.database.core import get_db
 from src.auth.dependencies import require_admin
 from src.entities.user import User
-
+from src.admin.service import (
+    get_all_users,
+    get_user_by_id,
+    update_user as update_user_service,
+    get_admin_stats,
+)
 router = APIRouter()
 
 
@@ -30,15 +35,31 @@ class UpdateUserRole(BaseModel):
     plan: Optional[str] = None
     is_active: Optional[bool] = None
 
+@router.get("/stats")
+def admin_stats(
+    db: Session = Depends(get_db),
+    _admin: User = Depends(require_admin),
+):
+    return get_admin_stats(db)
 
 @router.get("/users", response_model=list[UserAdminOut])
-def list_all_users(db: Session = Depends(get_db), _admin: User = Depends(require_admin)):
-    users = db.query(User).order_by(User.created_at.desc()).all()
+def list_all_users(
+    db: Session = Depends(get_db),
+    _admin: User = Depends(require_admin),
+):
+    users = get_all_users(db)
+
     return [
         UserAdminOut(
-            id=u.id, name=u.name, email=u.email, role=u.role, plan=u.plan,
-            is_active=u.is_active, mfa_enabled=u.mfa_enabled,
-            storage_used=u.storage_used or 0, storage_quota=u.storage_quota or 5368709120,
+            id=u.id,
+            name=u.name,
+            email=u.email,
+            role=u.role,
+            plan=u.plan,
+            is_active=u.is_active,
+            mfa_enabled=u.mfa_enabled,
+            storage_used=u.storage_used or 0,
+            storage_quota=u.storage_quota or 5368709120,
             created_at=str(u.created_at) if u.created_at else None,
         )
         for u in users

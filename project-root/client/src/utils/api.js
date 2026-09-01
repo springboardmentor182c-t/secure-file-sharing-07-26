@@ -198,8 +198,12 @@ export const sharedWithMeAPI = {
 
 // ── Admin ─────────────────────────────────────────────────────────────────
 export const adminAPI = {
-  listUsers: () => api.get('/api/admin/users'),
-  updateUser: (id, data) => api.patch(`/api/admin/users/${id}`, data),
+  stats: () => api.get("/api/admin/stats"),
+
+  listUsers: () => api.get("/api/admin/users"),
+
+  updateUser: (id, data) =>
+    api.patch(`/api/admin/users/${id}`, data),
 };
 
 // ── Audit ─────────────────────────────────────────────────────────────────
