@@ -1,0 +1,65 @@
+/* Analytics Dashboard Styles */
+.analytics-wrapper {
+  background-color: #F9FAFB;
+  min-height: 100vh;
+  padding: 2rem;
+  font-family: inherit;
+}
+
+.analytics-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1F2937;
+  margin-bottom: 1.5rem;
+}
+
+/* Metric Cards */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.metric-card {
+  background-color: #FFFFFF;
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid #F3F4F6;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Tabs Navigation */
+.tabs-nav {
+  display: flex;
+  border-bottom: 1px solid #E5E7EB;
+  margin-bottom: 1.5rem;
+  gap: 2rem;
+}
+
+.tab-btn {
+  padding-bottom: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: capitalize;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #9CA3AF;
+  transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+  border-bottom: 2px solid #292524;
+  color: #1C1917;
+  font-weight: 600;
+}
+
+/* Card Boxes for Charts */
+.analytics-card {
+  background-color: #FFFFFF;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid #F3F4F6;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}

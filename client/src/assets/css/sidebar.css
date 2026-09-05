@@ -1,0 +1,231 @@
+/* ===========================
+   SIDEBAR
+=========================== */
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+
+  width: 260px;
+  height: 100vh;
+
+  background: linear-gradient(180deg, #2a2422 0%, #211d1b 100%);
+
+  color: #fff;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  padding: 20px 16px;
+
+  overflow-y: auto;
+
+  z-index: 1000;
+
+  box-sizing: border-box;
+  box-shadow: 6px 0 24px rgba(0, 0, 0, 0.16);
+}
+
+/* ===========================
+   LOGO
+=========================== */
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding-bottom: 18px;
+
+  border-bottom: 1px solid rgba(255,255,255,.08);
+
+  margin-bottom: 20px;
+}
+
+.logo-circle {
+
+  width: 40px;
+  height: 40px;
+
+  border-radius: 12px;
+
+  background: linear-gradient(135deg, #8b6d62 0%, #6f544d 100%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+}
+
+.logo-circle svg {
+  color: white;
+  font-size: 18px;
+}
+
+.logo-section h2 {
+
+  font-size: 19px;
+
+  font-weight: 700;
+
+  line-height: 1.1;
+}
+
+.logo-section p {
+
+  margin-top: 2px;
+
+  font-size: 11px;
+
+  color: #b8aea9;
+}
+
+/* ===========================
+   MENU
+=========================== */
+
+.menu {
+  list-style: none;
+  flex: 1;
+}
+
+.menu-item {
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 11px 14px;
+
+  margin-bottom: 6px;
+
+  border-radius: 12px;
+
+  cursor: pointer;
+
+  color: #d7cdc7;
+
+  transition: all .25s ease;
+  text-decoration: none;
+}
+
+.menu-item svg {
+
+  font-size: 17px;
+
+  min-width: 20px;
+}
+
+.menu-item span {
+
+  font-size: 14px;
+
+  font-weight: 500;
+}
+
+.menu-item:hover {
+
+  background: rgba(255,255,255,.08);
+
+  transform: translateX(3px);
+}
+
+.menu-item.active {
+
+  background: linear-gradient(135deg, #7f625b 0%, #6c4f49 100%);
+
+  color: white;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16);
+}
+
+/* ===========================
+   FOOTER
+=========================== */
+
+.sidebar-footer {
+
+  border-top: 1px solid rgba(255,255,255,.08);
+
+  padding-top: 16px;
+
+  margin-top: 12px;
+}
+
+.sidebar .menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 12px;
+  color: #d7cdc7;
+  text-decoration: none;
+  margin-bottom: 6px;
+  transition: all .25s ease;
+}
+
+.sidebar .menu:hover {
+  background: rgba(255,255,255,.08);
+  transform: translateX(3px);
+}
+
+.sidebar .menu.active {
+  background: linear-gradient(135deg, #7f625b 0%, #6c4f49 100%);
+  color: white;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16);
+}
+
+.logout {
+
+  color: #f5d4d4;
+}
+
+/* ===========================
+   SCROLLBAR
+=========================== */
+
+.sidebar::-webkit-scrollbar {
+
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+
+  background: rgba(255,255,255,.15);
+
+  border-radius: 20px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+
+  background: transparent;
+}
+
+/* ===========================
+   RESPONSIVE
+=========================== */
+
+@media (max-width:768px){
+
+  .sidebar{
+
+    transform: translateX(-100%);
+  }
+
+}
+
+/* Fix for sidebar text labels not showing */
+.menu-item span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-footer .menu-item span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
